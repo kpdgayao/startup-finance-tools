@@ -11,6 +11,8 @@ import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP, formatNumber } from "@/lib/utils";
+import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import {
   calculateCostPlus,
   calculatePenetrationPrice,
@@ -42,6 +44,8 @@ export default function PricingCalculatorPage() {
   // Bundle state
   const [bundleItems, setBundleItems] = useState<number[]>([10000, 8000, 5000]);
   const [bundleDiscount, setBundleDiscount] = useState(15);
+
+  const ai = useAiExplain("pricing-calculator");
 
   const costPlusResult = calculateCostPlus(
     { fixedCosts, variableCostPerUnit: variableCost, expectedUnits },
@@ -290,6 +294,30 @@ export default function PricingCalculatorPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <AiInsightsPanel
+        explanation={ai.explanation}
+        isLoading={ai.isLoading}
+        error={ai.error}
+        onExplain={() =>
+          ai.explain({
+            costPlus: {
+              fixedCosts,
+              variableCost,
+              expectedUnits,
+              marginPercent,
+              price: costPlusResult.price,
+              breakeven: costPlusResult.breakeven,
+            },
+            valueBased: { perceivedValue, valueDiscount, suggestedPrice: valueBased },
+            penetration: { marketPrice, penetrationDiscount, entryPrice: penetrationPrice },
+            competitive: { competitorPrices, ...competitive },
+            bundle: { bundleItems, bundleDiscount, ...bundle },
+            psychologicalPrice,
+          })
+        }
+        onDismiss={ai.reset}
+      />
     </div>
   );
 }

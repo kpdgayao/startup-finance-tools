@@ -12,6 +12,8 @@ import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP } from "@/lib/utils";
+import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import {
   calculateDCF,
   calculateBerkus,
@@ -55,6 +57,8 @@ export default function ValuationCalculatorPage() {
       score: 1.0,
     }))
   );
+
+  const ai = useAiExplain("valuation-calculator");
 
   // VC Method state
   const [exitValue, setExitValue] = useState(100000000);
@@ -263,6 +267,28 @@ export default function ValuationCalculatorPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <AiInsightsPanel
+        explanation={ai.explanation}
+        isLoading={ai.isLoading}
+        error={ai.error}
+        onExplain={() =>
+          ai.explain({
+            dcfValue,
+            berkusValue,
+            scorecardValue,
+            vcValue,
+            suggestedRange: `${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`,
+            averageValuation: summary.average,
+            discountRate,
+            terminalGrowth,
+            exitValue,
+            targetReturn,
+            expectedDilution,
+          })
+        }
+        onDismiss={ai.reset}
+      />
     </div>
   );
 }

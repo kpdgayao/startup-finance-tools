@@ -11,6 +11,8 @@ import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP } from "@/lib/utils";
+import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import {
   projectMonthlyCashFlow,
   calculateSummary,
@@ -125,6 +127,8 @@ export default function CashFlowForecastPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const ai = useAiExplain("cash-flow-forecast");
 
   const hasWorkingCapitalImpact = stats.workingCapitalImpact > 0;
 
@@ -546,6 +550,31 @@ export default function CashFlowForecastPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AiInsightsPanel
+        explanation={ai.explanation}
+        isLoading={ai.isLoading}
+        error={ai.error}
+        onExplain={() =>
+          ai.explain({
+            startingBalance,
+            monthlyRecurringRevenue: mrr,
+            fixedCosts,
+            variableCostPercent,
+            paymentTermsDSO: paymentTerms,
+            payableTermsDPO: payableTerms,
+            totalInflow: stats.totalInflow,
+            totalOutflow: stats.totalOutflow,
+            finalBalance: stats.finalBalance,
+            negativeMonths: stats.negativeMonths,
+            avgNetFlow: stats.avgNetFlow,
+            cashConversionCycle: stats.cashConversionCycle,
+            peakBalance: stats.peakBalance,
+            lowestBalance: stats.lowestBalance,
+          })
+        }
+        onDismiss={ai.reset}
+      />
     </div>
   );
 }

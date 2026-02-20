@@ -8,6 +8,8 @@ import { CurrencyInput } from "@/components/shared/currency-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP } from "@/lib/utils";
+import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import {
   calculateBurnRate,
   projectCashBalance,
@@ -31,6 +33,8 @@ export default function BurnRatePage() {
   const [monthlyExpenses, setMonthlyExpenses] = useState(800000);
   const [expenseCut, setExpenseCut] = useState(0);
   const [revenueIncrease, setRevenueIncrease] = useState(0);
+
+  const ai = useAiExplain("burn-rate");
 
   const burnResult = calculateBurnRate({ cashBalance, monthlyRevenue, monthlyExpenses });
   const baseProjection = projectCashBalance(cashBalance, monthlyRevenue, monthlyExpenses, 18);
@@ -240,6 +244,28 @@ export default function BurnRatePage() {
           )}
         </CardContent>
       </Card>
+
+      <AiInsightsPanel
+        explanation={ai.explanation}
+        isLoading={ai.isLoading}
+        error={ai.error}
+        onExplain={() =>
+          ai.explain({
+            cashBalance,
+            monthlyRevenue,
+            monthlyExpenses,
+            grossBurn: burnResult.grossBurn,
+            netBurn: burnResult.netBurn,
+            runway: burnResult.runway === Infinity ? "Sustainable" : `${burnResult.runway.toFixed(1)} months`,
+            zone,
+            expenseCut,
+            revenueIncrease,
+            adjustedRunway: adjustedBurn.runway === Infinity ? "Sustainable" : `${adjustedBurn.runway.toFixed(1)} months`,
+            adjustedZone,
+          })
+        }
+        onDismiss={ai.reset}
+      />
     </div>
   );
 }

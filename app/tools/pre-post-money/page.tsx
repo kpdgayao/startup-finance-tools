@@ -9,6 +9,8 @@ import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP, formatPercent } from "@/lib/utils";
+import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import {
   PieChart,
   Pie,
@@ -46,6 +48,8 @@ export default function PrePostMoneyPage() {
       }
     }
   };
+
+  const ai = useAiExplain("pre-post-money");
 
   const result = calculate();
 
@@ -201,6 +205,24 @@ export default function PrePostMoneyPage() {
             </Card>
           </div>
         </>
+      )}
+
+      {result && result.postMoney > 0 && (
+        <AiInsightsPanel
+          explanation={ai.explanation}
+          isLoading={ai.isLoading}
+          error={ai.error}
+          onExplain={() =>
+            ai.explain({
+              preMoney: result.preMoney,
+              investment: result.investment,
+              postMoney: result.postMoney,
+              investorEquityPercent: result.equityPercent,
+              existingShareholdersPercent: 100 - result.equityPercent,
+            })
+          }
+          onDismiss={ai.reset}
+        />
       )}
     </div>
   );

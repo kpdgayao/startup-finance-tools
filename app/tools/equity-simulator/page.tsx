@@ -9,6 +9,8 @@ import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP, formatPercent } from "@/lib/utils";
+import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import {
   simulateCapTable,
   type Founder,
@@ -40,6 +42,8 @@ export default function EquitySimulatorPage() {
   const [rounds, setRounds] = useState<FundingRound[]>([
     { id: "r1", name: "Seed Round", investment: 5000000, preMoneyValuation: 20000000, esopPool: 10 },
   ]);
+
+  const ai = useAiExplain("equity-simulator");
 
   const totalFounderEquity = founders.reduce((sum, f) => sum + f.equity, 0);
   const results = simulateCapTable(founders, rounds);
@@ -286,6 +290,29 @@ export default function EquitySimulatorPage() {
           <p><strong className="text-foreground">ESOP (Employee Stock Option Pool):</strong> Typically 10-20% set aside before a funding round to attract key hires. This dilutes existing shareholders proportionally.</p>
         </CardContent>
       </Card>
+
+      <AiInsightsPanel
+        explanation={ai.explanation}
+        isLoading={ai.isLoading}
+        error={ai.error}
+        onExplain={() =>
+          ai.explain({
+            founders: founders.map((f) => ({ name: f.name, equity: f.equity })),
+            rounds: rounds.map((r) => ({
+              name: r.name,
+              investment: r.investment,
+              preMoneyValuation: r.preMoneyValuation,
+              esopPool: r.esopPool,
+            })),
+            finalCapTable: latestRound.entries.map((e) => ({
+              stakeholder: e.stakeholder,
+              type: e.type,
+              percentage: e.percentage,
+            })),
+          })
+        }
+        onDismiss={ai.reset}
+      />
     </div>
   );
 }
