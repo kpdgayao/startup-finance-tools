@@ -84,9 +84,11 @@ export function calculateBundlePrice(
 
 export function suggestPsychologicalPrice(price: number): number {
   if (price <= 0) return 0;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(price)));
-  const rounded = Math.ceil(price / magnitude) * magnitude;
-  return rounded - 1;
+  const floored = Math.floor(price);
+  const lastDigit = floored % 10;
+  if (lastDigit === 9) return floored;
+  // Step down to nearest number ending in 9
+  return floored - lastDigit - 1;
 }
 
 export function calculateBreakeven(

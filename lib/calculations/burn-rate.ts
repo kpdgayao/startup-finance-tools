@@ -18,7 +18,7 @@ export function calculateBurnRate(inputs: BurnRateInputs): BurnRateResult {
 
   return {
     grossBurn,
-    netBurn: Math.max(0, netBurn),
+    netBurn,
     runway: netBurn <= 0 ? Infinity : runway,
     monthlyRevenue: inputs.monthlyRevenue,
   };

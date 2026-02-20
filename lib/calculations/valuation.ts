@@ -45,7 +45,9 @@ export function calculateDCF(inputs: DCFInputs): number {
 }
 
 export function calculateBerkus(factors: BerkusFactor[]): number {
-  return factors.reduce((sum, factor) => sum + factor.value, 0);
+  const total = factors.reduce((sum, factor) => sum + Math.min(factor.value, factor.maxValue), 0);
+  const cap = factors.reduce((sum, factor) => sum + factor.maxValue, 0);
+  return Math.min(total, cap);
 }
 
 export function calculateScorecard(
@@ -65,15 +67,15 @@ export function calculateScorecard(
 
 export function calculateVCMethod(inputs: VCMethodInputs): number {
   const { expectedExitValue, targetReturnMultiple, expectedDilution } = inputs;
-  const dilutionFactor = 1 - expectedDilution / 100;
+  const retentionFactor = 1 - expectedDilution / 100;
 
-  // Post-money = Exit Value / Target Return
-  const postMoney = expectedExitValue / targetReturnMultiple;
+  if (targetReturnMultiple <= 0 || retentionFactor <= 0) return 0;
 
-  // Adjust for future dilution
-  const adjustedPostMoney = postMoney * dilutionFactor;
+  // Post-money today, grossed up for future dilution
+  // VC needs ownership that, after dilution, still delivers target return
+  const postMoney = (expectedExitValue / targetReturnMultiple) / retentionFactor;
 
-  return Math.max(0, adjustedPostMoney);
+  return Math.max(0, postMoney);
 }
 
 export interface ValuationSummary {

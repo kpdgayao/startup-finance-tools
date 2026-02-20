@@ -46,10 +46,8 @@ export function projectMonthlyCashFlow(
     // Cash inflow considers DSO delay
     let cashInflow: number;
     if (i >= dsoMonthDelay) {
-      const delayedMonth = i - dsoMonthDelay;
-      const delayedMrr = inputs.monthlyRecurringRevenue;
-      const delayedOneTime = inputs.monthlyOneTimeIncome[delayedMonth] || 0;
-      cashInflow = delayedMrr + delayedOneTime;
+      const delayedOneTime = inputs.monthlyOneTimeIncome[i - dsoMonthDelay] || 0;
+      cashInflow = mrr + delayedOneTime;
     } else {
       cashInflow = 0; // Haven't collected yet
     }
@@ -57,12 +55,12 @@ export function projectMonthlyCashFlow(
     const variableCosts = totalRevenue * (inputs.variableCostPercent / 100);
     const totalExpenses = inputs.fixedCosts + variableCosts;
 
-    // Cash outflow considers DPO delay
+    // Cash outflow considers DPO delay — bills deferred during delay period
     let cashOutflow: number;
     if (i >= dpoMonthDelay) {
       cashOutflow = totalExpenses;
     } else {
-      cashOutflow = inputs.fixedCosts; // Only fixed costs paid immediately
+      cashOutflow = 0; // Payables not yet due — DPO benefit
     }
 
     const netCashFlow = cashInflow - cashOutflow;

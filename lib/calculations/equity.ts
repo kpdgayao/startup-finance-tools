@@ -67,42 +67,19 @@ export function simulateCapTable(
   });
 
   for (const round of rounds) {
-    const postMoney = calculatePostMoney(round.preMoneyValuation, round.investment);
-    const dilutionFactor = round.preMoneyValuation / postMoney;
+    // Skip empty rounds to avoid NaN from 0/0
+    if (round.preMoneyValuation === 0 && round.investment === 0) continue;
 
-    // Dilute all existing holders
+    const postMoney = calculatePostMoney(round.preMoneyValuation, round.investment);
+    const dilutionFactor = postMoney > 0 ? round.preMoneyValuation / postMoney : 1;
+
+    // Step 1: Dilute all existing holders by the investor round
     currentEntries = currentEntries.map((entry) => ({
       ...entry,
       percentage: entry.percentage * dilutionFactor,
     }));
 
-    // Add ESOP pool if specified (dilutes from pre-money)
-    if (round.esopPool && round.esopPool > 0) {
-      const esopDilution = round.esopPool / 100;
-      currentEntries = currentEntries.map((entry) => ({
-        ...entry,
-        percentage: entry.percentage * (1 - esopDilution),
-      }));
-
-      const existingEsop = currentEntries.find(
-        (e) => e.type === "esop" && e.stakeholder === "ESOP Pool"
-      );
-      if (existingEsop) {
-        existingEsop.percentage += round.esopPool;
-      } else {
-        currentEntries.push({
-          stakeholder: "ESOP Pool",
-          type: "esop",
-          percentage:
-            currentEntries.reduce((s, e) => s + e.percentage, 0) > 0
-              ? round.esopPool
-              : round.esopPool,
-          roundAdded: round.name,
-        });
-      }
-    }
-
-    // Add investor
+    // Step 2: Add investor at their correct percentage
     const investorPct = calculateInvestorEquity(round.investment, postMoney);
     currentEntries.push({
       stakeholder: `${round.name} Investor`,
@@ -111,9 +88,41 @@ export function simulateCapTable(
       roundAdded: round.name,
     });
 
-    // Normalize to 100%
+    // Step 3: ESOP carved from existing holders (not investor)
+    if (round.esopPool && round.esopPool > 0) {
+      const esopFraction = round.esopPool / 100;
+
+      // Calculate ESOP size from non-investor existing equity
+      const existingNonInvestorPct = currentEntries
+        .filter((e) => !(e.type === "investor" && e.roundAdded === round.name))
+        .reduce((s, e) => s + e.percentage, 0);
+
+      const esopPct = existingNonInvestorPct * esopFraction;
+
+      // Dilute non-investor holders proportionally
+      currentEntries = currentEntries.map((entry) => {
+        if (entry.type === "investor" && entry.roundAdded === round.name) return entry;
+        return { ...entry, percentage: entry.percentage * (1 - esopFraction) };
+      });
+
+      const existingEsop = currentEntries.find(
+        (e) => e.type === "esop" && e.stakeholder === "ESOP Pool"
+      );
+      if (existingEsop) {
+        existingEsop.percentage += esopPct;
+      } else {
+        currentEntries.push({
+          stakeholder: "ESOP Pool",
+          type: "esop",
+          percentage: esopPct,
+          roundAdded: round.name,
+        });
+      }
+    }
+
+    // Safety: normalize only for floating-point drift
     const total = currentEntries.reduce((s, e) => s + e.percentage, 0);
-    if (total > 0 && Math.abs(total - 100) > 0.01) {
+    if (total > 0 && Math.abs(total - 100) > 0.001) {
       const factor = 100 / total;
       currentEntries = currentEntries.map((e) => ({
         ...e,

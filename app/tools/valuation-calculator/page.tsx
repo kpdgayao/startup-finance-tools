@@ -100,7 +100,7 @@ export default function ValuationCalculatorPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <ResultCard label="Suggested Range" value={`${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`} variant="success" />
             <ResultCard label="Average Valuation" value={formatPHP(summary.average)} />
-            <ResultCard label="Methods Used" value="4" sublabel="DCF, Berkus, Scorecard, VC" />
+            <ResultCard label="Methods Used" value={String([summary.dcf, summary.berkus, summary.scorecard, summary.vcMethod].filter((v) => v !== null && v > 0).length)} sublabel="DCF, Berkus, Scorecard, VC" />
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={comparisonData}>
@@ -258,8 +258,8 @@ export default function ValuationCalculatorPage() {
             </CardContent>
           </Card>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ResultCard label="Post-Money (before dilution adj.)" value={formatPHP(exitValue / targetReturn)} />
-            <ResultCard label="VC Method Valuation" value={formatPHP(vcValue)} variant="success" sublabel="Adjusted for expected dilution" />
+            <ResultCard label="Unadjusted Post-Money" value={formatPHP(exitValue / targetReturn)} sublabel="Exit Value / Target Return" />
+            <ResultCard label="VC Method Valuation" value={formatPHP(vcValue)} variant="success" sublabel="Grossed up for future dilution" />
           </div>
         </TabsContent>
       </Tabs>

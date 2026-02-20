@@ -114,7 +114,7 @@ export default function CashFlowForecastPage() {
     month: p.monthLabel,
     "Fixed Costs": p.fixedCosts,
     "Variable Costs": p.variableCosts,
-    Revenue: p.cashInflow,
+    Revenue: p.mrr + p.oneTimeIncome,
   }));
 
   const handleExportCSV = () => {

@@ -153,7 +153,7 @@ export default function PrePostMoneyPage() {
                       innerRadius={60}
                       outerRadius={100}
                       dataKey="value"
-                      label={({ name, value }) => `${name}: ${value.toFixed(2)}%`}
+                      label={({ value }) => `${value.toFixed(1)}%`}
                     >
                       {pieData.map((_, index) => (
                         <Cell key={index} fill={CHART_COLORS[index]} />

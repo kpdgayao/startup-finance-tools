@@ -87,7 +87,12 @@ export default function BurnRatePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <ResultCard label="Gross Burn" value={formatPHP(burnResult.grossBurn)} sublabel="Total monthly expenses" />
-        <ResultCard label="Net Burn" value={formatPHP(burnResult.netBurn)} sublabel="Expenses minus revenue" />
+        <ResultCard
+          label="Net Burn"
+          value={formatPHP(burnResult.netBurn)}
+          sublabel={burnResult.netBurn < 0 ? "Net surplus (revenue > expenses)" : "Expenses minus revenue"}
+          variant={burnResult.netBurn < 0 ? "success" : burnResult.netBurn === 0 ? "warning" : "default"}
+        />
         <ResultCard
           label="Runway"
           value={burnResult.runway === Infinity ? "Sustainable" : `${burnResult.runway.toFixed(1)} months`}
@@ -200,11 +205,22 @@ export default function BurnRatePage() {
               <ResultCard
                 label="Runway Change"
                 value={
-                  burnResult.runway === Infinity || adjustedBurn.runway === Infinity
-                    ? "Sustainable"
-                    : `+${(adjustedBurn.runway - burnResult.runway).toFixed(1)} months`
+                  burnResult.runway === Infinity && adjustedBurn.runway === Infinity
+                    ? "No change"
+                    : burnResult.runway !== Infinity && adjustedBurn.runway === Infinity
+                      ? "Now sustainable"
+                      : (() => {
+                          const delta = adjustedBurn.runway - burnResult.runway;
+                          return `${delta >= 0 ? "+" : ""}${delta.toFixed(1)} months`;
+                        })()
                 }
-                variant="success"
+                variant={
+                  adjustedBurn.runway === Infinity
+                    ? "success"
+                    : adjustedBurn.runway > burnResult.runway
+                      ? "success"
+                      : "danger"
+                }
               />
             </div>
           )}
