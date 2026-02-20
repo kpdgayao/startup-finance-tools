@@ -13,6 +13,7 @@ import {
   BarChart3,
   Target,
   Users,
+  FileSpreadsheet,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
@@ -26,6 +27,7 @@ const iconMap = {
   BarChart3,
   Target,
   Users,
+  FileSpreadsheet,
 } as const;
 
 export function ToolSidebar() {

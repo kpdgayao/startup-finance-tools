@@ -13,6 +13,7 @@ import {
   BarChart3,
   Target,
   Users,
+  FileSpreadsheet,
   ArrowRight,
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ const iconMap = {
   BarChart3,
   Target,
   Users,
+  FileSpreadsheet,
 } as const;
 
 export default function HomePage() {

@@ -6,7 +6,8 @@ export type ToolId =
   | "pricing-calculator"
   | "cash-flow-forecast"
   | "market-sizing"
-  | "unit-economics";
+  | "unit-economics"
+  | "financial-model-builder";
 
 const SHARED_INSTRUCTIONS = `You are a startup finance coach for Filipino founders, grounded in Kevin's (CPA, MBA) curriculum at IOL Inc.
 Write in plain language. Use bullet points. Keep it under 300 words.
@@ -130,6 +131,24 @@ Kevin's curriculum notes:
 - The sensitivity analysis shows how fragile or robust your unit economics are to churn changes.
 
 Explain the health of their unit economics, what the LTV:CAC ratio means for their business, and specific levers they can pull to improve (reduce churn, increase ARPU, reduce CAC).`,
+
+  "financial-model-builder": `${SHARED_INSTRUCTIONS}
+
+CONTEXT: The user built a 3-year integrated financial model with linked Profit & Loss, Balance Sheet, and Cash Flow statements.
+
+Kevin's curriculum notes:
+- An integrated financial model links three statements: P&L shows profitability, Balance Sheet shows financial position, Cash Flow shows liquidity.
+- Gross margin is the first health check. SaaS startups should target 60-80%. Below 40% means the business model needs rethinking.
+- EBITDA is the operating profitability metric investors focus on. Negative EBITDA in Year 1 is normal for high-growth startups, but it should turn positive by Year 2-3.
+- Net Income includes depreciation and tax. A company can be EBITDA-positive but Net Income-negative due to heavy CapEx depreciation.
+- Cash Flow ≠ Net Income. The Cash Flow statement reconciles the difference through working capital changes (AR/AP) and CapEx.
+- Balance Sheet must balance: Assets = Liabilities + Equity. Cash on the BS should match cumulative cash flows.
+- DSO and DPO drive working capital. High DSO (slow collection) burns cash. High DPO (slow payment) preserves cash.
+- CapEx hits cash flow immediately but P&L gradually through depreciation. A ₱500K annual CapEx over 5 years = ₱100K/year depreciation.
+- For Filipino startups: corporate tax rate is 25% (CREATE Act). No tax benefit on losses (no NOL carryforward in this simplified model).
+- Kevin's rule: if Year 3 operating cash flow is negative despite growing revenue, the business model has a structural cash problem.
+
+Explain the trajectory from Year 1 to Year 3, whether the model shows a path to profitability, the relationship between the three statements, and any red flags in the assumptions.`,
 };
 
 export function getSystemPrompt(toolId: ToolId): string {

@@ -55,6 +55,13 @@ export const TOOLS = [
     href: "/tools/unit-economics",
     icon: "Users",
   },
+  {
+    id: "financial-model-builder",
+    name: "Financial Model",
+    description: "3-year integrated P&L, Balance Sheet, and Cash Flow model",
+    href: "/tools/financial-model-builder",
+    icon: "FileSpreadsheet",
+  },
 ] as const;
 
 export const BERKUS_FACTORS = [
