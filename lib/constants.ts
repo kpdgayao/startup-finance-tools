@@ -62,6 +62,13 @@ export const TOOLS = [
     href: "/tools/financial-model-builder",
     icon: "FileSpreadsheet",
   },
+  {
+    id: "compliance-checklist",
+    name: "PH Compliance Checklist",
+    description: "SEC, DTI, BIR registration & ongoing compliance for Filipino startups",
+    href: "/tools/compliance-checklist",
+    icon: "ClipboardCheck",
+  },
 ] as const;
 
 export const BERKUS_FACTORS = [

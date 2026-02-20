@@ -67,6 +67,26 @@ export default function AboutPage() {
               <strong className="text-foreground">Cash Flow Forecaster</strong> — 12-month
               projection with DSO/DPO tracking and CSV export.
             </p>
+            <p>
+              <strong className="text-foreground">Market Sizing</strong> — Estimate TAM, SAM,
+              and SOM with top-down and bottom-up methods, funnel chart, and
+              3-year revenue projections.
+            </p>
+            <p>
+              <strong className="text-foreground">Unit Economics</strong> — Calculate CAC, LTV,
+              LTV:CAC ratio, payback period, and break-even with churn
+              sensitivity analysis.
+            </p>
+            <p>
+              <strong className="text-foreground">Financial Model Builder</strong> — 3-year
+              integrated P&L, Balance Sheet, and Cash Flow model with linked
+              statements, charts, and CSV export.
+            </p>
+            <p>
+              <strong className="text-foreground">PH Compliance Checklist</strong> — Interactive
+              step-by-step guide to SEC, DTI, BIR, and LGU registration with
+              dependency tracking, cost estimates, and progress persistence.
+            </p>
           </CardContent>
         </Card>
 

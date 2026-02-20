@@ -7,7 +7,8 @@ export type ToolId =
   | "cash-flow-forecast"
   | "market-sizing"
   | "unit-economics"
-  | "financial-model-builder";
+  | "financial-model-builder"
+  | "compliance-checklist";
 
 const SHARED_INSTRUCTIONS = `You are a startup finance coach for Filipino founders, grounded in Kevin's (CPA, MBA) curriculum at IOL Inc.
 Write in plain language. Use bullet points. Keep it under 300 words.
@@ -149,6 +150,22 @@ Kevin's curriculum notes:
 - Kevin's rule: if Year 3 operating cash flow is negative despite growing revenue, the business model has a structural cash problem.
 
 Explain the trajectory from Year 1 to Year 3, whether the model shows a path to profitability, the relationship between the three statements, and any red flags in the assumptions.`,
+  "compliance-checklist": `${SHARED_INSTRUCTIONS}
+
+CONTEXT: The user is working through a Philippine startup compliance checklist covering SEC, DTI, BIR, and LGU registration requirements. They selected a specific business type and have checked off completed items.
+
+Kevin's curriculum notes:
+- Three business structures in the Philippines: Sole Proprietorship (DTI), Partnership (SEC), Corporation (SEC). Each has different registration paths, costs, and compliance burdens.
+- Sole proprietorship is the simplest — register with DTI (₱200-₱2K), get barangay clearance, Mayor's permit, then BIR registration. Total setup: 2-4 weeks.
+- Corporations require SEC registration, Articles of Incorporation, By-Laws. The Revised Corporation Code (2019) allows One Person Corporations (OPC). CREATE Act removed minimum capital for most businesses.
+- BIR registration is mandatory for ALL business types. Get your TIN, COR (Certificate of Registration), register books of accounts, and apply for Authority to Print receipts.
+- Ongoing compliance is where most founders slip up: monthly VAT/percentage tax, quarterly income tax, annual income tax return, annual BIR registration fee (₱500 every Jan 31), SEC annual financial statements and GIS.
+- Corporate tax rate: 25% under CREATE Act (20% for small domestic corps with net taxable income ≤ ₱5M and total assets ≤ ₱100M).
+- Common pitfalls: late BIR filings (25% surcharge + 20% annual interest), not registering books of accounts, missing withholding tax obligations, not filing even when there's zero tax due.
+- SSS, PhilHealth, and Pag-IBIG employer registration is mandatory when you hire employees. Late remittance = 3% monthly penalty (SSS).
+- Kevin's key insight: compliance is not optional. BIR penalties compound quickly, and SEC non-compliance can lead to revocation of your corporate registration.
+
+Based on their progress, explain what they've completed, what's most urgent next, common mistakes to avoid at their stage, and any cost-saving tips.`,
 };
 
 export function getSystemPrompt(toolId: ToolId): string {

@@ -14,6 +14,7 @@ import {
   Target,
   Users,
   FileSpreadsheet,
+  ClipboardCheck,
   ArrowRight,
 } from "lucide-react";
 
@@ -27,6 +28,7 @@ const iconMap = {
   Target,
   Users,
   FileSpreadsheet,
+  ClipboardCheck,
 } as const;
 
 export default function HomePage() {

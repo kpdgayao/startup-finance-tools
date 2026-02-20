@@ -4,8 +4,15 @@ export function Footer() {
       <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
         <p>
           Built by{" "}
-          <span className="font-medium text-foreground">IOL Inc.</span> — Based
-          on startup finance teachings by Kevin (CPA, MBA)
+          <a
+            href="https://www.iol.ph"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-foreground hover:text-primary transition-colors underline underline-offset-4"
+          >
+            IOL Inc.
+          </a>{" "}
+          — Based on startup finance teachings by Kevin (CPA, MBA)
         </p>
         <p className="mt-1">
           Designed for Filipino startup founders. All calculations run

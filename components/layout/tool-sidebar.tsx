@@ -14,6 +14,7 @@ import {
   Target,
   Users,
   FileSpreadsheet,
+  ClipboardCheck,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
@@ -28,6 +29,7 @@ const iconMap = {
   Target,
   Users,
   FileSpreadsheet,
+  ClipboardCheck,
 } as const;
 
 export function ToolSidebar() {
