@@ -85,7 +85,7 @@ export default function BurnRatePage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ResultCard label="Gross Burn" value={formatPHP(burnResult.grossBurn)} sublabel="Total monthly expenses" />
         <ResultCard
           label="Net Burn"
@@ -132,19 +132,19 @@ export default function BurnRatePage() {
                   <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
               <YAxis
-                stroke="hsl(var(--muted-foreground))"
+                stroke="var(--muted-foreground)"
                 fontSize={12}
                 tickFormatter={(v) => `₱${(v / 1000000).toFixed(1)}M`}
               />
               <RechartsTooltip
-                contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
-                labelStyle={{ color: "hsl(var(--foreground))" }}
+                contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+                labelStyle={{ color: "var(--foreground)" }}
                 formatter={(value) => formatPHP(Number(value))}
               />
-              <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="3 3" />
+              <ReferenceLine y={0} stroke="var(--destructive)" strokeDasharray="3 3" />
               <Area
                 type="monotone"
                 dataKey="Current Path"

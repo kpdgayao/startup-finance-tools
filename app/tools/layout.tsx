@@ -10,10 +10,10 @@ export default function ToolsLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex flex-col lg:flex-row">
         <ToolSidebar />
         <main className="flex-1 overflow-auto">
-          <div className="container mx-auto px-4 py-8 max-w-5xl">
+          <div className="mx-auto px-4 py-6 lg:py-8 max-w-5xl">
             {children}
           </div>
         </main>

@@ -118,7 +118,7 @@ export default function PrePostMoneyPage() {
 
       {result && result.postMoney > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4" id="pre-post-results">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4" id="pre-post-results">
             <ResultCard
               label="Pre-Money Valuation"
               value={formatPHP(result.preMoney)}
@@ -153,13 +153,27 @@ export default function PrePostMoneyPage() {
                       innerRadius={60}
                       outerRadius={100}
                       dataKey="value"
-                      label={({ value }) => `${value.toFixed(1)}%`}
+                      label={(props) => {
+                        const { value, cx, cy, midAngle, outerRadius: or } = props as { value: number; cx: number; cy: number; midAngle: number; outerRadius: number };
+                        const RADIAN = Math.PI / 180;
+                        const radius = or + 20;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        return (
+                          <text x={x} y={y} fill="#e5e7eb" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={13} fontWeight={600}>
+                            {`${value.toFixed(1)}%`}
+                          </text>
+                        );
+                      }}
                     >
                       {pieData.map((_, index) => (
                         <Cell key={index} fill={CHART_COLORS[index]} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
+                    <RechartsTooltip
+                      contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+                      formatter={(value) => `${Number(value).toFixed(2)}%`}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

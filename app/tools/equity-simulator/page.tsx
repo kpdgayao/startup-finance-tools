@@ -226,11 +226,11 @@ export default function EquitySimulatorPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="round" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `${v}%`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="round" stroke="var(--muted-foreground)" fontSize={12} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(v) => `${v}%`} />
                 <RechartsTooltip
-                  contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                  contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
                   formatter={(value) => `${Number(value).toFixed(2)}%`}
                 />
                 <Legend />

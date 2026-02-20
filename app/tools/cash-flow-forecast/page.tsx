@@ -130,9 +130,9 @@ export default function CashFlowForecastPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Cash Flow Forecaster</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Cash Flow Forecaster</h1>
           <p className="text-muted-foreground mt-1">
             12-month cash flow projection with DSO/DPO timing adjustments.
           </p>
@@ -199,7 +199,7 @@ export default function CashFlowForecastPage() {
           <CardDescription>Add any one-time income (grants, contract payments, etc.) per month. Subject to same DSO collection delay.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {oneTimeIncome.map((val, i) => (
               <div key={i} className="space-y-1">
                 <Label className="text-xs">{projections[i]?.monthLabel || `M${i + 1}`}</Label>
@@ -241,7 +241,7 @@ export default function CashFlowForecastPage() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ResultCard label="Total 12-Month Inflow" value={formatPHP(stats.totalInflow)} sublabel="Cash collected from customers" />
         <ResultCard label="Total 12-Month Outflow" value={formatPHP(stats.totalOutflow)} sublabel="Cash paid to suppliers/ops" />
         <ResultCard
@@ -259,7 +259,7 @@ export default function CashFlowForecastPage() {
       </div>
 
       {/* Key Insights Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-500/10">
@@ -319,7 +319,7 @@ export default function CashFlowForecastPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="overview">
-            <TabsList className="grid grid-cols-4 w-full mb-4">
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full mb-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="net-flow">Net Flow</TabsTrigger>
               <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -330,10 +330,10 @@ export default function CashFlowForecastPage() {
             <TabsContent value="overview">
               <ResponsiveContainer width="100%" height={400}>
                 <ComposedChart data={overviewChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
                   <YAxis
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground)"
                     fontSize={12}
                     tickFormatter={(v) => {
                       const abs = Math.abs(v);
@@ -358,15 +358,15 @@ export default function CashFlowForecastPage() {
             <TabsContent value="net-flow">
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={netFlowChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
                   <YAxis
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground)"
                     fontSize={12}
                     tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}K`}
                   />
                   <RechartsTooltip content={<CustomTooltip />} />
-                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" />
+                  <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 4" />
                   <Bar dataKey="Net Cash Flow" radius={[4, 4, 0, 0]}>
                     {netFlowChartData.map((entry, index) => (
                       <Cell
@@ -399,15 +399,15 @@ export default function CashFlowForecastPage() {
                       <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
                   <YAxis
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground)"
                     fontSize={12}
                     tickFormatter={(v) => `₱${(v / 1000000).toFixed(1)}M`}
                   />
                   <RechartsTooltip content={<CustomTooltip />} />
-                  <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: "Zero", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                  <ReferenceLine y={0} stroke="var(--destructive)" strokeDasharray="4 4" label={{ value: "Zero", fill: "var(--muted-foreground)", fontSize: 11 }} />
                   <Area
                     type="monotone"
                     dataKey="Balance"
@@ -437,10 +437,10 @@ export default function CashFlowForecastPage() {
             <TabsContent value="breakdown">
               <ResponsiveContainer width="100%" height={400}>
                 <ComposedChart data={breakdownChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
                   <YAxis
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground)"
                     fontSize={12}
                     tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}K`}
                   />

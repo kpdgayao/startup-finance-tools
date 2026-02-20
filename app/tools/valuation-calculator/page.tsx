@@ -97,18 +97,18 @@ export default function ValuationCalculatorPage() {
           <CardDescription>Comparison across all 4 methods</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <ResultCard label="Suggested Range" value={`${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`} variant="success" />
             <ResultCard label="Average Valuation" value={formatPHP(summary.average)} />
             <ResultCard label="Methods Used" value={String([summary.dcf, summary.berkus, summary.scorecard, summary.vcMethod].filter((v) => v !== null && v > 0).length)} sublabel="DCF, Berkus, Scorecard, VC" />
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={comparisonData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="method" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `₱${(v / 1000000).toFixed(1)}M`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="method" stroke="var(--muted-foreground)" fontSize={12} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(v) => `₱${(v / 1000000).toFixed(1)}M`} />
               <RechartsTooltip
-                contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
                 formatter={(value) => formatPHP(Number(value))}
               />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
@@ -122,7 +122,7 @@ export default function ValuationCalculatorPage() {
       </Card>
 
       <Tabs defaultValue="dcf">
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
           <TabsTrigger value="dcf">DCF</TabsTrigger>
           <TabsTrigger value="berkus">Berkus</TabsTrigger>
           <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
