@@ -80,6 +80,33 @@ describe("balance chain integrity", () => {
   });
 });
 
+// ─── Steady-State Initialization ───────────────────────────────────────────
+
+describe("steady-state AR/AP initialization", () => {
+  it("month 1 has the same net cash flow as month 2 when revenue is flat", () => {
+    const result = projectMonthlyCashFlow(makeInputs(), STARTING_BALANCE);
+    // With steady-state initialization and flat MRR, no month-1 anomaly
+    expect(result[0].netCashFlow).toBeCloseTo(result[1].netCashFlow, 2);
+  });
+
+  it("no false month-1 cash dip with flat recurring revenue", () => {
+    const result = projectMonthlyCashFlow(makeInputs(), STARTING_BALANCE);
+    // All months should have the same net flow when revenue/costs are constant
+    const netFlows = result.map((p) => p.netCashFlow);
+    for (let i = 1; i < netFlows.length; i++) {
+      expect(netFlows[i]).toBeCloseTo(netFlows[0], 2);
+    }
+  });
+
+  it("balance stays flat when accrual revenue equals accrual expenses", () => {
+    // MRR=500K, fixed=400K, var=20% → expenses=500K, net accrual=0
+    const result = projectMonthlyCashFlow(makeInputs(), STARTING_BALANCE);
+    for (const p of result) {
+      expect(p.closingBalance).toBeCloseTo(STARTING_BALANCE, 2);
+    }
+  });
+});
+
 // ─── DSO = 0 (Immediate Collection) ───────────────────────────────────────
 
 describe("DSO=0 (immediate collection)", () => {
@@ -159,15 +186,11 @@ describe("DSO=0 DPO=0 (no timing effects)", () => {
 describe("DSO=30 (one full month delay)", () => {
   const inputs = makeInputs({ paymentTermsDays: 30, payableTermsDays: 0 });
 
-  it("month 1 cash inflow is zero (building AR)", () => {
+  it("cash inflow equals revenue every month (steady-state initialized)", () => {
     const result = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
-    expect(result[0].cashInflow).toBe(0);
-  });
-
-  it("month 2+ cash inflow equals revenue (collecting previous month AR)", () => {
-    const result = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
-    for (let i = 1; i < result.length; i++) {
-      expect(result[i].cashInflow).toBeCloseTo(result[i].revenue, 2);
+    // With steady-state beginningAR, month 1 collects just like any other month
+    for (const p of result) {
+      expect(p.cashInflow).toBeCloseTo(p.revenue, 2);
     }
   });
 
@@ -184,16 +207,19 @@ describe("DSO=30 (one full month delay)", () => {
 describe("DSO=60 (two month delay)", () => {
   const inputs = makeInputs({ paymentTermsDays: 60, payableTermsDays: 0 });
 
-  it("month 1 cash inflow is zero", () => {
-    const result = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
-    expect(result[0].cashInflow).toBe(0);
-  });
-
   it("AR equals two months of revenue (DSO/30 * revenue)", () => {
     const result = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
-    // With constant revenue, endingAR = 2 * 500K = 1M
     for (const p of result) {
       expect(p.accountsReceivable).toBeCloseTo(2 * p.revenue, 2);
+    }
+  });
+
+  it("steady state cash inflow equals revenue with flat MRR", () => {
+    const result = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
+    // beginningAR = 2 * 500K = 1M, endingAR = 2 * 500K = 1M
+    // cashInflow = 1M + 500K - 1M = 500K
+    for (const p of result) {
+      expect(p.cashInflow).toBeCloseTo(500_000, 2);
     }
   });
 });
@@ -203,18 +229,19 @@ describe("DSO=60 (two month delay)", () => {
 describe("DSO=15 (half-month delay)", () => {
   const inputs = makeInputs({ paymentTermsDays: 15, payableTermsDays: 0 });
 
-  it("month 1 collects 50% of revenue", () => {
+  it("AR equals half a month of revenue", () => {
     const result = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
-    // arRatio = 0.5, endingAR = 0.5 * 500K = 250K
-    // cashInflow = 0 + 500K - 250K = 250K
-    expect(result[0].cashInflow).toBeCloseTo(250_000, 2);
+    for (const p of result) {
+      expect(p.accountsReceivable).toBeCloseTo(p.revenue * 0.5, 2);
+    }
   });
 
-  it("months 2+ collect full revenue (steady state)", () => {
+  it("all months collect full revenue (steady-state)", () => {
     const result = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
-    for (let i = 1; i < result.length; i++) {
-      // beginningAR = 250K, + 500K revenue - 250K endingAR = 500K
-      expect(result[i].cashInflow).toBeCloseTo(500_000, 2);
+    // beginningAR = 0.5 * 500K = 250K, endingAR = 0.5 * 500K = 250K
+    // cashInflow = 250K + 500K - 250K = 500K
+    for (const p of result) {
+      expect(p.cashInflow).toBeCloseTo(500_000, 2);
     }
   });
 });
@@ -236,17 +263,30 @@ describe("one-time income", () => {
 
   it("one-time income is subject to DSO delay", () => {
     const oneTime = Array(12).fill(0);
-    oneTime[2] = 1_000_000;
+    oneTime[2] = 1_000_000; // month 3 (index 2) gets 1M extra
     const result = projectMonthlyCashFlow(
       makeInputs({ monthlyOneTimeIncome: oneTime, paymentTermsDays: 30 }),
       STARTING_BALANCE
     );
-    // Month 3 (index 2): revenue = 1.5M, endingAR = 1.5M
-    // cashInflow = beginningAR(500K from month 2) + 1.5M - 1.5M = 500K (only collects prior AR)
+    // Month 3 (index 2): revenue = 1.5M, endingAR = 1.0 * 1.5M = 1.5M
+    // beginningAR = 500K (steady state from month 2)
+    // cashInflow = 500K + 1.5M - 1.5M = 500K (only collects prior month's steady AR)
     expect(result[2].cashInflow).toBeCloseTo(500_000, 2);
+
     // Month 4 (index 3): revenue = 500K, endingAR = 500K
-    // cashInflow = beginningAR(1.5M) + 500K - 500K = 1.5M (collects month 3's large AR)
+    // beginningAR = 1.5M (from month 3's large AR)
+    // cashInflow = 1.5M + 500K - 500K = 1.5M (collects the one-time income now)
     expect(result[3].cashInflow).toBeCloseTo(1_500_000, 2);
+  });
+
+  it("one-time income collected in same month with DSO=0", () => {
+    const oneTime = Array(12).fill(0);
+    oneTime[2] = 1_000_000;
+    const result = projectMonthlyCashFlow(
+      makeInputs({ monthlyOneTimeIncome: oneTime, paymentTermsDays: 0 }),
+      STARTING_BALANCE
+    );
+    expect(result[2].cashInflow).toBeCloseTo(1_500_000, 2);
   });
 });
 
@@ -305,7 +345,7 @@ describe("edge cases", () => {
     expect(result[0].netCashFlow).toBeCloseTo(0, 2);
   });
 
-  it("expenses exceed revenue — balance declines", () => {
+  it("expenses exceed revenue — balance declines steadily", () => {
     const result = projectMonthlyCashFlow(
       makeInputs({
         monthlyRecurringRevenue: 200_000,
@@ -348,13 +388,13 @@ describe("edge cases", () => {
 
 // ─── Steady State Verification ─────────────────────────────────────────────
 
-describe("steady state (months 2-12 with flat revenue)", () => {
-  it("all months from 2-12 have identical cash flows", () => {
+describe("steady state (all 12 months with flat revenue)", () => {
+  it("ALL months have identical cash flows (no month-1 anomaly)", () => {
     const result = projectMonthlyCashFlow(makeInputs(), STARTING_BALANCE);
-    for (let i = 2; i < 12; i++) {
-      expect(result[i].cashInflow).toBeCloseTo(result[1].cashInflow, 2);
-      expect(result[i].cashOutflow).toBeCloseTo(result[1].cashOutflow, 2);
-      expect(result[i].netCashFlow).toBeCloseTo(result[1].netCashFlow, 2);
+    for (let i = 1; i < 12; i++) {
+      expect(result[i].cashInflow).toBeCloseTo(result[0].cashInflow, 2);
+      expect(result[i].cashOutflow).toBeCloseTo(result[0].cashOutflow, 2);
+      expect(result[i].netCashFlow).toBeCloseTo(result[0].netCashFlow, 2);
     }
   });
 });
@@ -376,24 +416,27 @@ describe("manual trace with defaults (MRR=500K, Fixed=400K, Var=20%, DSO=30, DPO
     expect(result[0].totalExpenses).toBe(500_000);
   });
 
-  it("month 1: cashInflow=0, cashOutflow=250K, net=-250K", () => {
-    // arRatio=1.0, endingAR=500K, cashInflow = 0+500K-500K = 0
-    // apRatio=0.5, endingAP=250K, cashOutflow = 0+500K-250K = 250K
-    expect(result[0].cashInflow).toBe(0);
-    expect(result[0].cashOutflow).toBe(250_000);
-    expect(result[0].netCashFlow).toBe(-250_000);
-    expect(result[0].closingBalance).toBe(2_750_000);
+  it("month 1: steady-state → cashInflow=500K, cashOutflow=500K, net=0", () => {
+    // arRatio=1.0, beginningAR = 1.0*500K = 500K (steady state)
+    // endingAR = 1.0*500K = 500K
+    // cashInflow = 500K + 500K - 500K = 500K
+    // apRatio=0.5, beginningAP = 0.5*500K = 250K (steady state)
+    // endingAP = 0.5*500K = 250K
+    // cashOutflow = 250K + 500K - 250K = 500K
+    expect(result[0].cashInflow).toBe(500_000);
+    expect(result[0].cashOutflow).toBe(500_000);
+    expect(result[0].netCashFlow).toBe(0);
+    expect(result[0].closingBalance).toBe(3_000_000);
   });
 
-  it("month 2: cashInflow=500K, cashOutflow=500K, net=0", () => {
-    expect(result[1].cashInflow).toBe(500_000);
-    expect(result[1].cashOutflow).toBe(500_000);
-    expect(result[1].netCashFlow).toBe(0);
-    expect(result[1].closingBalance).toBe(2_750_000);
+  it("all months identical — balance stays at 3M (break-even)", () => {
+    for (const p of result) {
+      expect(p.closingBalance).toBe(3_000_000);
+    }
   });
 
-  it("final balance = 3M - 250K = 2.75M", () => {
-    expect(result[11].closingBalance).toBe(2_750_000);
+  it("final balance = starting balance (no working capital leak)", () => {
+    expect(result[11].closingBalance).toBe(STARTING_BALANCE);
   });
 });
 
@@ -422,13 +465,12 @@ describe("calculateSummary", () => {
   });
 
   it("peakBalance includes starting balance", () => {
-    // Starting balance is 3M, all closing balances are <= 2.75M
     expect(stats.peakBalance).toBe(STARTING_BALANCE);
   });
 
   it("lowestBalance includes starting balance", () => {
-    // Lowest closing is 2.75M, starting is 3M
-    expect(stats.lowestBalance).toBe(2_750_000);
+    // With break-even, all balances = 3M
+    expect(stats.lowestBalance).toBe(STARTING_BALANCE);
   });
 
   it("cashConversionCycle = DSO - DPO", () => {
@@ -440,24 +482,37 @@ describe("calculateSummary", () => {
     expect(stats.workingCapitalImpact).toBe(250_000);
   });
 
-  it("negativeMonths counts months with negative net flow", () => {
-    // Only month 1 has net=-250K
-    expect(stats.negativeMonths).toBe(1);
+  it("negativeMonths = 0 (all months break even)", () => {
+    expect(stats.negativeMonths).toBe(0);
   });
 
-  it("negativeBalanceMonths counts months ending with negative balance", () => {
+  it("negativeBalanceMonths = 0", () => {
     expect(stats.negativeBalanceMonths).toBe(0);
   });
+});
 
-  it("bestMonth is the month with highest net cash flow", () => {
-    // Months 2-12 have net=0, month 1 has net=-250K
-    // bestMonth should be one of months 2-12
-    expect(stats.bestMonth.netCashFlow).toBe(0);
+// ─── Summary when losing money ─────────────────────────────────────────────
+
+describe("calculateSummary when expenses exceed revenue", () => {
+  const inputs = makeInputs({
+    monthlyRecurringRevenue: 200_000,
+    fixedCosts: 500_000,
+    paymentTermsDays: 0,
+    payableTermsDays: 0,
+  });
+  const projections = projectMonthlyCashFlow(inputs, STARTING_BALANCE);
+  const stats = calculateSummary(projections, STARTING_BALANCE, 0, 0);
+
+  it("all 12 months have negative net flow", () => {
+    expect(stats.negativeMonths).toBe(12);
   });
 
-  it("worstMonth is month 1 (net=-250K)", () => {
-    expect(stats.worstMonth.month).toBe(1);
-    expect(stats.worstMonth.netCashFlow).toBe(-250_000);
+  it("peakBalance is starting balance", () => {
+    expect(stats.peakBalance).toBe(STARTING_BALANCE);
+  });
+
+  it("lowestBalance is final closing", () => {
+    expect(stats.lowestBalance).toBe(projections[11].closingBalance);
   });
 });
 
@@ -525,5 +580,28 @@ describe("exportToCSV", () => {
     expect(header).toContain("Cash Inflow");
     expect(header).toContain("Cash Outflow");
     expect(header).toContain("Closing Balance");
+  });
+});
+
+// ─── One-Time Income AR Behavior ───────────────────────────────────────────
+
+describe("one-time income AR behavior with steady-state init", () => {
+  it("total cash collected over 12 months equals total revenue when DSO < 12 months", () => {
+    const oneTime = Array(12).fill(0);
+    oneTime[3] = 2_000_000; // big one-time in month 4
+    oneTime[8] = 500_000;   // another in month 9
+    const result = projectMonthlyCashFlow(
+      makeInputs({ monthlyOneTimeIncome: oneTime, paymentTermsDays: 30 }),
+      STARTING_BALANCE
+    );
+    const totalRevenue = result.reduce((s, p) => s + p.revenue, 0);
+    const totalCashIn = result.reduce((s, p) => s + p.cashInflow, 0);
+    // With DSO=30 and 12 months, some AR from the last month won't be collected
+    // Final AR should equal the last month's revenue (only MRR since no one-time in month 12)
+    const finalAR = result[11].accountsReceivable;
+    // Initial AR (steady state) = 1 * 500K = 500K
+    const initialAR = 500_000;
+    // totalCashIn = initialAR + totalRevenue - finalAR
+    expect(totalCashIn).toBeCloseTo(initialAR + totalRevenue - finalAR, 2);
   });
 });

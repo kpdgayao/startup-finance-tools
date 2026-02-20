@@ -73,8 +73,16 @@ export function projectMonthlyCashFlow(
   const apRatio = Math.min(inputs.payableTermsDays / 30, 12);
 
   let openingBalance = startingBalance;
-  let beginningAR = 0; // no outstanding receivables at start
-  let beginningAP = 0; // no outstanding payables at start
+
+  // Initialize AR/AP at steady-state values, assuming the business was already
+  // operating before the forecast. This avoids a false month-1 cash dip where
+  // zero AR means zero collections despite having ongoing revenue.
+  // Steady-state AR = arRatio × recurring revenue (one-time income didn't exist in "month 0")
+  // Steady-state AP = apRatio × expenses based on recurring revenue
+  const steadyStateRevenue = inputs.monthlyRecurringRevenue;
+  const steadyStateExpenses = inputs.fixedCosts + steadyStateRevenue * (inputs.variableCostPercent / 100);
+  let beginningAR = arRatio * steadyStateRevenue;
+  let beginningAP = apRatio * steadyStateExpenses;
 
   for (let i = 0; i < 12; i++) {
     const mrr = inputs.monthlyRecurringRevenue;

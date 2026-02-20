@@ -221,19 +221,19 @@ export default function CashFlowForecastPage() {
         </CardContent>
       </Card>
 
-      {/* Working Capital Alert — explains month 1 AR/AP build-up */}
+      {/* Working Capital Info — explains DSO > DPO impact */}
       {hasWorkingCapitalImpact && (
         <Card className="border-yellow-500/30 bg-yellow-500/5">
           <CardContent className="p-4 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-medium text-yellow-400">Working Capital Build-Up in Month 1</p>
+              <p className="font-medium text-yellow-400">Working Capital Tied Up</p>
               <p className="text-muted-foreground mt-1">
-                With DSO={paymentTerms} days and DPO={payableTerms} days, your first month requires{" "}
+                With DSO={paymentTerms} days and DPO={payableTerms} days, you have{" "}
                 <span className="font-mono font-medium text-foreground">{formatPHP(stats.workingCapitalImpact)}</span>{" "}
-                in working capital. This is because you collect {paymentTerms === 0 ? "immediately" : `after ~${paymentTerms} days`} but
-                pay expenses {payableTerms === 0 ? "immediately" : `after ~${payableTerms} days`}.
-                From month 2 onward, cash flow stabilizes as AR/AP balances reach steady state.
+                tied up in working capital (AR minus AP). You collect payments after ~{paymentTerms} days but
+                pay expenses after ~{payableTerms} days, creating a {stats.cashConversionCycle}-day gap
+                that needs to be funded from your cash reserves.
               </p>
             </div>
           </CardContent>
@@ -498,17 +498,12 @@ export default function CashFlowForecastPage() {
                 </tr>
               </thead>
               <tbody>
-                {projections.map((p, idx) => (
+                {projections.map((p) => (
                   <tr
                     key={p.month}
                     className={`border-b border-border/50 transition-colors hover:bg-muted/30 ${p.closingBalance < 0 ? "bg-red-500/5" : ""}`}
                   >
-                    <td className="py-3 px-2 font-medium">
-                      {p.monthLabel}
-                      {idx === 0 && hasWorkingCapitalImpact && (
-                        <span className="ml-1 text-yellow-400 text-xs" title="Working capital build-up month">*</span>
-                      )}
-                    </td>
+                    <td className="py-3 px-2 font-medium">{p.monthLabel}</td>
                     <td className="py-3 px-2 text-right font-mono text-muted-foreground">{formatPHP(p.openingBalance)}</td>
                     <td className="py-3 px-2 text-right font-mono text-blue-400/70">{formatPHP(p.revenue)}</td>
                     <td className="py-3 px-2 text-right font-mono text-green-400">{formatPHP(p.cashInflow)}</td>
@@ -549,11 +544,6 @@ export default function CashFlowForecastPage() {
               </tfoot>
             </table>
           </div>
-          {hasWorkingCapitalImpact && (
-            <p className="text-xs text-muted-foreground mt-3">
-              * Month 1 has reduced cash flow due to AR/AP build-up. This is a one-time working capital requirement, not a recurring loss.
-            </p>
-          )}
         </CardContent>
       </Card>
     </div>
