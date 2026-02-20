@@ -32,11 +32,13 @@ export interface CashFlowSummary {
   totalOutflow: number;
   totalNetFlow: number;
   finalBalance: number;
-  peakBalance: number;
-  lowestBalance: number;
+  peakBalance: number;        // includes starting balance
+  lowestBalance: number;      // includes starting balance
   avgNetFlow: number;
-  negativeMonths: number;
-  cashConversionCycle: number; // DSO - DPO (for SaaS)
+  negativeMonths: number;     // months with negative net cash flow
+  negativeBalanceMonths: number; // months ending with negative balance
+  cashConversionCycle: number; // DSO - DPO
+  workingCapitalImpact: number; // cash tied up in month 1 due to AR/AP build-up
   bestMonth: MonthlyProjection;
   worstMonth: MonthlyProjection;
 }
@@ -125,22 +127,35 @@ export function projectMonthlyCashFlow(
 
 export function calculateSummary(
   projections: MonthlyProjection[],
-  startingBalance: number
+  startingBalance: number,
+  dsoDays: number = 0,
+  dpoDays: number = 0
 ): CashFlowSummary {
   const totalInflow = projections.reduce((s, p) => s + p.cashInflow, 0);
   const totalOutflow = projections.reduce((s, p) => s + p.cashOutflow, 0);
   const totalNetFlow = totalInflow - totalOutflow;
   const finalBalance = projections[projections.length - 1]?.closingBalance ?? startingBalance;
-  const peakBalance = Math.max(...projections.map((p) => p.closingBalance));
-  const lowestBalance = Math.min(...projections.map((p) => p.closingBalance));
+
+  // Include starting balance in peak/lowest — it's a real balance snapshot
+  const allBalances = [startingBalance, ...projections.map((p) => p.closingBalance)];
+  const peakBalance = Math.max(...allBalances);
+  const lowestBalance = Math.min(...allBalances);
+
   const avgNetFlow = projections.length > 0
     ? projections.reduce((s, p) => s + p.netCashFlow, 0) / projections.length
     : 0;
   const negativeMonths = projections.filter((p) => p.netCashFlow < 0).length;
+  const negativeBalanceMonths = projections.filter((p) => p.closingBalance < 0).length;
   const bestMonth = projections.reduce((best, p) =>
     p.netCashFlow > best.netCashFlow ? p : best, projections[0]);
   const worstMonth = projections.reduce((worst, p) =>
     p.netCashFlow < worst.netCashFlow ? p : worst, projections[0]);
+
+  // Working capital impact = cash tied up in month 1 from AR/AP build-up
+  const month1 = projections[0];
+  const workingCapitalImpact = month1
+    ? (month1.accountsReceivable - month1.accountsPayable)
+    : 0;
 
   return {
     totalInflow,
@@ -151,7 +166,9 @@ export function calculateSummary(
     lowestBalance,
     avgNetFlow,
     negativeMonths,
-    cashConversionCycle: 0, // computed on the page with DSO/DPO inputs
+    negativeBalanceMonths,
+    cashConversionCycle: dsoDays - dpoDays,
+    workingCapitalImpact,
     bestMonth,
     worstMonth,
   };

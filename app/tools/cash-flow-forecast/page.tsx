@@ -17,7 +17,7 @@ import {
   exportToCSV,
   type CashFlowInputs,
 } from "@/lib/calculations/cash-flow";
-import { Download, TrendingUp, TrendingDown, ArrowUpDown, RotateCcw } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, ArrowUpDown, RotateCcw, AlertTriangle } from "lucide-react";
 import {
   ComposedChart,
   Bar,
@@ -47,7 +47,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
             {entry.name}
           </span>
           <span className="font-mono font-medium">
-            {formatPHP(Math.abs(entry.value))}
+            {formatPHP(entry.value)}
           </span>
         </div>
       ))}
@@ -64,41 +64,56 @@ export default function CashFlowForecastPage() {
   const [payableTerms, setPayableTerms] = useState(15);
   const [oneTimeIncome, setOneTimeIncome] = useState<number[]>(Array(12).fill(0));
 
-  const inputs: CashFlowInputs = {
+  const inputs: CashFlowInputs = useMemo(() => ({
     monthlyRecurringRevenue: mrr,
     monthlyOneTimeIncome: oneTimeIncome,
     fixedCosts,
     variableCostPercent,
     paymentTermsDays: paymentTerms,
     payableTermsDays: payableTerms,
-  };
+  }), [mrr, oneTimeIncome, fixedCosts, variableCostPercent, paymentTerms, payableTerms]);
 
-  const projections = projectMonthlyCashFlow(inputs, startingBalance);
-  const stats = useMemo(
-    () => calculateSummary(projections, startingBalance),
-    [projections, startingBalance]
+  const projections = useMemo(
+    () => projectMonthlyCashFlow(inputs, startingBalance),
+    [inputs, startingBalance]
   );
 
-  const cashConversionCycle = paymentTerms - payableTerms;
+  const stats = useMemo(
+    () => calculateSummary(projections, startingBalance, paymentTerms, payableTerms),
+    [projections, startingBalance, paymentTerms, payableTerms]
+  );
 
-  // Chart data
-  const netFlowChartData = projections.map((p) => ({
+  // Overview chart: inflow and outflow as POSITIVE bars side by side + balance line
+  const overviewChartData = useMemo(() => [
+    { month: "Start", "Cash Inflow": 0, "Cash Outflow": 0, "Cash Balance": startingBalance },
+    ...projections.map((p) => ({
+      month: p.monthLabel,
+      "Cash Inflow": p.cashInflow,
+      "Cash Outflow": p.cashOutflow,
+      "Cash Balance": p.closingBalance,
+    })),
+  ], [projections, startingBalance]);
+
+  // Net flow chart data
+  const netFlowChartData = useMemo(() => projections.map((p) => ({
     month: p.monthLabel,
     "Net Cash Flow": p.netCashFlow,
     isPositive: p.netCashFlow >= 0,
-  }));
+  })), [projections]);
 
-  const balanceChartData = projections.map((p) => ({
-    month: p.monthLabel,
-    Balance: p.closingBalance,
-  }));
+  // Balance chart includes Month 0 (starting balance)
+  const balanceChartData = useMemo(() => [
+    { month: "Start", Balance: startingBalance },
+    ...projections.map((p) => ({ month: p.monthLabel, Balance: p.closingBalance })),
+  ], [projections, startingBalance]);
 
-  const breakdownChartData = projections.map((p) => ({
+  // Breakdown chart — clearly labeled as accrual basis
+  const breakdownChartData = useMemo(() => projections.map((p) => ({
     month: p.monthLabel,
     "Fixed Costs": p.fixedCosts,
     "Variable Costs": p.variableCosts,
-    Revenue: p.revenue,
-  }));
+    "Revenue (Accrual)": p.revenue,
+  })), [projections]);
 
   const handleExportCSV = () => {
     const csv = exportToCSV(projections);
@@ -111,13 +126,15 @@ export default function CashFlowForecastPage() {
     URL.revokeObjectURL(url);
   };
 
+  const hasWorkingCapitalImpact = stats.workingCapitalImpact > 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Cash Flow Forecaster</h1>
           <p className="text-muted-foreground mt-1">
-            12-month cash flow projection using the AR/AP balance method.
+            12-month cash flow projection with DSO/DPO timing adjustments.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={handleExportCSV}>
@@ -130,7 +147,7 @@ export default function CashFlowForecastPage() {
         <CardHeader>
           <CardTitle>
             Revenue & Cost Inputs
-            <InfoTooltip content="Uses the Wall Street standard AR/AP balance method: Ending AR = (DSO/30) × Revenue, Cash Collected = Beginning AR + Revenue - Ending AR. Same logic for DPO. This properly handles fractional month delays (e.g., DSO=15 → 50% collected same month)." />
+            <InfoTooltip content="DSO (Days Sales Outstanding) = average days to collect payment from customers. DPO (Days Payable Outstanding) = average days before you pay suppliers. Higher DSO means slower cash collection; higher DPO means you hold cash longer." />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -142,7 +159,7 @@ export default function CashFlowForecastPage() {
             <div className="space-y-2">
               <Label>
                 Payment Terms (DSO)
-                <InfoTooltip content="Days Sales Outstanding — average days to collect payment from customers. Determines accounts receivable balance: AR = (DSO/30) × monthly revenue." />
+                <InfoTooltip content="Days Sales Outstanding — average days to collect payment from customers. DSO=0 means immediate collection. DSO=30 means ~1 month delay. DSO=60 means ~2 month delay." />
               </Label>
               <div className="relative">
                 <Input
@@ -158,7 +175,7 @@ export default function CashFlowForecastPage() {
             <div className="space-y-2">
               <Label>
                 Payable Terms (DPO)
-                <InfoTooltip content="Days Payable Outstanding — average days before you pay your suppliers. Determines accounts payable balance: AP = (DPO/30) × monthly expenses." />
+                <InfoTooltip content="Days Payable Outstanding — average days before you pay your suppliers. DPO=0 means you pay immediately. DPO=30 means you hold cash ~1 month before paying." />
               </Label>
               <div className="relative">
                 <Input
@@ -179,7 +196,7 @@ export default function CashFlowForecastPage() {
       <Card>
         <CardHeader>
           <CardTitle>One-Time Income by Month</CardTitle>
-          <CardDescription>Add any one-time income (grants, contract payments, etc.) per month.</CardDescription>
+          <CardDescription>Add any one-time income (grants, contract payments, etc.) per month. Subject to same DSO collection delay.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
@@ -204,12 +221,31 @@ export default function CashFlowForecastPage() {
         </CardContent>
       </Card>
 
+      {/* Working Capital Alert — explains month 1 AR/AP build-up */}
+      {hasWorkingCapitalImpact && (
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <p className="font-medium text-yellow-400">Working Capital Build-Up in Month 1</p>
+              <p className="text-muted-foreground mt-1">
+                With DSO={paymentTerms} days and DPO={payableTerms} days, your first month requires{" "}
+                <span className="font-mono font-medium text-foreground">{formatPHP(stats.workingCapitalImpact)}</span>{" "}
+                in working capital. This is because you collect {paymentTerms === 0 ? "immediately" : `after ~${paymentTerms} days`} but
+                pay expenses {payableTerms === 0 ? "immediately" : `after ~${payableTerms} days`}.
+                From month 2 onward, cash flow stabilizes as AR/AP balances reach steady state.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <ResultCard label="Total 12-Month Inflow" value={formatPHP(stats.totalInflow)} sublabel="Cash collected from customers" />
         <ResultCard label="Total 12-Month Outflow" value={formatPHP(stats.totalOutflow)} sublabel="Cash paid to suppliers/ops" />
         <ResultCard
-          label="Ending Balance"
+          label="Ending Cash Balance"
           value={formatPHP(stats.finalBalance)}
           variant={stats.finalBalance > 0 ? "success" : "danger"}
           sublabel={`Started at ${formatPHP(startingBalance)}`}
@@ -218,6 +254,7 @@ export default function CashFlowForecastPage() {
           label="Negative Cash Flow Months"
           value={`${stats.negativeMonths} of 12`}
           variant={stats.negativeMonths === 0 ? "success" : stats.negativeMonths <= 3 ? "warning" : "danger"}
+          sublabel={stats.negativeBalanceMonths > 0 ? `${stats.negativeBalanceMonths} month(s) end with negative balance` : undefined}
         />
       </div>
 
@@ -264,10 +301,10 @@ export default function CashFlowForecastPage() {
             <div>
               <p className="text-xs text-muted-foreground">
                 Cash Conversion Cycle
-                <InfoTooltip content="CCC = DSO - DPO. Negative means you collect before you pay (ideal). Positive means you need working capital to bridge the gap." />
+                <InfoTooltip content="CCC = DSO - DPO. Negative CCC means you collect from customers before paying suppliers (ideal). Positive CCC means you need working capital to bridge the gap." />
               </p>
-              <p className={`font-semibold ${cashConversionCycle < 0 ? "text-green-400" : cashConversionCycle > 0 ? "text-yellow-400" : ""}`}>
-                {cashConversionCycle} days {cashConversionCycle < 0 ? "(favorable)" : cashConversionCycle > 0 ? "(needs working capital)" : "(neutral)"}
+              <p className={`font-semibold ${stats.cashConversionCycle < 0 ? "text-green-400" : stats.cashConversionCycle > 0 ? "text-yellow-400" : ""}`}>
+                {stats.cashConversionCycle} days {stats.cashConversionCycle < 0 ? "(favorable)" : stats.cashConversionCycle > 0 ? "(needs working capital)" : "(neutral)"}
               </p>
             </div>
           </CardContent>
@@ -289,40 +326,35 @@ export default function CashFlowForecastPage() {
               <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
             </TabsList>
 
-            {/* Overview: Combined inflow/outflow bars + balance line */}
+            {/* Overview: Inflow/Outflow bars (both positive) + Balance line */}
             <TabsContent value="overview">
               <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={projections.map((p) => ({
-                  month: p.monthLabel,
-                  Inflow: p.cashInflow,
-                  Outflow: -p.cashOutflow,
-                  "Closing Balance": p.closingBalance,
-                }))}>
+                <ComposedChart data={overviewChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <YAxis
-                    yAxisId="bars"
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
-                    tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}K`}
-                  />
-                  <YAxis
-                    yAxisId="line"
-                    orientation="right"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickFormatter={(v) => `₱${(v / 1000000).toFixed(1)}M`}
+                    tickFormatter={(v) => {
+                      const abs = Math.abs(v);
+                      if (abs >= 1_000_000) return `₱${(v / 1_000_000).toFixed(1)}M`;
+                      if (abs >= 1_000) return `₱${(v / 1_000).toFixed(0)}K`;
+                      return `₱${v}`;
+                    }}
                   />
                   <RechartsTooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar yAxisId="bars" dataKey="Inflow" fill="#22c55e" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Bar yAxisId="bars" dataKey="Outflow" fill="#ef4444" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Line yAxisId="line" type="monotone" dataKey="Closing Balance" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3b82f6" }} />
+                  <Bar dataKey="Cash Inflow" fill="#22c55e" radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Cash Outflow" fill="#ef4444" radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Line type="monotone" dataKey="Cash Balance" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3b82f6" }} />
                 </ComposedChart>
               </ResponsiveContainer>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Bars show cash-basis inflows and outflows. Blue line shows running cash balance.
+              </p>
             </TabsContent>
 
-            {/* Net Flow: Waterfall-style bar chart */}
+            {/* Net Flow: Color-coded bar chart */}
             <TabsContent value="net-flow">
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={netFlowChartData}>
@@ -348,15 +380,15 @@ export default function CashFlowForecastPage() {
               </ResponsiveContainer>
               <div className="mt-3 flex items-center justify-center gap-6 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Positive cash flow
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Positive net cash flow
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Negative cash flow
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Negative net cash flow
                 </span>
               </div>
             </TabsContent>
 
-            {/* Balance: Area chart with gradient */}
+            {/* Balance: Area chart starting from Month 0 */}
             <TabsContent value="balance">
               <ResponsiveContainer width="100%" height={400}>
                 <AreaChart data={balanceChartData}>
@@ -376,13 +408,6 @@ export default function CashFlowForecastPage() {
                   />
                   <RechartsTooltip content={<CustomTooltip />} />
                   <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: "Zero", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                  <ReferenceLine
-                    y={startingBalance}
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeDasharray="8 4"
-                    opacity={0.4}
-                    label={{ value: "Starting", fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  />
                   <Area
                     type="monotone"
                     dataKey="Balance"
@@ -408,7 +433,7 @@ export default function CashFlowForecastPage() {
               </div>
             </TabsContent>
 
-            {/* Breakdown: Revenue vs cost components */}
+            {/* Breakdown: Revenue vs cost components (ACCRUAL basis — clearly labeled) */}
             <TabsContent value="breakdown">
               <ResponsiveContainer width="100%" height={400}>
                 <ComposedChart data={breakdownChartData}>
@@ -423,31 +448,24 @@ export default function CashFlowForecastPage() {
                   <Legend />
                   <Bar dataKey="Fixed Costs" stackId="costs" fill="#ef4444" opacity={0.7} radius={[0, 0, 0, 0]} />
                   <Bar dataKey="Variable Costs" stackId="costs" fill="#f97316" opacity={0.7} radius={[3, 3, 0, 0]} />
-                  <Line type="monotone" dataKey="Revenue" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3, fill: "#22c55e" }} />
+                  <Line type="monotone" dataKey="Revenue (Accrual)" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3, fill: "#22c55e" }} />
                 </ComposedChart>
               </ResponsiveContainer>
-              <div className="mt-3 flex items-center justify-center gap-6 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Fixed
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> Variable
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Revenue (accrual)
-                </span>
-              </div>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Accrual basis — shows revenue earned and costs incurred, regardless of when cash moves.
+                See the Overview tab for actual cash timing.
+              </p>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
 
-      {/* Monthly Grid */}
+      {/* Monthly Grid — shows both accrual and cash columns */}
       <Card>
         <CardHeader>
           <CardTitle>Monthly Projection Detail</CardTitle>
           <CardDescription>
-            Opening → +Inflow → -Outflow → Closing. AR/AP balances show working capital tied up.
+            Accrual columns show what you earned/owed. Cash columns show actual money movement after DSO/DPO timing.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -457,23 +475,44 @@ export default function CashFlowForecastPage() {
                 <tr className="border-b">
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">Month</th>
                   <th className="text-right py-3 px-2 font-medium text-muted-foreground">Opening</th>
-                  <th className="text-right py-3 px-2 font-medium text-muted-foreground">Cash In</th>
-                  <th className="text-right py-3 px-2 font-medium text-muted-foreground">Cash Out</th>
+                  <th className="text-right py-3 px-2 font-medium text-blue-400/70">Revenue</th>
+                  <th className="text-right py-3 px-2 font-medium text-green-400/70">Cash In</th>
+                  <th className="text-right py-3 px-2 font-medium text-blue-400/70">Expenses</th>
+                  <th className="text-right py-3 px-2 font-medium text-red-400/70">Cash Out</th>
                   <th className="text-right py-3 px-2 font-medium text-muted-foreground">Net Flow</th>
                   <th className="text-right py-3 px-2 font-medium text-muted-foreground">Closing</th>
                   <th className="text-right py-3 px-2 font-medium text-muted-foreground">AR</th>
                   <th className="text-right py-3 px-2 font-medium text-muted-foreground">AP</th>
                 </tr>
+                <tr className="border-b border-border/30">
+                  <th className="text-left py-1 px-2 text-[10px] text-muted-foreground/50 font-normal"></th>
+                  <th className="text-right py-1 px-2 text-[10px] text-muted-foreground/50 font-normal">cash</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-blue-400/40 font-normal">accrual</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-green-400/40 font-normal">cash</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-blue-400/40 font-normal">accrual</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-red-400/40 font-normal">cash</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-muted-foreground/50 font-normal">cash</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-muted-foreground/50 font-normal">cash</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-muted-foreground/50 font-normal">owed</th>
+                  <th className="text-right py-1 px-2 text-[10px] text-muted-foreground/50 font-normal">owed</th>
+                </tr>
               </thead>
               <tbody>
-                {projections.map((p) => (
+                {projections.map((p, idx) => (
                   <tr
                     key={p.month}
-                    className={`border-b border-border/50 transition-colors hover:bg-muted/30 ${p.netCashFlow < 0 ? "bg-red-500/5" : ""}`}
+                    className={`border-b border-border/50 transition-colors hover:bg-muted/30 ${p.closingBalance < 0 ? "bg-red-500/5" : ""}`}
                   >
-                    <td className="py-3 px-2 font-medium">{p.monthLabel}</td>
+                    <td className="py-3 px-2 font-medium">
+                      {p.monthLabel}
+                      {idx === 0 && hasWorkingCapitalImpact && (
+                        <span className="ml-1 text-yellow-400 text-xs" title="Working capital build-up month">*</span>
+                      )}
+                    </td>
                     <td className="py-3 px-2 text-right font-mono text-muted-foreground">{formatPHP(p.openingBalance)}</td>
+                    <td className="py-3 px-2 text-right font-mono text-blue-400/70">{formatPHP(p.revenue)}</td>
                     <td className="py-3 px-2 text-right font-mono text-green-400">{formatPHP(p.cashInflow)}</td>
+                    <td className="py-3 px-2 text-right font-mono text-blue-400/70">{formatPHP(p.totalExpenses)}</td>
                     <td className="py-3 px-2 text-right font-mono text-red-400">{formatPHP(p.cashOutflow)}</td>
                     <td className={`py-3 px-2 text-right font-mono font-medium ${p.netCashFlow < 0 ? "text-red-400" : "text-green-400"}`}>
                       {formatPHP(p.netCashFlow)}
@@ -488,9 +527,15 @@ export default function CashFlowForecastPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 font-semibold">
-                  <td className="py-3 px-2">Total</td>
+                  <td className="py-3 px-2">Total / Final</td>
                   <td className="py-3 px-2"></td>
+                  <td className="py-3 px-2 text-right font-mono text-blue-400/70">
+                    {formatPHP(projections.reduce((s, p) => s + p.revenue, 0))}
+                  </td>
                   <td className="py-3 px-2 text-right font-mono text-green-400">{formatPHP(stats.totalInflow)}</td>
+                  <td className="py-3 px-2 text-right font-mono text-blue-400/70">
+                    {formatPHP(projections.reduce((s, p) => s + p.totalExpenses, 0))}
+                  </td>
                   <td className="py-3 px-2 text-right font-mono text-red-400">{formatPHP(stats.totalOutflow)}</td>
                   <td className={`py-3 px-2 text-right font-mono ${stats.totalNetFlow < 0 ? "text-red-400" : "text-green-400"}`}>
                     {formatPHP(stats.totalNetFlow)}
@@ -504,6 +549,11 @@ export default function CashFlowForecastPage() {
               </tfoot>
             </table>
           </div>
+          {hasWorkingCapitalImpact && (
+            <p className="text-xs text-muted-foreground mt-3">
+              * Month 1 has reduced cash flow due to AR/AP build-up. This is a one-time working capital requirement, not a recurring loss.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
