@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, X, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 
 interface AiInsightsPanelProps {
   explanation: string;
@@ -66,14 +66,8 @@ export function AiInsightsPanel({
         )}
 
         {explanation && (
-          <div
-            className={cn(
-              "text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap",
-              "[&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-1",
-              "[&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:space-y-1"
-            )}
-          >
-            {explanation}
+          <div className="prose prose-sm prose-invert max-w-none text-foreground/90 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-semibold [&>h2]:font-semibold [&>h3]:font-semibold [&>h1]:mt-4 [&>h2]:mt-3 [&>h3]:mt-2 [&>h1]:mb-2 [&>h2]:mb-1 [&>h3]:mb-1 [&>p]:mb-2 [&>ul]:my-2 [&>ol]:my-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&_li]:mb-1 [&>hr]:my-3 [&>hr]:border-purple-500/20 [&_strong]:text-foreground [&_code]:text-purple-300 [&_code]:bg-purple-500/10 [&_code]:px-1 [&_code]:rounded">
+            <ReactMarkdown>{explanation}</ReactMarkdown>
           </div>
         )}
       </CardContent>
