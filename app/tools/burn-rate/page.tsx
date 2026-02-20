@@ -120,6 +120,18 @@ export default function BurnRatePage() {
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="currentPathGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                  <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.1} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="adjustedPathGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
+                  <stop offset="50%" stopColor="#22c55e" stopOpacity={0.1} />
+                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <YAxis
@@ -136,17 +148,19 @@ export default function BurnRatePage() {
               <Area
                 type="monotone"
                 dataKey="Current Path"
-                stroke="hsl(var(--chart-5))"
-                fill="hsl(var(--chart-5))"
-                fillOpacity={0.1}
+                stroke="#3b82f6"
+                strokeWidth={2.5}
+                fill="url(#currentPathGradient)"
+                dot={{ r: 2, fill: "#3b82f6" }}
               />
               {(expenseCut > 0 || revenueIncrease > 0) && (
                 <Area
                   type="monotone"
                   dataKey="Adjusted Path"
-                  stroke="hsl(var(--chart-2))"
-                  fill="hsl(var(--chart-2))"
-                  fillOpacity={0.1}
+                  stroke="#22c55e"
+                  strokeWidth={2.5}
+                  fill="url(#adjustedPathGradient)"
+                  dot={{ r: 2, fill: "#22c55e" }}
                 />
               )}
             </AreaChart>
