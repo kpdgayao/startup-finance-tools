@@ -41,6 +41,20 @@ export const TOOLS = [
     href: "/tools/cash-flow-forecast",
     icon: "BarChart3",
   },
+  {
+    id: "market-sizing",
+    name: "Market Sizing",
+    description: "Estimate TAM, SAM, SOM with top-down and bottom-up methods",
+    href: "/tools/market-sizing",
+    icon: "Target",
+  },
+  {
+    id: "unit-economics",
+    name: "Unit Economics",
+    description: "Calculate CAC, LTV, payback period, and break-even",
+    href: "/tools/unit-economics",
+    icon: "Users",
+  },
 ] as const;
 
 export const BERKUS_FACTORS = [

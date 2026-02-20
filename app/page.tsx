@@ -11,6 +11,8 @@ import {
   Flame,
   Tag,
   BarChart3,
+  Target,
+  Users,
   ArrowRight,
 } from "lucide-react";
 
@@ -21,6 +23,8 @@ const iconMap = {
   Flame,
   Tag,
   BarChart3,
+  Target,
+  Users,
 } as const;
 
 export default function HomePage() {

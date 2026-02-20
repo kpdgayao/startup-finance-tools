@@ -11,6 +11,8 @@ import {
   Flame,
   Tag,
   BarChart3,
+  Target,
+  Users,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
@@ -22,6 +24,8 @@ const iconMap = {
   Flame,
   Tag,
   BarChart3,
+  Target,
+  Users,
 } as const;
 
 export function ToolSidebar() {
