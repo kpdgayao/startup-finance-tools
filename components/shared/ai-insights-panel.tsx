@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, X, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface AiInsightsPanelProps {
   explanation: string;
@@ -66,8 +67,8 @@ export function AiInsightsPanel({
         )}
 
         {explanation && (
-          <div className="prose prose-sm prose-invert max-w-none text-foreground/90 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-semibold [&>h2]:font-semibold [&>h3]:font-semibold [&>h1]:mt-4 [&>h2]:mt-3 [&>h3]:mt-2 [&>h1]:mb-2 [&>h2]:mb-1 [&>h3]:mb-1 [&>p]:mb-2 [&>ul]:my-2 [&>ol]:my-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&_li]:mb-1 [&>hr]:my-3 [&>hr]:border-purple-500/20 [&_strong]:text-foreground [&_code]:text-purple-300 [&_code]:bg-purple-500/10 [&_code]:px-1 [&_code]:rounded">
-            <ReactMarkdown>{explanation}</ReactMarkdown>
+          <div className="prose prose-sm prose-invert max-w-none text-foreground/90 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-semibold [&>h2]:font-semibold [&>h3]:font-semibold [&>h1]:mt-4 [&>h2]:mt-3 [&>h3]:mt-2 [&>h1]:mb-2 [&>h2]:mb-1 [&>h3]:mb-1 [&>p]:mb-2 [&>ul]:my-2 [&>ol]:my-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&_li]:mb-1 [&>hr]:my-3 [&>hr]:border-purple-500/20 [&_strong]:text-foreground [&_code]:text-purple-300 [&_code]:bg-purple-500/10 [&_code]:px-1 [&_code]:rounded [&_table]:w-full [&_table]:my-3 [&_table]:border-collapse [&_table]:text-xs [&_th]:border [&_th]:border-purple-500/20 [&_th]:bg-purple-500/10 [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-semibold [&_td]:border [&_td]:border-purple-500/20 [&_td]:px-3 [&_td]:py-1.5 [&_thead]:bg-purple-500/10">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{explanation}</ReactMarkdown>
           </div>
         )}
       </CardContent>
