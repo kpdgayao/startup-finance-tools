@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { TOOLS } from "@/lib/constants";
+import { TOOLS, LEARN_MODULES } from "@/lib/constants";
 
 const BASE_URL = "https://startupfinance.tools";
 
@@ -17,6 +17,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.5,
     },
+    {
+      url: `${BASE_URL}/learn`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
   ];
 
   const toolPages: MetadataRoute.Sitemap = TOOLS.map((tool) => ({
@@ -26,5 +32,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...toolPages];
+  const learnPages: MetadataRoute.Sitemap = LEARN_MODULES.map((mod) => ({
+    url: `${BASE_URL}${mod.href}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...toolPages, ...learnPages];
 }

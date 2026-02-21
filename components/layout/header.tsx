@@ -17,6 +17,12 @@ export function Header() {
             Tools
           </Link>
           <Link
+            href="/learn"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Learn
+          </Link>
+          <Link
             href="/about"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >

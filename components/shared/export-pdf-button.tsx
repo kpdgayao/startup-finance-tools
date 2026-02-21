@@ -1,18 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { EmailCaptureDialog } from "@/components/shared/email-capture-dialog";
 
 interface ExportPDFButtonProps {
   elementId: string;
   filename?: string;
+  enableEmailCapture?: boolean;
 }
 
 export function ExportPDFButton({
   elementId,
   filename = "export",
+  enableEmailCapture = false,
 }: ExportPDFButtonProps) {
-  const handleExport = () => {
+  const [showDialog, setShowDialog] = useState(false);
+
+  const doPrint = () => {
     const element = document.getElementById(elementId);
     if (!element) return;
 
@@ -43,10 +49,42 @@ export function ExportPDFButton({
     printWindow.print();
   };
 
+  const handleClick = () => {
+    if (
+      enableEmailCapture &&
+      !sessionStorage.getItem("pdf-email-captured")
+    ) {
+      setShowDialog(true);
+    } else {
+      doPrint();
+    }
+  };
+
+  const handleEmailSuccess = () => {
+    sessionStorage.setItem("pdf-email-captured", "true");
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    setShowDialog(open);
+    if (!open) {
+      // Proceed with print after dialog is dismissed
+      doPrint();
+    }
+  };
+
   return (
-    <Button variant="outline" size="sm" onClick={handleExport}>
-      <Download className="h-4 w-4 mr-2" />
-      Export PDF
-    </Button>
+    <>
+      <Button variant="outline" size="sm" onClick={handleClick}>
+        <Download className="h-4 w-4 mr-2" />
+        Export PDF
+      </Button>
+      {enableEmailCapture && (
+        <EmailCaptureDialog
+          open={showDialog}
+          onOpenChange={handleDialogChange}
+          onSuccess={handleEmailSuccess}
+        />
+      )}
+    </>
   );
 }

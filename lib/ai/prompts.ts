@@ -9,7 +9,8 @@ export type ToolId =
   | "unit-economics"
   | "financial-model-builder"
   | "compliance-checklist"
-  | "self-assessment";
+  | "self-assessment"
+  | "fundraising-guide";
 
 const SHARED_INSTRUCTIONS = `You are a startup finance coach for Filipino founders, grounded in Kevin's (CPA, MBA) curriculum at IOL Inc.
 Write in plain language. Use bullet points. Keep it under 300 words.
@@ -180,6 +181,20 @@ Kevin's curriculum notes:
 - Compliance: Philippine-specific knowledge (SEC, DTI, BIR, CREATE Act) is non-negotiable. Penalties compound and can shut down a business.
 
 Based on their scores, create a personalized learning path. Prioritize their weakest categories. Recommend specific tools in this toolkit they should use to practice. Be encouraging but honest about gaps.`,
+  "fundraising-guide": `${SHARED_INSTRUCTIONS}
+
+CONTEXT: The user is working through a startup lifecycle guide covering 5 stages: R&D, Proof of Concept, Fundraising, Operations, and Scaling. They selected a specific stage and are tracking checklist progress.
+
+Kevin's curriculum notes:
+- R&D stage: validate the problem exists before building anything. 20+ customer interviews is the minimum. Willingness-to-pay validation (actual money exchanged) is stronger than verbal "I'd buy it."
+- Proof of Concept: launch MVP to 10+ pilots, get first revenue, achieve 60%+ W1 retention. Unit economics baseline (CAC, LTV) should be established before scaling spend.
+- Fundraising: takes 3-6 months in the Philippines. Build a pipeline of 30+ investors, get 10+ warm intros, aim for 5+ meetings. Don't sign the first term sheet — having multiple gives leverage.
+- Operations: deploy capital against milestones, not all at once. Monthly reporting (P&L + cash) builds investor trust. Target DSO < 30 days. Achieve break-even before thinking about scaling.
+- Scaling: NRR > 100% is the golden metric. Expand to second market only after dominating the first. Hire VP-level leaders who have done the next stage before. Series A readiness = ₱2-5M MRR, LTV:CAC > 3:1, 15%+ MoM growth.
+- Philippine context: seed valuations ₱5-20M, Series A ₱50-150M. Angel investors typically write ₱500K-₱5M checks. Accelerators (QBO, Ideaspace) provide ₱500K-₱2M + mentorship.
+- Key insight: fundraising is a full-time job. Don't try to fundraise and build product simultaneously. Designate one founder as the fundraising lead.
+
+Based on their stage and progress, explain what they've accomplished, what's most critical next, common mistakes at their stage, and specific metrics they should be tracking.`,
 };
 
 export function getSystemPrompt(toolId: ToolId): string {

@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
   ClipboardCheck,
   GraduationCap,
+  Map,
   ArrowRight,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ const iconMap = {
   FileSpreadsheet,
   ClipboardCheck,
   GraduationCap,
+  Map,
 } as const;
 
 export const metadata: Metadata = {

@@ -3,43 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { TOOLS } from "@/lib/constants";
+import { LEARN_MODULES } from "@/lib/constants";
 import {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
   Tag,
-  BarChart3,
-  Target,
-  Users,
   FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
+  TrendingUp,
+  Flame,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 
 const iconMap = {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
   Tag,
-  BarChart3,
-  Target,
-  Users,
   FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
+  TrendingUp,
+  Flame,
 } as const;
 
-export function ToolSidebar() {
+export function LearnSidebar() {
   const pathname = usePathname();
 
-  const currentTool = TOOLS.find((t) => t.href === pathname);
+  const currentModule = LEARN_MODULES.find((m) => m.href === pathname);
 
   return (
     <>
@@ -47,16 +31,16 @@ export function ToolSidebar() {
       <nav className="w-64 shrink-0 border-r border-border/50 hidden lg:block">
         <div className="p-4 space-y-1">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
-            Tools
+            Learn
           </p>
-          {TOOLS.map((tool) => {
-            const Icon = iconMap[tool.icon as keyof typeof iconMap];
-            const isActive = pathname === tool.href;
+          {LEARN_MODULES.map((mod) => {
+            const Icon = iconMap[mod.icon as keyof typeof iconMap];
+            const isActive = pathname === mod.href;
 
             return (
               <Link
-                key={tool.id}
-                href={tool.href}
+                key={mod.id}
+                href={mod.href}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
                   isActive
@@ -65,30 +49,30 @@ export function ToolSidebar() {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span>{tool.name}</span>
+                <span>{mod.name}</span>
               </Link>
             );
           })}
         </div>
       </nav>
 
-      {/* Mobile tool nav */}
-      <MobileToolNav currentTool={currentTool} pathname={pathname} />
+      {/* Mobile nav */}
+      <MobileLearnNav currentModule={currentModule} pathname={pathname} />
     </>
   );
 }
 
-function MobileToolNav({
-  currentTool,
+function MobileLearnNav({
+  currentModule,
   pathname,
 }: {
-  currentTool: (typeof TOOLS)[number] | undefined;
+  currentModule: (typeof LEARN_MODULES)[number] | undefined;
   pathname: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const CurrentIcon = currentTool
-    ? iconMap[currentTool.icon as keyof typeof iconMap]
-    : BarChart3;
+  const CurrentIcon = currentModule
+    ? iconMap[currentModule.icon as keyof typeof iconMap]
+    : Tag;
 
   return (
     <div className="lg:hidden border-b border-border/50">
@@ -98,7 +82,7 @@ function MobileToolNav({
       >
         <span className="flex items-center gap-2">
           <CurrentIcon className="h-4 w-4" />
-          {currentTool?.name || "Select Tool"}
+          {currentModule?.name || "Learn Modules"}
         </span>
         <ChevronDown
           className={cn(
@@ -109,14 +93,14 @@ function MobileToolNav({
       </button>
       {isOpen && (
         <div className="border-t border-border/50 pb-2">
-          {TOOLS.map((tool) => {
-            const Icon = iconMap[tool.icon as keyof typeof iconMap];
-            const isActive = pathname === tool.href;
+          {LEARN_MODULES.map((mod) => {
+            const Icon = iconMap[mod.icon as keyof typeof iconMap];
+            const isActive = pathname === mod.href;
 
             return (
               <Link
-                key={tool.id}
-                href={tool.href}
+                key={mod.id}
+                href={mod.href}
                 onClick={() => setIsOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
@@ -126,7 +110,7 @@ function MobileToolNav({
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span>{tool.name}</span>
+                <span>{mod.name}</span>
               </Link>
             );
           })}

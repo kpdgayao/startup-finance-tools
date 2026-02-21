@@ -102,6 +102,40 @@ export default function AboutPage() {
               quiz covering Financial Statements, Valuation, Cash Management,
               Fundraising, and Compliance with personalized learning recommendations.
             </p>
+            <p>
+              <strong className="text-foreground">Fundraising Stage Guide</strong> — Interactive
+              R&D to Scaling lifecycle guide with stage-specific checklists, funding
+              sources, key metrics, and dependency tracking.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Learn Startup Finance</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Free educational modules that teach core startup finance concepts with
+              practical examples in Philippine pesos. Each module links to an interactive
+              tool so you can practice what you learn.
+            </p>
+            <p>
+              <strong className="text-foreground">Pricing Your Product</strong> — 6 pricing
+              strategies from cost-plus to psychological pricing with real examples.
+            </p>
+            <p>
+              <strong className="text-foreground">Reading Financial Statements</strong> — How
+              P&L, Balance Sheet, and Cash Flow connect and why founders must understand them.
+            </p>
+            <p>
+              <strong className="text-foreground">Startup Valuation</strong> — 5 valuation
+              methods explained simply with Philippine context.
+            </p>
+            <p>
+              <strong className="text-foreground">Managing Cash Flow</strong> — Burn rate,
+              runway zones, working capital, and Kevin&apos;s cash flow rules.
+            </p>
           </CardContent>
         </Card>
 

@@ -76,6 +76,44 @@ export const TOOLS = [
     href: "/tools/self-assessment",
     icon: "GraduationCap",
   },
+  {
+    id: "fundraising-guide",
+    name: "Fundraising Stage Guide",
+    description: "R&D to Scaling lifecycle guide with checklists and funding sources",
+    href: "/tools/fundraising-guide",
+    icon: "Map",
+  },
+] as const;
+
+export const LEARN_MODULES = [
+  {
+    id: "pricing-your-product",
+    name: "Pricing Your Product",
+    href: "/learn/pricing-your-product",
+    icon: "Tag",
+    relatedTool: "/tools/pricing-calculator",
+  },
+  {
+    id: "reading-financial-statements",
+    name: "Reading Financial Statements",
+    href: "/learn/reading-financial-statements",
+    icon: "FileSpreadsheet",
+    relatedTool: "/tools/financial-model-builder",
+  },
+  {
+    id: "startup-valuation",
+    name: "Startup Valuation",
+    href: "/learn/startup-valuation",
+    icon: "TrendingUp",
+    relatedTool: "/tools/valuation-calculator",
+  },
+  {
+    id: "managing-cash-flow",
+    name: "Managing Cash Flow",
+    href: "/learn/managing-cash-flow",
+    icon: "Flame",
+    relatedTool: "/tools/burn-rate",
+  },
 ] as const;
 
 export const BERKUS_FACTORS = [

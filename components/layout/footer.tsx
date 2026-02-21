@@ -1,7 +1,12 @@
+import { NewsletterSection } from "@/components/shared/newsletter-section";
+import { Separator } from "@/components/ui/separator";
+
 export function Footer() {
   return (
-    <footer className="border-t border-border/50 py-6 mt-auto">
-      <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+    <footer className="border-t border-border/50 mt-auto">
+      <NewsletterSection />
+      <Separator />
+      <div className="py-6 container mx-auto px-4 text-center text-sm text-muted-foreground">
         <p>
           Built by{" "}
           <a
