@@ -159,7 +159,7 @@ export default function FundraisingGuidePage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Fundraising Stage Guide</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Fundraising Stage Guide</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Navigate the startup lifecycle from R&D to Scaling. Track your
           progress at each stage with checklists, key metrics, and funding

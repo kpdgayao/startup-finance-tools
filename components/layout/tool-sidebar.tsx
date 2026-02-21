@@ -19,7 +19,7 @@ import {
   Map,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const iconMap = {
   TrendingUp,
@@ -94,14 +94,28 @@ function MobileToolNav({
   pathname: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const CurrentIcon = currentTool
     ? iconMap[currentTool.icon as keyof typeof iconMap]
     : BarChart3;
 
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
   return (
-    <div className="lg:hidden border-b border-border/50">
+    <div ref={containerRef} className="lg:hidden border-b border-border/50">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-label="Tool navigation"
         className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium"
       >
         <span className="flex items-center gap-2">

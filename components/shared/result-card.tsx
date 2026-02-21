@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 
 interface ResultCardProps {
   label: string;
@@ -9,6 +10,12 @@ interface ResultCardProps {
   className?: string;
 }
 
+const variantIcons = {
+  success: CheckCircle2,
+  warning: AlertTriangle,
+  danger: XCircle,
+} as const;
+
 export function ResultCard({
   label,
   value,
@@ -16,6 +23,8 @@ export function ResultCard({
   variant = "default",
   className,
 }: ResultCardProps) {
+  const Icon = variant !== "default" ? variantIcons[variant] : null;
+
   return (
     <Card
       className={cn(
@@ -30,12 +39,23 @@ export function ResultCard({
         <p className="text-sm text-muted-foreground">{label}</p>
         <p
           className={cn(
-            "text-2xl font-bold mt-1",
+            "text-2xl font-bold mt-1 truncate",
             variant === "success" && "text-green-400",
             variant === "warning" && "text-yellow-400",
             variant === "danger" && "text-red-400"
           )}
+          title={value}
         >
+          {Icon && (
+            <Icon
+              className={cn(
+                "inline-block h-5 w-5 mr-1.5 -mt-0.5",
+                variant === "success" && "text-green-400",
+                variant === "warning" && "text-yellow-400",
+                variant === "danger" && "text-red-400"
+              )}
+            />
+          )}
           {value}
         </p>
         {sublabel && (

@@ -348,7 +348,7 @@ export default function CashFlowForecastPage() {
                     }}
                   />
                   <RechartsTooltip content={<CustomTooltip />} />
-                  <Legend />
+                  <Legend verticalAlign="bottom" height={36} />
                   <Bar dataKey="Cash Inflow" fill="#22c55e" radius={[3, 3, 0, 0]} opacity={0.85} />
                   <Bar dataKey="Cash Outflow" fill="#ef4444" radius={[3, 3, 0, 0]} opacity={0.85} />
                   <Line type="monotone" dataKey="Cash Balance" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3b82f6" }} />
@@ -450,7 +450,7 @@ export default function CashFlowForecastPage() {
                     tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}K`}
                   />
                   <RechartsTooltip content={<CustomTooltip />} />
-                  <Legend />
+                  <Legend verticalAlign="bottom" height={36} />
                   <Bar dataKey="Fixed Costs" stackId="costs" fill="#ef4444" opacity={0.7} radius={[0, 0, 0, 0]} />
                   <Bar dataKey="Variable Costs" stackId="costs" fill="#f97316" opacity={0.7} radius={[3, 3, 0, 0]} />
                   <Line type="monotone" dataKey="Revenue (Accrual)" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3, fill: "#22c55e" }} />
@@ -474,7 +474,38 @@ export default function CashFlowForecastPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto" id="cash-flow-detail">
+          {/* Mobile card view */}
+          <div className="lg:hidden space-y-3" id="cash-flow-detail-mobile">
+            {projections.map((p) => (
+              <div
+                key={p.month}
+                className={`rounded-lg border p-4 space-y-2 ${p.closingBalance < 0 ? "border-red-500/30 bg-red-500/5" : "border-border/50"}`}
+              >
+                <p className="font-semibold">{p.monthLabel}</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <span className="text-muted-foreground">Revenue</span>
+                  <span className="text-right font-mono text-blue-400/70">{formatPHP(p.revenue)}</span>
+                  <span className="text-muted-foreground">Cash In</span>
+                  <span className="text-right font-mono text-green-400">{formatPHP(p.cashInflow)}</span>
+                  <span className="text-muted-foreground">Expenses</span>
+                  <span className="text-right font-mono text-blue-400/70">{formatPHP(p.totalExpenses)}</span>
+                  <span className="text-muted-foreground">Cash Out</span>
+                  <span className="text-right font-mono text-red-400">{formatPHP(p.cashOutflow)}</span>
+                  <span className="text-muted-foreground">Net Flow</span>
+                  <span className={`text-right font-mono font-medium ${p.netCashFlow < 0 ? "text-red-400" : "text-green-400"}`}>
+                    {formatPHP(p.netCashFlow)}
+                  </span>
+                  <span className="text-muted-foreground">Closing Balance</span>
+                  <span className={`text-right font-mono font-semibold ${p.closingBalance < 0 ? "text-red-400" : ""}`}>
+                    {formatPHP(p.closingBalance)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="overflow-x-auto hidden lg:block" id="cash-flow-detail">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">

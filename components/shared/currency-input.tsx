@@ -3,7 +3,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
-import { useCallback, useState } from "react";
+import { cn } from "@/lib/utils";
+import { useCallback, useState, useRef } from "react";
 
 interface CurrencyInputProps {
   label: string;
@@ -11,6 +12,8 @@ interface CurrencyInputProps {
   onChange: (value: number) => void;
   placeholder?: string;
   id?: string;
+  min?: number;
+  max?: number;
 }
 
 export function CurrencyInput({
@@ -19,18 +22,39 @@ export function CurrencyInput({
   onChange,
   placeholder = "0",
   id,
+  min,
+  max,
 }: CurrencyInputProps) {
   const [focused, setFocused] = useState(false);
   const [displayValue, setDisplayValue] = useState(value ? String(value) : "");
+  const [clamped, setClamped] = useState(false);
+  const clampTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value;
       setDisplayValue(raw);
-      const parsed = parseNumericInput(raw);
+      let parsed = parseNumericInput(raw);
+
+      let wasClamped = false;
+      if (min !== undefined && parsed < min) {
+        parsed = min;
+        wasClamped = true;
+      }
+      if (max !== undefined && parsed > max) {
+        parsed = max;
+        wasClamped = true;
+      }
+
+      if (wasClamped) {
+        setClamped(true);
+        clearTimeout(clampTimer.current);
+        clampTimer.current = setTimeout(() => setClamped(false), 1500);
+      }
+
       onChange(parsed);
     },
-    [onChange]
+    [onChange, min, max]
   );
 
   const handleFocus = useCallback(() => {
@@ -53,7 +77,7 @@ export function CurrencyInput({
           id={id}
           type="text"
           inputMode="numeric"
-          className="pl-7"
+          className={cn("pl-7", clamped && "border-red-500/50")}
           value={focused ? displayValue : value ? formatNumber(value) : ""}
           onChange={handleChange}
           onFocus={handleFocus}

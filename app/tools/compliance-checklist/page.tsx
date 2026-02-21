@@ -157,7 +157,7 @@ export default function ComplianceChecklistPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl font-bold">PH Startup Compliance Checklist</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">PH Startup Compliance Checklist</h1>
           <Badge variant="outline" className="text-xs text-muted-foreground">
             <Info className="h-3 w-3 mr-1" />
             As of {DATA_LAST_UPDATED}

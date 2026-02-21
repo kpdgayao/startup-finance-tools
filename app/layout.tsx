@@ -49,6 +49,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-background focus:px-4 focus:py-2 focus:rounded-md focus:border"
+        >
+          Skip to main content
+        </a>
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
