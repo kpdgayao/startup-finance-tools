@@ -1,3 +1,4 @@
+import { Linkedin } from "lucide-react";
 import { NewsletterSection } from "@/components/shared/newsletter-section";
 import { Separator } from "@/components/ui/separator";
 
@@ -23,6 +24,16 @@ export function Footer() {
           Designed for Filipino startup founders. All calculations run
           client-side.
         </p>
+        <a
+          href="https://www.linkedin.com/in/kpdgayao/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 mt-3 text-muted-foreground hover:text-primary transition-colors"
+          aria-label="Kevin's LinkedIn"
+        >
+          <Linkedin className="h-4 w-4" />
+          <span className="text-xs">Kevin Paul D. Gayao</span>
+        </a>
       </div>
     </footer>
   );
