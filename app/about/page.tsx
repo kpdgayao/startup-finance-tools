@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Linkedin } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About",
@@ -28,7 +28,18 @@ export default function AboutPage() {
 
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>Kevin — CPA, MBA, CEO of IOL Inc.</CardTitle>
+            <CardTitle className="flex items-center gap-3">
+              Kevin — CPA, MBA, CEO of IOL Inc.
+              <a
+                href="https://www.linkedin.com/in/kpdgayao/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Kevin's LinkedIn"
+              >
+                <Linkedin className="h-4 w-4" />
+              </a>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>
