@@ -27,6 +27,7 @@ export interface ChecklistItem {
   description: string;
   tips?: string;
   dependsOn?: string[];
+  relatedToolId?: string;
 }
 
 export interface StageSummary {
@@ -298,6 +299,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Calculate your initial CAC, LTV, and LTV:CAC ratio. These numbers will be rough, but you need a baseline to improve from.",
       tips: "Use the Unit Economics tool in this toolkit. At this stage, LTV:CAC > 1 is the minimum bar. Aim for 3:1 before scaling acquisition spend.",
+      relatedToolId: "unit-economics",
       dependsOn: ["poc-first-revenue"],
     },
     {
@@ -313,6 +315,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Register your business formally (DTI for sole prop, SEC for corporation). Get your BIR registration, barangay clearance, and Mayor's permit.",
       tips: "Use the PH Compliance Checklist tool for step-by-step guidance. Most founders register as a corporation if they plan to raise investment.",
+      relatedToolId: "compliance-checklist",
     },
     {
       id: "poc-bank-account",
@@ -328,6 +331,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Create a bottom-up financial model with linked P&L, Balance Sheet, and Cash Flow statements. This becomes the basis for investor conversations.",
       tips: "Use the Financial Model Builder tool. Base your revenue assumptions on actual customer data, not top-down market percentages. Investors can smell made-up numbers.",
+      relatedToolId: "financial-model-builder",
       dependsOn: ["poc-unit-economics"],
     },
   ],
@@ -338,6 +342,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Build a 10-15 slide deck covering: problem, solution, market size, traction, business model, team, competition, financials, ask, and use of funds.",
       tips: "Lead with traction. If you have revenue, that slide goes near the front. Use the Market Sizing tool for your TAM/SAM/SOM slide. Keep it under 15 slides.",
+      relatedToolId: "market-sizing",
     },
     {
       id: "fr-financial-model",
@@ -400,6 +405,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Negotiate the pre-money valuation, option pool size, board composition, and protective provisions. Use the Pre/Post-Money tool to model scenarios.",
       tips: "Focus on what matters long-term: valuation is less important than finding the right partner. Avoid giving away board control at seed stage. Standard seed: 1 founder seat, 1 investor seat, 1 independent.",
+      relatedToolId: "pre-post-money",
       dependsOn: ["fr-lawyer-review"],
     },
     {
@@ -408,6 +414,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Sign the definitive agreements, wire the funds, issue shares, and update your cap table. Celebrate — then get back to work.",
       tips: "Use the Equity Simulator to model your post-round cap table. File the SEC amendment for new share issuance. Update your books immediately — don't let accounting pile up.",
+      relatedToolId: "equity-simulator",
       dependsOn: ["fr-negotiation"],
     },
   ],
@@ -449,6 +456,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Reach the point where monthly revenue covers monthly expenses. This is the milestone that proves your business model is sustainable.",
       tips: "Use the Burn Rate tool to track your path to break-even. Focus on unit economics first — if each customer is profitable, break-even is a function of customer count.",
+      relatedToolId: "burn-rate",
       dependsOn: ["ops-monthly-reporting"],
     },
     {
@@ -457,6 +465,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Implement accounts receivable and accounts payable processes. Invoice promptly, follow up on payments, and negotiate favorable payment terms with suppliers.",
       tips: "DSO (Days Sales Outstanding) < 30 is the target. Offer early payment discounts (2/10 net 30). Use the Cash Flow Forecaster to model working capital needs.",
+      relatedToolId: "cash-flow-forecast",
       dependsOn: ["ops-monthly-reporting"],
     },
     {
@@ -473,6 +482,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       description:
         "Renew Mayor's permit (January), pay BIR annual registration (January 31), file all required BIR returns, and submit SEC annual requirements.",
       tips: "Use the PH Compliance Checklist tool to track all ongoing requirements. Set calendar reminders 1 month before each deadline. Late BIR filing = 25% surcharge + 20% annual interest.",
+      relatedToolId: "compliance-checklist",
       dependsOn: ["ops-deploy-capital"],
     },
   ],

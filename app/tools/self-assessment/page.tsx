@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ResultCard } from "@/components/shared/result-card";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
+import { RelatedTools } from "@/components/shared/related-tools";
 import {
   QUIZ_QUESTIONS,
   calculateQuizResult,
@@ -252,6 +253,8 @@ export default function SelfAssessmentPage() {
           }
           onDismiss={ai.reset}
         />
+
+        <RelatedTools currentToolId="self-assessment" />
       </div>
     );
   }

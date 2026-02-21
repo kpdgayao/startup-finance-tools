@@ -13,6 +13,7 @@ import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
+import { RelatedTools } from "@/components/shared/related-tools";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import {
@@ -401,6 +402,8 @@ export default function UnitEconomicsPage() {
         }
         onDismiss={ai.reset}
       />
+
+      <RelatedTools currentToolId="unit-economics" />
     </div>
   );
 }

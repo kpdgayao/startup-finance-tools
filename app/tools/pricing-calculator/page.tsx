@@ -13,6 +13,7 @@ import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP, formatNumber } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
+import { RelatedTools } from "@/components/shared/related-tools";
 import {
   calculateCostPlus,
   calculatePenetrationPrice,
@@ -318,6 +319,8 @@ export default function PricingCalculatorPage() {
         }
         onDismiss={ai.reset}
       />
+
+      <RelatedTools currentToolId="pricing-calculator" />
     </div>
   );
 }

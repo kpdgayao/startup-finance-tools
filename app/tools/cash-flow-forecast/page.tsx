@@ -13,6 +13,7 @@ import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
+import { RelatedTools } from "@/components/shared/related-tools";
 import {
   projectMonthlyCashFlow,
   calculateSummary,
@@ -575,6 +576,8 @@ export default function CashFlowForecastPage() {
         }
         onDismiss={ai.reset}
       />
+
+      <RelatedTools currentToolId="cash-flow-forecast" />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { ResultCard } from "@/components/shared/result-card";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
+import { RelatedTools } from "@/components/shared/related-tools";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import {
@@ -29,7 +30,10 @@ import {
   Settings,
   Rocket,
   FileText,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
+import { TOOLS } from "@/lib/constants";
 import {
   type FundraisingStage,
   type ChecklistItem,
@@ -367,6 +371,8 @@ export default function FundraisingGuidePage() {
         }
         onDismiss={ai.reset}
       />
+
+      <RelatedTools currentToolId="fundraising-guide" />
     </div>
   );
 }
@@ -441,6 +447,18 @@ function ChecklistItemRow({
                   <p>{item.tips}</p>
                 </div>
               )}
+              {item.relatedToolId && (() => {
+                const tool = TOOLS.find((t) => t.id === item.relatedToolId);
+                if (!tool) return null;
+                return (
+                  <Link
+                    href={tool.href}
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    Open {tool.name} <ArrowRight className="h-3 w-3" />
+                  </Link>
+                );
+              })()}
             </div>
           )}
         </div>

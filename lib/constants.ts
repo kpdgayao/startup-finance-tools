@@ -85,6 +85,25 @@ export const TOOLS = [
   },
 ] as const;
 
+export const TOOL_GROUPS = [
+  {
+    label: "Start Here",
+    tools: ["self-assessment", "fundraising-guide"],
+  },
+  {
+    label: "Valuation & Fundraising",
+    tools: ["valuation-calculator", "equity-simulator", "pre-post-money"],
+  },
+  {
+    label: "Revenue & Growth",
+    tools: ["pricing-calculator", "market-sizing", "unit-economics"],
+  },
+  {
+    label: "Cash & Operations",
+    tools: ["burn-rate", "cash-flow-forecast", "financial-model-builder", "compliance-checklist"],
+  },
+] as const;
+
 export const LEARN_MODULES = [
   {
     id: "pricing-your-product",

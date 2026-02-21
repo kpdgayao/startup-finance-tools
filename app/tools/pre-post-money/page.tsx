@@ -11,6 +11,7 @@ import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP, formatPercent } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
+import { RelatedTools } from "@/components/shared/related-tools";
 import {
   PieChart,
   Pie,
@@ -224,6 +225,8 @@ export default function PrePostMoneyPage() {
           onDismiss={ai.reset}
         />
       )}
+
+      <RelatedTools currentToolId="pre-post-money" />
     </div>
   );
 }
