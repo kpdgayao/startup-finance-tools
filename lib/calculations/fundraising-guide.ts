@@ -480,7 +480,7 @@ const STAGE_CHECKLISTS: Record<FundraisingStage, ChecklistItem[]> = {
       id: "ops-regulatory-renewals",
       title: "Complete all regulatory renewals",
       description:
-        "Renew Mayor's permit (January), pay BIR annual registration (January 31), file all required BIR returns, and submit SEC annual requirements.",
+        "Renew Mayor's permit (January), file all required BIR returns (quarterly VAT/percentage tax, income tax), and submit SEC annual requirements (AFS and GIS).",
       tips: "Use the PH Compliance Checklist tool to track all ongoing requirements. Set calendar reminders 1 month before each deadline. Late BIR filing = 25% surcharge + 20% annual interest.",
       relatedToolId: "compliance-checklist",
       dependsOn: ["ops-deploy-capital"],

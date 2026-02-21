@@ -163,7 +163,7 @@ Kevin's curriculum notes:
 - Sole proprietorship is the simplest — register with DTI (₱200-₱2K), get barangay clearance, Mayor's permit, then BIR registration. Total setup: 2-4 weeks.
 - Corporations require SEC registration, Articles of Incorporation, By-Laws. The Revised Corporation Code (2019) allows One Person Corporations (OPC). CREATE Act removed minimum capital for most businesses.
 - BIR registration is mandatory for ALL business types. Get your TIN, COR (Certificate of Registration), register books of accounts, and apply for Authority to Print receipts.
-- Ongoing compliance is where most founders slip up: monthly VAT/percentage tax, quarterly income tax, annual income tax return, annual BIR registration fee (₱500 every Jan 31), SEC annual financial statements and GIS.
+- Ongoing compliance is where most founders slip up: quarterly VAT/percentage tax (Forms 2550Q/2551Q, due 25th after quarter end), quarterly income tax, annual income tax return, SEC annual financial statements and GIS. Note: the ₱500 annual registration fee was abolished by the EOPT Act in 2024.
 - Corporate tax rate: 25% under CREATE Act (20% for small domestic corps with net taxable income ≤ ₱5M and total assets ≤ ₱100M).
 - Common pitfalls: late BIR filings (25% surcharge + 20% annual interest), not registering books of accounts, missing withholding tax obligations, not filing even when there's zero tax due.
 - SSS, PhilHealth, and Pag-IBIG employer registration is mandatory when you hire employees. Late remittance = 3% monthly penalty (SSS).

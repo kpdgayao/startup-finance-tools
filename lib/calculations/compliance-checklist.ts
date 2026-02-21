@@ -141,8 +141,8 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
     agency: "BIR",
     phase: "registration",
     appliesTo: ALL_TYPES,
-    costMin: 500,
-    costMax: 1000,
+    costMin: 30,
+    costMax: 30,
     estimatedDays: 5,
     requiredDocuments: [
       "DTI Certificate or SEC Registration",
@@ -153,7 +153,7 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
       "BIR Form 1901 (sole prop) or 1903 (corp/partnership)",
     ],
     dependsOn: ["mayors-permit"],
-    tips: "Registration fee is ₱500 + ₱30 documentary stamp tax. File within 30 days of business start. You'll be assigned your RDO (Revenue District Office) based on business address.",
+    tips: "The ₱500 registration fee was abolished by the EOPT Act (RA 11976) in 2024. Only the ₱30 documentary stamp tax remains. File within 30 days of business start. You'll be assigned your RDO (Revenue District Office) based on business address.",
   },
   {
     id: "bir-payment-system",
@@ -172,7 +172,7 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
       "Email address",
     ],
     dependsOn: ["bir-registration"],
-    tips: "eBIRForms is free and sufficient for most startups. eFPS is mandatory for large taxpayers and those with VAT registration.",
+    tips: "eBIRForms is free and sufficient for most startups. eFPS is mandatory for large taxpayers. Under the EOPT Act, electronic filing is now mandated for most taxpayers; manual filing is only allowed for micro/small taxpayers or when there are system issues.",
   },
   {
     id: "sss-employer",
@@ -232,7 +232,7 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
       "List of employees",
     ],
     dependsOn: ["bir-registration"],
-    tips: "Minimum employer contribution is 2% of employee's monthly compensation. Register online at pagibigfund.gov.ph.",
+    tips: "Employer contribution is 2% of employee's monthly compensation (max fund salary cap: ₱10,000, max contribution: ₱200/month per side). Register online at pagibigfund.gov.ph.",
   },
 
   // === POST-REGISTRATION ===
@@ -319,10 +319,10 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
 
   // === ONGOING ===
   {
-    id: "bir-monthly-vat",
-    title: "File Monthly VAT/Percentage Tax Return",
+    id: "bir-quarterly-vat",
+    title: "File Quarterly VAT/Percentage Tax Return",
     description:
-      "File BIR Form 2550M (monthly VAT) or 2551M (monthly percentage tax) by the 20th of the following month. VAT applies if gross sales exceed ₱3M annually; otherwise, 3% percentage tax applies.",
+      "File BIR Form 2550Q (quarterly VAT) or 2551Q (quarterly percentage tax) by the 25th day after the end of each quarter. VAT applies if gross sales exceed ₱3M annually; otherwise, 3% percentage tax applies.",
     agency: "BIR",
     phase: "ongoing",
     appliesTo: ALL_TYPES,
@@ -330,11 +330,11 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
     costMax: 0,
     estimatedDays: 0,
     requiredDocuments: [
-      "BIR Form 2550M (VAT) or 2551M (Percentage Tax)",
-      "Summary of sales and purchases",
+      "BIR Form 2550Q (VAT) or 2551Q (Percentage Tax)",
+      "Summary of sales and purchases for the quarter",
       "Official receipts/invoices",
     ],
-    tips: "If gross annual sales are below ₱3M, you pay 3% percentage tax (not VAT). Above ₱3M, you're VAT-registered at 12%. File even if there's zero tax due — failure to file incurs penalties.",
+    tips: "Under the EOPT Act (RA 11976), VAT and percentage tax are now filed quarterly instead of monthly. Due dates: April 25, July 25, October 25, January 25. If gross annual sales are below ₱3M, you pay 3% percentage tax (not VAT). Above ₱3M, you're VAT-registered at 12%. File even if there's zero tax due — failure to file incurs penalties.",
   },
   {
     id: "bir-quarterly-income-tax",
@@ -374,23 +374,6 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
     tips: "Corporate tax rate is 25% under the CREATE Act (20% for domestic corps with net taxable income ≤ ₱5M and total assets ≤ ₱100M). Sole proprietors can opt for the 8% flat rate if eligible.",
   },
   {
-    id: "bir-annual-registration",
-    title: "Pay BIR Annual Registration Fee (₱500)",
-    description:
-      "Pay the annual registration fee of ₱500 via BIR Form 0605 every January 31. This is separate from your income tax filing.",
-    agency: "BIR",
-    phase: "ongoing",
-    appliesTo: ALL_TYPES,
-    costMin: 500,
-    costMax: 500,
-    estimatedDays: 0,
-    requiredDocuments: [
-      "BIR Form 0605",
-      "BIR Certificate of Registration",
-    ],
-    tips: "Due every January 31. Late payment incurs a 25% surcharge + 20% interest per year. You can pay online through eBIRForms or at any AAB (Authorized Agent Bank).",
-  },
-  {
     id: "sec-annual-financial-statements",
     title: "Submit Annual Financial Statements to SEC",
     description:
@@ -406,7 +389,7 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
       "SEC Form for AFS submission",
       "Tax Clearance or proof of filing of Annual ITR",
     ],
-    tips: "AFS must be audited by an SEC-accredited external auditor. Costs vary by firm size: small firms charge ₱10K-₱30K, Big 4 firms charge ₱50K+. Submit via SEC Electronic Filing and Submission Tool (eFAST).",
+    tips: "AFS must be audited by an SEC-accredited external auditor. Costs vary by firm size: small firms charge ₱10K-₱30K, Big 4 firms charge ₱50K+. Submit via SEC eFAST. Calendar-year companies follow a staggered filing schedule (May-June) based on SEC registration number. Non-December FY-end companies file within 120 days after fiscal year end.",
   },
   {
     id: "sec-annual-gis",
@@ -468,9 +451,9 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
   },
   {
     id: "bir-withholding-tax",
-    title: "File & Remit Withholding Taxes Monthly",
+    title: "File & Remit Withholding Taxes",
     description:
-      "If you have employees or pay contractors, you must withhold and remit taxes. File BIR Form 1601-C (compensation) or 1601-E (expanded) by the 10th of the following month.",
+      "If you have employees or pay contractors, you must withhold and remit taxes. File BIR Form 1601-C (compensation) monthly by the 10th. For expanded withholding, file Form 0619-E (monthly remittance, first 2 months of quarter) and Form 1601-EQ (quarterly return, last month of quarter).",
     agency: "BIR",
     phase: "ongoing",
     appliesTo: ALL_TYPES,
@@ -478,11 +461,13 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
     costMax: 0,
     estimatedDays: 0,
     requiredDocuments: [
-      "BIR Form 1601-C (compensation) or 1601-E (expanded withholding)",
+      "BIR Form 1601-C (compensation withholding, monthly)",
+      "BIR Form 0619-E (expanded withholding, monthly remittance)",
+      "BIR Form 1601-EQ (expanded withholding, quarterly return)",
       "Alphabetical list of employees/payees",
       "Proof of remittance",
     ],
-    tips: "Expanded withholding tax (EWT) applies to payments to contractors, professionals, and suppliers. Rates vary: 1-2% for goods, 2-15% for services. Failure to withhold makes you liable for the tax.",
+    tips: "Compensation withholding (1601-C) is filed monthly by the 10th. Expanded withholding tax (EWT) uses Form 0619-E for monthly remittance (first 2 months of quarter) and Form 1601-EQ for the quarterly return. EWT applies to payments to contractors, professionals, and suppliers. Rates vary: 1-2% for goods, 2-15% for services. Failure to withhold makes you liable for the tax.",
   },
 ];
 
