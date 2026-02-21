@@ -15,6 +15,7 @@ import {
   Users,
   FileSpreadsheet,
   ClipboardCheck,
+  GraduationCap,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
@@ -30,6 +31,7 @@ const iconMap = {
   Users,
   FileSpreadsheet,
   ClipboardCheck,
+  GraduationCap,
 } as const;
 
 export function ToolSidebar() {

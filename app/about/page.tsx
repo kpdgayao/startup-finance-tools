@@ -1,9 +1,19 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "About",
+  description: "Learn about the Startup Finance Toolkit by IOL Inc. and Kevin's startup finance curriculum for Filipino founders.",
+  openGraph: {
+    title: "About | Startup Finance Toolkit",
+    description: "Learn about the Startup Finance Toolkit by IOL Inc.",
+  },
+};
 
 export default function AboutPage() {
   return (
@@ -44,8 +54,8 @@ export default function AboutPage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
-              <strong className="text-foreground">Valuation Calculator</strong> — 4 methods
-              (DCF, Berkus, Scorecard, VC Method) with a comparison summary.
+              <strong className="text-foreground">Valuation Calculator</strong> — 5 methods
+              (DCF, Berkus, Scorecard, VC Method, Revenue Multiple) with a comparison summary.
             </p>
             <p>
               <strong className="text-foreground">Equity & Cap Table Simulator</strong> — Model
@@ -86,6 +96,11 @@ export default function AboutPage() {
               <strong className="text-foreground">PH Compliance Checklist</strong> — Interactive
               step-by-step guide to SEC, DTI, BIR, and LGU registration with
               dependency tracking, cost estimates, and progress persistence.
+            </p>
+            <p>
+              <strong className="text-foreground">Finance Self-Assessment</strong> — Interactive
+              quiz covering Financial Statements, Valuation, Cash Management,
+              Fundraising, and Compliance with personalized learning recommendations.
             </p>
           </CardContent>
         </Card>

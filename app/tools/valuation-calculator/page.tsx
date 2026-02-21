@@ -19,6 +19,7 @@ import {
   calculateBerkus,
   calculateScorecard,
   calculateVCMethod,
+  calculateRevenueMultiple,
   calculateValuationSummary,
   type BerkusFactor,
   type ScorecardFactor,
@@ -59,6 +60,10 @@ export default function ValuationCalculatorPage() {
     }))
   );
 
+  // Revenue Multiple state
+  const [annualRevenue, setAnnualRevenue] = useState(5000000);
+  const [revenueMultiple, setRevenueMultiple] = useState(3);
+
   const ai = useAiExplain("valuation-calculator");
 
   // VC Method state
@@ -72,12 +77,14 @@ export default function ValuationCalculatorPage() {
   const berkusValue = calculateBerkus(adjustedBerkusFactors);
   const scorecardValue = calculateScorecard(scorecardFactors, medianValuation);
   const vcValue = calculateVCMethod({ expectedExitValue: exitValue, targetReturnMultiple: targetReturn, expectedDilution: expectedDilution });
+  const revMultipleValue = calculateRevenueMultiple({ annualRevenue, revenueMultiple });
 
   const summary = calculateValuationSummary({
     dcf: dcfValue,
     berkus: berkusValue,
     scorecard: scorecardValue,
     vcMethod: vcValue,
+    revenueMultiple: revMultipleValue,
   });
 
   const comparisonData = [
@@ -85,6 +92,7 @@ export default function ValuationCalculatorPage() {
     { method: "Berkus", value: berkusValue },
     { method: "Scorecard", value: scorecardValue },
     { method: "VC Method", value: vcValue },
+    { method: "Rev Multiple", value: revMultipleValue },
   ];
 
   return (
@@ -92,7 +100,7 @@ export default function ValuationCalculatorPage() {
       <div>
         <h1 className="text-3xl font-bold">Startup Valuation Calculator</h1>
         <p className="text-muted-foreground mt-1">
-          Estimate your startup&apos;s value using 4 industry-standard methods.
+          Estimate your startup&apos;s value using 5 industry-standard methods.
         </p>
       </div>
 
@@ -100,13 +108,13 @@ export default function ValuationCalculatorPage() {
       <Card className="border-primary/30 bg-primary/5">
         <CardHeader>
           <CardTitle>Valuation Summary</CardTitle>
-          <CardDescription>Comparison across all 4 methods</CardDescription>
+          <CardDescription>Comparison across all 5 methods</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <ResultCard label="Suggested Range" value={`${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`} variant="success" />
             <ResultCard label="Average Valuation" value={formatPHP(summary.average)} />
-            <ResultCard label="Methods Used" value={String([summary.dcf, summary.berkus, summary.scorecard, summary.vcMethod].filter((v) => v !== null && v > 0).length)} sublabel="DCF, Berkus, Scorecard, VC" />
+            <ResultCard label="Methods Used" value={String([summary.dcf, summary.berkus, summary.scorecard, summary.vcMethod, summary.revenueMultiple].filter((v) => v !== null && v > 0).length)} sublabel="DCF, Berkus, Scorecard, VC, Rev Multiple" />
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={comparisonData}>
@@ -128,11 +136,12 @@ export default function ValuationCalculatorPage() {
       </Card>
 
       <Tabs defaultValue="dcf">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
           <TabsTrigger value="dcf">DCF</TabsTrigger>
           <TabsTrigger value="berkus">Berkus</TabsTrigger>
           <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
           <TabsTrigger value="vc-method">VC Method</TabsTrigger>
+          <TabsTrigger value="revenue-multiple">Rev Multiple</TabsTrigger>
         </TabsList>
 
         {/* DCF Tab */}
@@ -286,6 +295,59 @@ export default function ValuationCalculatorPage() {
             <ResultCard label="VC Method Valuation" value={formatPHP(vcValue)} variant="success" sublabel="Grossed up for future dilution" />
           </div>
         </TabsContent>
+
+        {/* Revenue Multiple Tab */}
+        <TabsContent value="revenue-multiple" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Revenue Multiple
+                <InfoTooltip content="Multiply annual revenue by an industry-specific multiple. SaaS companies typically command 5-10x, marketplaces 2-4x, and services 1-2x. The multiple reflects growth rate, margins, and market potential." />
+              </CardTitle>
+              <CardDescription>Value your startup based on a multiple of annual revenue.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CurrencyInput label="Annual Revenue (ARR)" value={annualRevenue} onChange={setAnnualRevenue} />
+              <div className="space-y-2">
+                <Label>Industry Preset</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { label: "SaaS", multiple: 6 },
+                    { label: "Marketplace", multiple: 3 },
+                    { label: "E-commerce", multiple: 2 },
+                    { label: "Services", multiple: 1.5 },
+                  ].map((preset) => (
+                    <Button
+                      key={preset.label}
+                      variant={revenueMultiple === preset.multiple ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setRevenueMultiple(preset.multiple)}
+                    >
+                      {preset.label} ({preset.multiple}x)
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Revenue Multiple ({revenueMultiple}x)</Label>
+                <Slider
+                  value={[revenueMultiple * 10]}
+                  onValueChange={([v]) => setRevenueMultiple(v / 10)}
+                  min={5}
+                  max={150}
+                  step={5}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Range: 0.5x to 15x. Higher multiples for high-growth, high-margin businesses.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ResultCard label="Annual Revenue" value={formatPHP(annualRevenue)} sublabel="Input ARR" />
+            <ResultCard label="Revenue Multiple Valuation" value={formatPHP(revMultipleValue)} variant="success" sublabel={`${revenueMultiple}x revenue`} />
+          </div>
+        </TabsContent>
       </Tabs>
 
       <AiInsightsPanel
@@ -298,6 +360,9 @@ export default function ValuationCalculatorPage() {
             berkusValue,
             scorecardValue,
             vcValue,
+            revenueMultipleValue: revMultipleValue,
+            annualRevenue,
+            revenueMultiple,
             suggestedRange: `${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`,
             averageValuation: summary.average,
             discountRate,

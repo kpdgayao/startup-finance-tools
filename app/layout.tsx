@@ -14,7 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Startup Finance Toolkit | IOL Inc.",
+  metadataBase: new URL("https://startupfinance.tools"),
+  title: {
+    default: "Startup Finance Toolkit | IOL Inc.",
+    template: "%s | Startup Finance Toolkit",
+  },
   description:
     "Interactive financial tools for Filipino startup founders. Valuation calculators, equity simulators, burn rate analysis, and more.",
   openGraph: {
@@ -22,6 +26,16 @@ export const metadata: Metadata = {
     description:
       "Interactive financial tools for Filipino startup founders.",
     type: "website",
+    locale: "en_PH",
+    siteName: "Startup Finance Toolkit",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Startup Finance Toolkit | IOL Inc.",
+    description: "Interactive financial tools for Filipino startup founders.",
+  },
+  icons: {
+    icon: "/favicon.ico",
   },
 };
 

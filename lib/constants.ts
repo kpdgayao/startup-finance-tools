@@ -2,7 +2,7 @@ export const TOOLS = [
   {
     id: "valuation-calculator",
     name: "Valuation Calculator",
-    description: "Multi-method startup valuation (DCF, Berkus, Scorecard, VC Method)",
+    description: "Multi-method startup valuation (DCF, Berkus, Scorecard, VC, Revenue Multiple)",
     href: "/tools/valuation-calculator",
     icon: "TrendingUp",
   },
@@ -68,6 +68,13 @@ export const TOOLS = [
     description: "SEC, DTI, BIR registration & ongoing compliance for Filipino startups",
     href: "/tools/compliance-checklist",
     icon: "ClipboardCheck",
+  },
+  {
+    id: "self-assessment",
+    name: "Finance Self-Assessment",
+    description: "Test your startup finance knowledge across 5 key categories",
+    href: "/tools/self-assessment",
+    icon: "GraduationCap",
   },
 ] as const;
 

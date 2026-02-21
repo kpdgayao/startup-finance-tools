@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -15,6 +16,7 @@ import {
   Users,
   FileSpreadsheet,
   ClipboardCheck,
+  GraduationCap,
   ArrowRight,
 } from "lucide-react";
 
@@ -29,7 +31,17 @@ const iconMap = {
   Users,
   FileSpreadsheet,
   ClipboardCheck,
+  GraduationCap,
 } as const;
+
+export const metadata: Metadata = {
+  title: { absolute: "Startup Finance Toolkit | IOL Inc." },
+  description: "Interactive financial tools for Filipino startup founders. Valuation calculators, equity simulators, burn rate analysis, and more.",
+  openGraph: {
+    title: "Startup Finance Toolkit | IOL Inc.",
+    description: "Interactive financial tools for Filipino startup founders.",
+  },
+};
 
 export default function HomePage() {
   return (

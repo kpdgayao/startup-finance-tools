@@ -24,6 +24,11 @@ export interface VCMethodInputs {
   expectedDilution: number; // percentage of dilution in future rounds
 }
 
+export interface RevenueMultipleInputs {
+  annualRevenue: number;
+  revenueMultiple: number; // e.g. 3x for marketplace, 6x for SaaS
+}
+
 export function calculateDCF(inputs: DCFInputs): number {
   const { cashFlows, discountRate, terminalGrowthRate = 3 } = inputs;
   const rate = discountRate / 100;
@@ -78,17 +83,24 @@ export function calculateVCMethod(inputs: VCMethodInputs): number {
   return Math.max(0, postMoney);
 }
 
+export function calculateRevenueMultiple(inputs: RevenueMultipleInputs): number {
+  const { annualRevenue, revenueMultiple } = inputs;
+  if (annualRevenue <= 0 || revenueMultiple <= 0) return 0;
+  return annualRevenue * revenueMultiple;
+}
+
 export interface ValuationSummary {
   dcf: number | null;
   berkus: number | null;
   scorecard: number | null;
   vcMethod: number | null;
+  revenueMultiple: number | null;
   average: number;
   range: { min: number; max: number };
 }
 
 export function calculateValuationSummary(
-  values: { dcf?: number; berkus?: number; scorecard?: number; vcMethod?: number }
+  values: { dcf?: number; berkus?: number; scorecard?: number; vcMethod?: number; revenueMultiple?: number }
 ): ValuationSummary {
   const entries = Object.entries(values).filter(
     ([, v]) => v !== undefined && v > 0
@@ -104,6 +116,7 @@ export function calculateValuationSummary(
     berkus: values.berkus ?? null,
     scorecard: values.scorecard ?? null,
     vcMethod: values.vcMethod ?? null,
+    revenueMultiple: values.revenueMultiple ?? null,
     average,
     range: { min, max },
   };
