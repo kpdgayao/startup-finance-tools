@@ -34,9 +34,18 @@ export async function POST(request: Request) {
       }
     }
 
-    await mailjet
-      .post("listrecipient")
-      .request({ ContactAlt: email, ListID: parseInt(listId) });
+    try {
+      await mailjet
+        .post("listrecipient")
+        .request({ ContactAlt: email, ListID: parseInt(listId) });
+    } catch (err) {
+      // Ignore duplicate list recipient errors
+      if (
+        !(err instanceof Error && err.message?.includes("already exists"))
+      ) {
+        throw err;
+      }
+    }
 
     // Send welcome email only to new subscribers
     if (isNewContact) {
