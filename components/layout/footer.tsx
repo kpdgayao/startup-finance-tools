@@ -32,7 +32,7 @@ export function Footer() {
           aria-label="Kevin's LinkedIn"
         >
           <Linkedin className="h-4 w-4" />
-          <span className="text-xs">Kevin Paul D. Gayao</span>
+          <span className="text-xs">Kevin Philip D. Gayao</span>
         </a>
       </div>
     </footer>
