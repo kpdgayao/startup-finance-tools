@@ -43,6 +43,7 @@ export default function ValuationCalculatorPage() {
   const [terminalGrowth, setTerminalGrowth] = useState(3);
 
   // Berkus state
+  const [berkusMaxPerFactor, setBerkusMaxPerFactor] = useState(500000);
   const [berkusFactors, setBerkusFactors] = useState<BerkusFactor[]>(
     BERKUS_FACTORS.map((f) => ({ ...f, value: 250000 }))
   );
@@ -67,7 +68,8 @@ export default function ValuationCalculatorPage() {
 
   // Calculate all methods
   const dcfValue = calculateDCF({ cashFlows, discountRate, terminalGrowthRate: terminalGrowth });
-  const berkusValue = calculateBerkus(berkusFactors);
+  const adjustedBerkusFactors = berkusFactors.map((f) => ({ ...f, maxValue: berkusMaxPerFactor }));
+  const berkusValue = calculateBerkus(adjustedBerkusFactors);
   const scorecardValue = calculateScorecard(scorecardFactors, medianValuation);
   const vcValue = calculateVCMethod({ expectedExitValue: exitValue, targetReturnMultiple: targetReturn, expectedDilution: expectedDilution });
 
@@ -173,33 +175,51 @@ export default function ValuationCalculatorPage() {
             <CardHeader>
               <CardTitle>
                 Berkus Method
-                <InfoTooltip content="Assigns up to ₱500K for each of 5 risk factors, for a max pre-revenue valuation of ₱2.5M. Best for early-stage startups without revenue." />
+                <InfoTooltip content="Assigns a value for each of 5 risk factors. The classic model caps each at ₱500K (₱2.5M total), but modern adaptations use higher caps. Adjust the max per factor to match your market." />
               </CardTitle>
-              <CardDescription>Score each factor from ₱0 to ₱500,000. Maximum valuation: ₱2,500,000.</CardDescription>
+              <CardDescription>Score each factor from ₱0 to {formatPHP(berkusMaxPerFactor)}. Maximum valuation: {formatPHP(berkusMaxPerFactor * 5)}.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label>Max Value Per Factor</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {[500000, 1000000, 2000000, 5000000].map((preset) => (
+                    <Button
+                      key={preset}
+                      variant={berkusMaxPerFactor === preset ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setBerkusMaxPerFactor(preset)}
+                    >
+                      {formatPHP(preset)}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Classic Berkus uses ₱500K/factor. Use higher caps for larger markets or later-stage startups.
+                </p>
+              </div>
               {berkusFactors.map((factor, i) => (
                 <div key={factor.id} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label>{factor.label}</Label>
-                    <span className="text-sm font-medium">{formatPHP(factor.value)}</span>
+                    <span className="text-sm font-medium">{formatPHP(Math.min(factor.value, berkusMaxPerFactor))}</span>
                   </div>
                   <Slider
-                    value={[factor.value]}
+                    value={[Math.min(factor.value, berkusMaxPerFactor)]}
                     onValueChange={([v]) => {
                       const next = [...berkusFactors];
                       next[i] = { ...factor, value: v };
                       setBerkusFactors(next);
                     }}
                     min={0}
-                    max={factor.maxValue}
-                    step={50000}
+                    max={berkusMaxPerFactor}
+                    step={berkusMaxPerFactor <= 1000000 ? 50000 : 100000}
                   />
                 </div>
               ))}
             </CardContent>
           </Card>
-          <ResultCard label="Berkus Valuation" value={formatPHP(berkusValue)} variant="success" sublabel="Pre-revenue valuation (max ₱2.5M)" />
+          <ResultCard label="Berkus Valuation" value={formatPHP(berkusValue)} variant="success" sublabel={`Pre-revenue valuation (max ${formatPHP(berkusMaxPerFactor * 5)})`} />
         </TabsContent>
 
         {/* Scorecard Tab */}
