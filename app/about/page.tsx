@@ -118,6 +118,21 @@ export default function AboutPage() {
               R&D to Scaling lifecycle guide with stage-specific checklists, funding
               sources, key metrics, and dependency tracking.
             </p>
+            <p>
+              <strong className="text-foreground">SAFE Calculator</strong> — Model how SAFEs and
+              convertible notes convert to equity at a priced round, with cap vs. discount
+              comparison and post-conversion cap table.
+            </p>
+            <p>
+              <strong className="text-foreground">Break-Even Analysis</strong> — Calculate your
+              break-even point in units and revenue, with interactive what-if sliders for
+              price, variable cost, and fixed costs.
+            </p>
+            <p>
+              <strong className="text-foreground">Startup Cost Estimator</strong> — Estimate total
+              startup capital with PH-specific registration costs pulled from the compliance
+              checklist, category-based budgeting, and contingency buffer.
+            </p>
           </CardContent>
         </Card>
 
@@ -146,6 +161,16 @@ export default function AboutPage() {
             <p>
               <strong className="text-foreground">Managing Cash Flow</strong> — Burn rate,
               runway zones, working capital, and Kevin&apos;s cash flow rules.
+            </p>
+            <p>
+              <strong className="text-foreground">Understanding SAFEs</strong> — SAFEs vs.
+              convertible notes, valuation caps, discount rates, and what stacking
+              multiple SAFEs means for your cap table.
+            </p>
+            <p>
+              <strong className="text-foreground">Break-Even Analysis</strong> — Break-even
+              formula, contribution margin, the 3 levers that move your break-even point,
+              with SaaS and Philippine context.
             </p>
           </CardContent>
         </Card>

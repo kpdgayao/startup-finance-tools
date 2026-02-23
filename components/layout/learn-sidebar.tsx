@@ -9,6 +9,8 @@ import {
   FileSpreadsheet,
   TrendingUp,
   Flame,
+  FileText,
+  Scale,
   ChevronDown,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -18,6 +20,8 @@ const iconMap = {
   FileSpreadsheet,
   TrendingUp,
   Flame,
+  FileText,
+  Scale,
 } as const;
 
 export function LearnSidebar() {

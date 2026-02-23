@@ -142,6 +142,20 @@ export const LEARN_MODULES = [
     icon: "Flame",
     relatedTool: "/tools/burn-rate",
   },
+  {
+    id: "understanding-safes",
+    name: "Understanding SAFEs",
+    href: "/learn/understanding-safes",
+    icon: "FileText",
+    relatedTool: "/tools/safe-calculator",
+  },
+  {
+    id: "break-even-analysis",
+    name: "Break-Even Analysis",
+    href: "/learn/break-even-analysis",
+    icon: "Scale",
+    relatedTool: "/tools/break-even",
+  },
 ] as const;
 
 export const BERKUS_FACTORS = [

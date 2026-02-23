@@ -3,13 +3,15 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LEARN_MODULES } from "@/lib/constants";
-import { Tag, FileSpreadsheet, TrendingUp, Flame, ArrowRight } from "lucide-react";
+import { Tag, FileSpreadsheet, TrendingUp, Flame, FileText, Scale, ArrowRight } from "lucide-react";
 
 const iconMap = {
   Tag,
   FileSpreadsheet,
   TrendingUp,
   Flame,
+  FileText,
+  Scale,
 } as const;
 
 const MODULE_META: Record<string, { description: string; readTime: string }> = {
@@ -27,6 +29,14 @@ const MODULE_META: Record<string, { description: string; readTime: string }> = {
   },
   "managing-cash-flow": {
     description: "Cash flow kills more startups than bad ideas. Learn burn rate, runway zones, and cash management.",
+    readTime: "6 min",
+  },
+  "understanding-safes": {
+    description: "How SAFEs and convertible notes work, including caps, discounts, and what stacking means for your cap table.",
+    readTime: "7 min",
+  },
+  "break-even-analysis": {
+    description: "The break-even formula, contribution margin, and the 3 levers that move your break-even point.",
     readTime: "6 min",
   },
 };
