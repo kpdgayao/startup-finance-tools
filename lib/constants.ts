@@ -21,11 +21,32 @@ export const TOOLS = [
     icon: "Calculator",
   },
   {
+    id: "safe-calculator",
+    name: "SAFE Calculator",
+    description: "Model how SAFEs and convertible notes convert to equity at a priced round",
+    href: "/tools/safe-calculator",
+    icon: "FileText",
+  },
+  {
+    id: "startup-costs",
+    name: "Startup Cost Estimator",
+    description: "Estimate total startup capital with PH-specific registration costs",
+    href: "/tools/startup-costs",
+    icon: "Landmark",
+  },
+  {
     id: "burn-rate",
     name: "Burn Rate & Runway",
     description: "Calculate your runway and model expense scenarios",
     href: "/tools/burn-rate",
     icon: "Flame",
+  },
+  {
+    id: "break-even",
+    name: "Break-Even Analysis",
+    description: "Calculate your break-even point with interactive what-if scenarios",
+    href: "/tools/break-even",
+    icon: "Scale",
   },
   {
     id: "pricing-calculator",
@@ -86,22 +107,10 @@ export const TOOLS = [
 ] as const;
 
 export const TOOL_GROUPS = [
-  {
-    label: "Start Here",
-    tools: ["self-assessment", "fundraising-guide"],
-  },
-  {
-    label: "Valuation & Fundraising",
-    tools: ["valuation-calculator", "equity-simulator", "pre-post-money"],
-  },
-  {
-    label: "Revenue & Growth",
-    tools: ["pricing-calculator", "market-sizing", "unit-economics"],
-  },
-  {
-    label: "Cash & Operations",
-    tools: ["burn-rate", "cash-flow-forecast", "financial-model-builder", "compliance-checklist"],
-  },
+  { label: "Start Here", tools: ["self-assessment", "fundraising-guide"] },
+  { label: "Valuation & Fundraising", tools: ["valuation-calculator", "equity-simulator", "pre-post-money", "safe-calculator"] },
+  { label: "Revenue & Growth", tools: ["break-even", "pricing-calculator", "market-sizing", "unit-economics"] },
+  { label: "Cash & Operations", tools: ["startup-costs", "burn-rate", "cash-flow-forecast", "financial-model-builder", "compliance-checklist"] },
 ] as const;
 
 export const LEARN_MODULES = [

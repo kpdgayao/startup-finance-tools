@@ -13,7 +13,7 @@ export const TOOL_RELATIONSHIPS: Record<ToolId, RelatedTool[]> = {
   ],
   "equity-simulator": [
     { toolId: "valuation-calculator", reason: "Determine the pre-money valuation for each round" },
-    { toolId: "pre-post-money", reason: "Quick-check a single round's dilution math" },
+    { toolId: "safe-calculator", reason: "Model how a SAFE converts in this round" },
     { toolId: "fundraising-guide", reason: "See what stage you should be fundraising at" },
   ],
   "pre-post-money": [
@@ -24,12 +24,12 @@ export const TOOL_RELATIONSHIPS: Record<ToolId, RelatedTool[]> = {
   "burn-rate": [
     { toolId: "cash-flow-forecast", reason: "Expand into a full 12-month cash projection" },
     { toolId: "financial-model-builder", reason: "Build a complete 3-year financial model" },
-    { toolId: "fundraising-guide", reason: "Know when to start raising based on runway" },
+    { toolId: "startup-costs", reason: "Estimate your initial costs before tracking burn" },
   ],
   "pricing-calculator": [
     { toolId: "unit-economics", reason: "See how your pricing affects LTV:CAC ratio" },
     { toolId: "market-sizing", reason: "Estimate total revenue at this price point" },
-    { toolId: "cash-flow-forecast", reason: "Project 12 months of revenue at this pricing" },
+    { toolId: "break-even", reason: "See how many units you need to sell at this price" },
   ],
   "cash-flow-forecast": [
     { toolId: "burn-rate", reason: "Quick-check your monthly burn and runway" },
@@ -52,7 +52,7 @@ export const TOOL_RELATIONSHIPS: Record<ToolId, RelatedTool[]> = {
     { toolId: "fundraising-guide", reason: "Use your model to prepare for fundraising" },
   ],
   "compliance-checklist": [
-    { toolId: "fundraising-guide", reason: "See how compliance fits into your startup stage" },
+    { toolId: "startup-costs", reason: "See total startup costs including registration fees" },
     { toolId: "financial-model-builder", reason: "Build the financial statements regulators require" },
     { toolId: "burn-rate", reason: "Budget for compliance costs in your burn rate" },
   ],
@@ -65,6 +65,21 @@ export const TOOL_RELATIONSHIPS: Record<ToolId, RelatedTool[]> = {
     { toolId: "self-assessment", reason: "Test your finance knowledge before fundraising" },
     { toolId: "valuation-calculator", reason: "Determine your startup's valuation range" },
     { toolId: "equity-simulator", reason: "Model how a funding round affects ownership" },
+  ],
+  "safe-calculator": [
+    { toolId: "equity-simulator", reason: "Model full dilution across multiple rounds" },
+    { toolId: "valuation-calculator", reason: "Determine what valuation cap to negotiate" },
+    { toolId: "pre-post-money", reason: "Quick-check the round math" },
+  ],
+  "break-even": [
+    { toolId: "pricing-calculator", reason: "Test different price points to lower break-even" },
+    { toolId: "unit-economics", reason: "See how break-even relates to LTV:CAC" },
+    { toolId: "cash-flow-forecast", reason: "Project when you'll actually reach break-even" },
+  ],
+  "startup-costs": [
+    { toolId: "compliance-checklist", reason: "Track your registration progress step by step" },
+    { toolId: "burn-rate", reason: "Use this estimate as your starting burn rate" },
+    { toolId: "financial-model-builder", reason: "Build these costs into a 3-year model" },
   ],
 };
 

@@ -10,7 +10,10 @@ export type ToolId =
   | "financial-model-builder"
   | "compliance-checklist"
   | "self-assessment"
-  | "fundraising-guide";
+  | "fundraising-guide"
+  | "safe-calculator"
+  | "break-even"
+  | "startup-costs";
 
 const SHARED_INSTRUCTIONS = `You are a startup finance coach for Filipino founders, grounded in Kevin's (CPA, MBA) curriculum at IOL Inc.
 Write in plain language. Use bullet points. Keep it under 300 words.
@@ -196,6 +199,53 @@ Kevin's curriculum notes:
 - Key insight: fundraising is a full-time job. Don't try to fundraise and build product simultaneously. Designate one founder as the fundraising lead.
 
 Based on their stage and progress, explain what they've accomplished, what's most critical next, common mistakes at their stage, and specific metrics they should be tracking.`,
+
+  "safe-calculator": `${SHARED_INSTRUCTIONS}
+
+CONTEXT: The user modeled how a SAFE or convertible note converts to equity at a priced round, comparing cap vs. discount scenarios.
+
+Kevin's curriculum notes:
+- A SAFE (Simple Agreement for Future Equity) is not debt — it's a promise of future equity. No interest, no maturity date (post-money YC SAFE).
+- Valuation cap sets the maximum price at which the SAFE converts. Lower cap = more equity for the investor.
+- Discount rate (typically 15-25%) rewards early investors by letting them buy shares cheaper than the priced round price.
+- The investor gets the BETTER deal: whichever method (cap or discount) gives them a lower price per share.
+- Convertible notes add interest (5-8% typical) and a maturity date. Accrued interest converts to equity alongside the principal.
+- Stacking multiple SAFEs is dangerous — founders often don't realize the cumulative dilution until the priced round.
+- Post-money SAFEs (YC standard since 2018) are cleaner: the cap IS the post-money valuation, so you know exactly how much you're giving up.
+- Philippine context: SAFEs are increasingly common with international VCs. Local angels may still prefer convertible notes or direct equity.
+
+Explain which conversion method gave the investor a better deal, the effective valuation, dilution impact, and what founders should watch for with multiple SAFEs.`,
+
+  "break-even": `${SHARED_INSTRUCTIONS}
+
+CONTEXT: The user calculated their break-even point including contribution margin, break-even units/revenue, and optionally margin of safety.
+
+Kevin's curriculum notes:
+- Break-even = Fixed Costs / Contribution Margin per Unit. This is the minimum volume to cover all costs.
+- Contribution margin = Selling Price - Variable Cost. This is what each unit contributes toward covering fixed costs.
+- Contribution margin ratio = CM / Price. Higher ratio means each peso of revenue covers more fixed costs.
+- Margin of safety = Current Volume - Break-even Volume. Positive = profitable; negative = still losing money.
+- Three levers to improve break-even: (1) raise prices, (2) reduce variable costs, (3) reduce fixed costs. Raising price has the biggest impact because it improves CM and revenue simultaneously.
+- For subscription/SaaS businesses: fixed costs are high (engineering, servers) and variable costs are low, so break-even is mostly about reaching enough subscribers.
+- Philippine context: labor costs are lower but rent in Metro Manila is significant. Many startups can reduce fixed costs dramatically by going remote-first.
+- Kevin's rule: know your break-even BEFORE launching. If break-even requires more customers than your SAM, the business model doesn't work.
+
+Explain what the break-even point means for their business, which lever has the biggest impact, and whether their target volume is realistic.`,
+
+  "startup-costs": `${SHARED_INSTRUCTIONS}
+
+CONTEXT: The user estimated their total startup costs across categories: registration & legal (from PH compliance data), office & equipment, technology, marketing, team, and working capital buffer.
+
+Kevin's curriculum notes:
+- Most Filipino founders underestimate startup costs by 30-50%. The 20% contingency buffer is a minimum, not a luxury.
+- Registration costs vary dramatically by business type: sole proprietorship (₱1K-₱10K), partnership (₱5K-₱25K), corporation (₱10K-₱80K including SEC, barangay, mayor's permit, BIR, SSS/PhilHealth/Pag-IBIG).
+- The biggest surprise cost is usually the Mayor's Permit — fees scale with capitalization and location. Makati and BGC are 2-5x more expensive than provincial LGUs.
+- Working capital buffer: Kevin recommends 3-6 months of recurring costs. 3 months is bare minimum; 6 months if you're pre-revenue.
+- Common overspend areas: fancy office space (go co-working or remote), over-engineered MVP (build lean), premium software tools (free tiers exist).
+- Common underspend areas: legal/accounting (pay for a good CPA early), marketing (you need customers), compliance (BIR penalties compound at 25% surcharge + 20% annual interest).
+- This total is your "Day 1 capital requirement" — use it to determine how much to raise or save before launching.
+
+Analyze their cost breakdown, flag any categories that seem too high or too low, and recommend whether they should bootstrap or seek external funding.`,
 };
 
 export function getSystemPrompt(toolId: ToolId): string {
