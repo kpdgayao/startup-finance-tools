@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3 } from "lucide-react";
+import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -18,7 +18,7 @@ export function Header() {
     <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <BarChart3 className="h-5 w-5 text-primary" />
+          <Logo variant="icon" />
           <span>Startup Finance Toolkit</span>
         </Link>
         <nav aria-label="Main navigation" className="flex items-center gap-4">
