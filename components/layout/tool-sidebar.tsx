@@ -17,6 +17,9 @@ import {
   ClipboardCheck,
   GraduationCap,
   Map,
+  FileText,
+  Scale,
+  Landmark,
   ChevronDown,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -34,6 +37,9 @@ const iconMap = {
   ClipboardCheck,
   GraduationCap,
   Map,
+  FileText,
+  Scale,
+  Landmark,
 } as const;
 
 export function ToolSidebar() {

@@ -18,6 +18,9 @@ import {
   ClipboardCheck,
   GraduationCap,
   Map,
+  FileText,
+  Scale,
+  Landmark,
   ArrowRight,
 } from "lucide-react";
 
@@ -34,6 +37,9 @@ const iconMap = {
   ClipboardCheck,
   GraduationCap,
   Map,
+  FileText,
+  Scale,
+  Landmark,
 } as const;
 
 export const metadata: Metadata = {
