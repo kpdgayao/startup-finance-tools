@@ -1,11 +1,13 @@
 import { Linkedin } from "lucide-react";
 import { NewsletterSection } from "@/components/shared/newsletter-section";
+import { EcosystemStrip } from "@/components/shared/ecosystem-strip";
 import { Separator } from "@/components/ui/separator";
 
 export function Footer() {
   return (
     <footer className="border-t border-border/50 mt-auto">
       <NewsletterSection />
+      <EcosystemStrip />
       <Separator />
       <div className="py-6 container mx-auto px-4 text-center text-sm text-muted-foreground">
         <p>

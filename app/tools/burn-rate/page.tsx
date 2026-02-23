@@ -11,6 +11,7 @@ import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
+import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
 import {
   calculateBurnRate,
   projectCashBalance,
@@ -267,6 +268,8 @@ export default function BurnRatePage() {
         }
         onDismiss={ai.reset}
       />
+
+      <EcosystemBanner toolId="burn-rate" />
 
       <RelatedTools currentToolId="burn-rate" />
     </div>
