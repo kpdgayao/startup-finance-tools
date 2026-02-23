@@ -2,12 +2,16 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Callout } from "@/components/shared/callout";
 
 export default function BreakEvenAnalysisPage() {
   return (
     <article className="prose prose-invert max-w-none">
       <h1 className="text-2xl font-bold mb-2">Break-Even Analysis</h1>
-      <p className="text-sm text-muted-foreground mb-6">6 min read</p>
+      <p className="text-sm text-muted-foreground mb-1">6 min read</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        By Kevin — CPA, MBA, CEO of IOL Inc.
+      </p>
 
       <p>
         Every startup founder asks the same question: &quot;When will we stop
@@ -21,9 +25,9 @@ export default function BreakEvenAnalysisPage() {
       <p>
         The math is straightforward:
       </p>
-      <p className="font-mono text-sm bg-muted/30 p-3 rounded-md">
+      <Callout variant="formula">
         Break-Even Units = Fixed Costs / (Selling Price - Variable Cost per Unit)
-      </p>
+      </Callout>
       <p>
         The denominator — selling price minus variable cost — is called
         your <strong>contribution margin</strong>. Each unit sold
@@ -61,10 +65,11 @@ export default function BreakEvenAnalysisPage() {
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-3">The 3 Levers</h2>
-      <p>
-        There are only three ways to lower your break-even point. Kevin teaches
-        founders to think about all three, not just the obvious one:
-      </p>
+      <Callout variant="insight">
+        There are only three ways to lower your break-even point: raise your
+        price, reduce variable costs, or reduce fixed costs. Most founders
+        only think about cutting costs — but pricing is the most powerful lever.
+      </Callout>
 
       <h3 className="text-lg font-medium mt-6 mb-2">1. Raise Your Price</h3>
       <p>

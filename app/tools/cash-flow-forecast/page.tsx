@@ -118,6 +118,16 @@ export default function CashFlowForecastPage() {
     "Revenue (Accrual)": p.revenue,
   })), [projections]);
 
+  const handleReset = () => {
+    setStartingBalance(3000000);
+    setMrr(500000);
+    setFixedCosts(400000);
+    setVariableCostPercent(20);
+    setPaymentTerms(30);
+    setPayableTerms(15);
+    setOneTimeIncome(Array(12).fill(0));
+  };
+
   const handleExportCSV = () => {
     const csv = exportToCSV(projections);
     const blob = new Blob([csv], { type: "text/csv" });
@@ -142,10 +152,15 @@ export default function CashFlowForecastPage() {
             12-month cash flow projection with DSO/DPO timing adjustments.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExportCSV}>
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <Card>

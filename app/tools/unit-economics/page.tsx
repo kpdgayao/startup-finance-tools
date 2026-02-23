@@ -14,8 +14,10 @@ import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
+import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { RotateCcw } from "lucide-react";
 import {
   calculateUnitEconomics,
   generateSensitivity,
@@ -38,6 +40,14 @@ export default function UnitEconomicsPage() {
   const [revenuePerCustomer, setRevenuePerCustomer] = useState(5_000);
   const [grossMarginPercent, setGrossMarginPercent] = useState(70);
   const [monthlyChurnRate, setMonthlyChurnRate] = useState(5);
+
+  const handleReset = () => {
+    setMonthlyMarketingSpend(100_000);
+    setNewCustomersPerMonth(20);
+    setRevenuePerCustomer(5_000);
+    setGrossMarginPercent(70);
+    setMonthlyChurnRate(5);
+  };
 
   const ai = useAiExplain("unit-economics");
 
@@ -79,11 +89,16 @@ export default function UnitEconomicsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Unit Economics Calculator</h1>
-        <p className="text-muted-foreground mt-1">
-          Calculate CAC, LTV, and the metrics investors care about most.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Unit Economics Calculator</h1>
+          <p className="text-muted-foreground mt-1">
+            Calculate CAC, LTV, and the metrics investors care about most.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

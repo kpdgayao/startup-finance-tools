@@ -56,9 +56,14 @@ export function NewsletterSection() {
           onSubmit={handleSubmit}
           className="flex gap-2 items-center justify-center"
         >
+          <label htmlFor="newsletter-email" className="sr-only">
+            Email address
+          </label>
           <Input
+            id="newsletter-email"
             type="email"
             placeholder="you@company.com"
+            aria-label="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

@@ -27,7 +27,8 @@ import {
   type AnnualRow,
   type BalanceSheetSeed,
 } from "@/lib/calculations/financial-model";
-import { Download } from "lucide-react";
+import { LearnLink } from "@/components/shared/learn-link";
+import { Download, RotateCcw } from "lucide-react";
 import {
   ComposedChart,
   Bar,
@@ -373,6 +374,20 @@ export default function FinancialModelBuilderPage() {
 
   const ai = useAiExplain("financial-model-builder");
 
+  const handleReset = () => {
+    setStartingRevenue(200_000);
+    setMonthlyGrowthRate(8);
+    setCogsPercent(25);
+    setFixedOpEx(500_000);
+    setVariableOpExPercent(10);
+    setStartingCash(5_000_000);
+    setDso(30);
+    setDpo(15);
+    setTaxRate(25);
+    setAnnualCapEx(500_000);
+    setDepreciationYears(5);
+  };
+
   const handleExportCSV = () => {
     const csv = exportFinancialModelCSV(annual, seed);
     const blob = new Blob([csv], { type: "text/csv" });
@@ -431,11 +446,17 @@ export default function FinancialModelBuilderPage() {
           <p className="text-muted-foreground mt-1">
             3-year integrated P&L, Balance Sheet, and Cash Flow model.
           </p>
+          <LearnLink toolHref="/tools/financial-model-builder" />
         </div>
-        <Button variant="outline" size="sm" onClick={handleExportCSV}>
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Assumptions */}

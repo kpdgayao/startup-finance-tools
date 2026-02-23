@@ -2,12 +2,16 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Callout } from "@/components/shared/callout";
 
 export default function ReadingFinancialStatementsPage() {
   return (
     <article className="prose prose-invert max-w-none">
       <h1 className="text-2xl font-bold mb-2">Reading Financial Statements</h1>
-      <p className="text-sm text-muted-foreground mb-6">6 min read</p>
+      <p className="text-sm text-muted-foreground mb-1">6 min read</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        By Kevin — CPA, MBA, CEO of IOL Inc.
+      </p>
 
       <p>
         Financial statements are the language of business. If you can&apos;t
@@ -99,13 +103,16 @@ export default function ReadingFinancialStatementsPage() {
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-3">How the Three Statements Connect</h2>
-      <p>
+
+      <Callout variant="tip">
         Net income from the P&L flows into Retained Earnings on the Balance
-        Sheet. Cash on the Balance Sheet should match the ending balance on the
+        Sheet. Cash on the Balance Sheet matches the ending balance on the
         Cash Flow Statement. Depreciation from the P&L is added back in
         Operating Cash Flow. CapEx from Investing Activities creates assets on
-        the Balance Sheet.
-      </p>
+        the Balance Sheet. All three statements are linked — change one
+        assumption and it cascades through all of them.
+      </Callout>
+
       <p>
         An integrated financial model links all three, so when you change one
         assumption (like revenue growth), it cascades through all statements

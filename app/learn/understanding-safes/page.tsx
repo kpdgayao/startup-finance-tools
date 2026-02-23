@@ -2,12 +2,16 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Callout } from "@/components/shared/callout";
 
 export default function UnderstandingSafesPage() {
   return (
     <article className="prose prose-invert max-w-none">
       <h1 className="text-2xl font-bold mb-2">Understanding SAFEs</h1>
-      <p className="text-sm text-muted-foreground mb-6">7 min read</p>
+      <p className="text-sm text-muted-foreground mb-1">7 min read</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        By Kevin — CPA, MBA, CEO of IOL Inc.
+      </p>
 
       <p>
         If you&apos;re raising your first round of funding in the Philippines,
@@ -77,6 +81,11 @@ export default function UnderstandingSafesPage() {
       </p>
 
       <h3 className="text-lg font-medium mt-6 mb-2">Cap vs. Discount: Which Wins?</h3>
+      <Callout variant="formula">
+        At conversion, compare: Price via Cap = Cap / Total Shares vs. Price
+        via Discount = Round Price x (1 - Discount%). The investor gets
+        whichever gives a lower price per share (more shares for their money).
+      </Callout>
       <p>
         When a SAFE has both a cap and a discount, the investor converts at
         whichever gives them the <strong>lower effective price per share</strong>.
@@ -93,12 +102,11 @@ export default function UnderstandingSafesPage() {
         a ₱50M post-money cap means 30% of your company goes to SAFE holders
         before your Series A investors even get their shares.
       </p>
-      <p>
-        Kevin&apos;s rule of thumb: <strong>keep total SAFE dilution under
-        20-25%</strong>. Beyond that, Series A investors will see a messy cap
-        table and may demand a higher ownership stake to compensate, further
-        diluting founders.
-      </p>
+      <Callout variant="tip">
+        Keep total SAFE dilution under 20-25%. Beyond that, Series A investors
+        will see a messy cap table and may demand a higher ownership stake to
+        compensate, further diluting founders.
+      </Callout>
 
       <h2 className="text-xl font-semibold mt-8 mb-3">SAFEs in the Philippine Context</h2>
       <p>

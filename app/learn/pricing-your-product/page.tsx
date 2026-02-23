@@ -2,12 +2,16 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Callout } from "@/components/shared/callout";
 
 export default function PricingYourProductPage() {
   return (
     <article className="prose prose-invert max-w-none">
       <h1 className="text-2xl font-bold mb-2">Pricing Your Product</h1>
-      <p className="text-sm text-muted-foreground mb-6">5 min read</p>
+      <p className="text-sm text-muted-foreground mb-1">5 min read</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        By Kevin — CPA, MBA, CEO of IOL Inc.
+      </p>
 
       <p>
         Pricing is the single most important decision a startup founder makes.
@@ -22,12 +26,11 @@ export default function PricingYourProductPage() {
         average. Compare that to a 1% improvement in volume (which only improves
         profit by 3-4%). Pricing is the highest-leverage growth tool you have.
       </p>
-      <p>
-        Kevin&apos;s key insight from his CPA practice: <strong>most Filipino
-        startups underprice</strong>. They price based on cost or competitors,
-        not based on the value they deliver. This leaves money on the table and
-        signals low quality to the market.
-      </p>
+      <Callout variant="insight">
+        Most Filipino startups underprice. They price based on cost or
+        competitors, not based on the value they deliver. This leaves money on
+        the table and signals low quality to the market.
+      </Callout>
 
       <h2 className="text-xl font-semibold mt-8 mb-3">The 6 Pricing Strategies</h2>
 

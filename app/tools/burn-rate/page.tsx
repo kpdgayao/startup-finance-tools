@@ -12,6 +12,10 @@ import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
+import { LearnLink } from "@/components/shared/learn-link";
+import { ExportPDFButton } from "@/components/shared/export-pdf-button";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 import {
   calculateBurnRate,
   projectCashBalance,
@@ -37,6 +41,14 @@ export default function BurnRatePage() {
   const [revenueIncrease, setRevenueIncrease] = useState(0);
 
   const ai = useAiExplain("burn-rate");
+
+  const handleReset = () => {
+    setCashBalance(5000000);
+    setMonthlyRevenue(200000);
+    setMonthlyExpenses(800000);
+    setExpenseCut(0);
+    setRevenueIncrease(0);
+  };
 
   const burnResult = calculateBurnRate({ cashBalance, monthlyRevenue, monthlyExpenses });
   const baseProjection = projectCashBalance(cashBalance, monthlyRevenue, monthlyExpenses, 18);
@@ -68,13 +80,23 @@ export default function BurnRatePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Burn Rate & Runway Calculator</h1>
-        <p className="text-muted-foreground mt-1">
-          Calculate how long your cash will last and model cost-cutting scenarios.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Burn Rate & Runway Calculator</h1>
+          <p className="text-muted-foreground mt-1">
+            Calculate how long your cash will last and model cost-cutting scenarios.
+          </p>
+          <LearnLink toolHref="/tools/burn-rate" />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <ExportPDFButton elementId="burn-rate-results" filename="Burn Rate & Runway" enableEmailCapture />
+        </div>
       </div>
 
+      <div id="burn-rate-results" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>
@@ -246,6 +268,7 @@ export default function BurnRatePage() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       <AiInsightsPanel
         explanation={ai.explanation}

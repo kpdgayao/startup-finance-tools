@@ -24,6 +24,8 @@ import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
+import { LearnLink } from "@/components/shared/learn-link";
+import { Button } from "@/components/ui/button";
 import { formatPHP, formatPercent } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import {
@@ -39,6 +41,7 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/constants";
+import { RotateCcw } from "lucide-react";
 
 type InstrumentType = "safe" | "convertible-note";
 
@@ -52,6 +55,17 @@ export default function SafeCalculatorPage() {
   const [termMonths, setTermMonths] = useState(18);
   const [preMoneyValuation, setPreMoneyValuation] = useState(40000000);
   const [roundSize, setRoundSize] = useState(10000000);
+
+  const handleReset = () => {
+    setInstrumentType("safe");
+    setInvestmentAmount(1000000);
+    setValuationCap(20000000);
+    setDiscountRate(20);
+    setInterestRate(5);
+    setTermMonths(18);
+    setPreMoneyValuation(40000000);
+    setRoundSize(10000000);
+  };
 
   const ai = useAiExplain("safe-calculator");
 
@@ -74,14 +88,20 @@ export default function SafeCalculatorPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">
-          SAFE & Convertible Note Calculator
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Model how SAFEs and convertible notes convert to equity at a priced
-          round.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">
+            SAFE & Convertible Note Calculator
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Model how SAFEs and convertible notes convert to equity at a priced
+            round.
+          </p>
+          <LearnLink toolHref="/tools/safe-calculator" />
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       <Card>

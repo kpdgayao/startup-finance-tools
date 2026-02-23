@@ -8,8 +8,10 @@ import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
+import { Button } from "@/components/ui/button";
 import { formatPHP, formatPercent } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { RotateCcw } from "lucide-react";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import {
@@ -50,6 +52,13 @@ export default function PrePostMoneyPage() {
     }
   };
 
+  const handleReset = () => {
+    setSolveFor("equity");
+    setPreMoney(12500000);
+    setInvestment(3250000);
+    setEquityPercent(20.63);
+  };
+
   const ai = useAiExplain("pre-post-money");
 
   const result = calculate();
@@ -63,11 +72,16 @@ export default function PrePostMoneyPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Pre-Money / Post-Money Calculator</h1>
-        <p className="text-muted-foreground mt-1">
-          Calculate pre-money valuation, investment amount, or investor equity percentage.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Pre-Money / Post-Money Calculator</h1>
+          <p className="text-muted-foreground mt-1">
+            Calculate pre-money valuation, investment amount, or investor equity percentage.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       <Card>

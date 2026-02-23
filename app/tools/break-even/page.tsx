@@ -17,6 +17,7 @@ import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
+import { LearnLink } from "@/components/shared/learn-link";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import {
@@ -33,7 +34,9 @@ import {
   ReferenceLine,
   ComposedChart,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { CHART_COLORS } from "@/lib/constants";
+import { RotateCcw } from "lucide-react";
 
 export default function BreakEvenPage() {
   const [fixedCosts, setFixedCosts] = useState(150000);
@@ -46,6 +49,17 @@ export default function BreakEvenPage() {
   const [priceAdj, setPriceAdj] = useState(0);
   const [variableAdj, setVariableAdj] = useState(0);
   const [fixedAdj, setFixedAdj] = useState(0);
+
+  const handleReset = () => {
+    setFixedCosts(150000);
+    setVariableCost(200);
+    setSellingPrice(500);
+    setCurrentVolume(600);
+    setTargetMargin(20);
+    setPriceAdj(0);
+    setVariableAdj(0);
+    setFixedAdj(0);
+  };
 
   const adjustedInputs = useMemo(
     () => ({
@@ -70,12 +84,18 @@ export default function BreakEvenPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Break-Even Analysis</h1>
-        <p className="text-muted-foreground mt-1">
-          Calculate your break-even point and model what-if scenarios to find the
-          fastest path to profitability.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Break-Even Analysis</h1>
+          <p className="text-muted-foreground mt-1">
+            Calculate your break-even point and model what-if scenarios to find the
+            fastest path to profitability.
+          </p>
+          <LearnLink toolHref="/tools/break-even" />
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       <Card>

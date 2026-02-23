@@ -39,7 +39,7 @@ export function ResultCard({
         <p className="text-sm text-muted-foreground">{label}</p>
         <p
           className={cn(
-            "text-2xl font-bold mt-1 truncate",
+            "text-2xl font-bold mt-1 break-words",
             variant === "success" && "text-green-400",
             variant === "warning" && "text-yellow-400",
             variant === "danger" && "text-red-400"

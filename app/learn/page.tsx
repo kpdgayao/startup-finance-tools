@@ -67,7 +67,7 @@ export default function LearnPage() {
           const meta = MODULE_META[mod.id];
           return (
             <Link key={mod.id} href={mod.href}>
-              <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
+              <Card className="h-full hover:border-primary/50 hover:shadow-[0_0_15px_-3px] hover:shadow-primary/15 transition-all cursor-pointer">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

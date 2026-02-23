@@ -22,7 +22,8 @@ import {
   suggestPsychologicalPrice,
   calculateBreakeven,
 } from "@/lib/calculations/pricing";
-import { Trash2, Plus } from "lucide-react";
+import { LearnLink } from "@/components/shared/learn-link";
+import { Trash2, Plus, RotateCcw } from "lucide-react";
 
 export default function PricingCalculatorPage() {
   // Cost-Plus state
@@ -46,6 +47,20 @@ export default function PricingCalculatorPage() {
   const [bundleItems, setBundleItems] = useState<number[]>([10000, 8000, 5000]);
   const [bundleDiscount, setBundleDiscount] = useState(15);
 
+  const handleReset = () => {
+    setFixedCosts(130000);
+    setVariableCost(0);
+    setExpectedUnits(10);
+    setMarginPercent(40);
+    setPerceivedValue(25000);
+    setValueDiscount(20);
+    setMarketPrice(20000);
+    setPenetrationDiscount(25);
+    setCompetitorPrices([15000, 18000, 22000, 25000]);
+    setBundleItems([10000, 8000, 5000]);
+    setBundleDiscount(15);
+  };
+
   const ai = useAiExplain("pricing-calculator");
 
   const costPlusResult = calculateCostPlus(
@@ -61,11 +76,17 @@ export default function PricingCalculatorPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Product Pricing Calculator</h1>
-        <p className="text-muted-foreground mt-1">
-          Explore 6 pricing strategies and find the optimal price for your product.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Product Pricing Calculator</h1>
+          <p className="text-muted-foreground mt-1">
+            Explore 6 pricing strategies and find the optimal price for your product.
+          </p>
+          <LearnLink toolHref="/tools/pricing-calculator" />
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       <Tabs defaultValue="cost-plus">

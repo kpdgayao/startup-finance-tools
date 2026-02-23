@@ -15,8 +15,10 @@ import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
+import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { RotateCcw } from "lucide-react";
 import {
   calculateTopDown,
   calculateBottomUp,
@@ -53,6 +55,21 @@ export default function MarketSizingPage() {
   const [grossMarginPct, setGrossMarginPct] = useState(55);
   const [opexPct, setOpexPct] = useState(40);
 
+  const handleReset = () => {
+    setApproach("top-down");
+    setTotalMarketSize(10_000_000_000);
+    setSamPercent(15);
+    setSomPercent(1);
+    setTotalCustomers(15_000_000);
+    setTargetPercent(10);
+    setRevenuePerCustomer(1000);
+    setYear1Share(1);
+    setYear2Share(2);
+    setYear3Share(4);
+    setGrossMarginPct(55);
+    setOpexPct(40);
+  };
+
   const ai = useAiExplain("market-sizing");
 
   const marketSize =
@@ -82,11 +99,16 @@ export default function MarketSizingPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Market Sizing Calculator</h1>
-        <p className="text-muted-foreground mt-1">
-          Estimate TAM, SAM, SOM using top-down and bottom-up methods.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Market Sizing Calculator</h1>
+          <p className="text-muted-foreground mt-1">
+            Estimate TAM, SAM, SOM using top-down and bottom-up methods.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       <Tabs value={approach} onValueChange={setApproach}>

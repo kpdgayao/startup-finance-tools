@@ -47,6 +47,7 @@ import {
   Store,
   Users,
   Building2,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -67,6 +68,12 @@ export default function StartupCostsPage() {
     getDefaultCategories
   );
   const [bufferMonths, setBufferMonths] = useState(3);
+
+  const handleReset = () => {
+    setBusinessType("corporation");
+    setCategories(getDefaultCategories);
+    setBufferMonths(3);
+  };
 
   const ai = useAiExplain("startup-costs");
 
@@ -148,12 +155,17 @@ export default function StartupCostsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Startup Cost Estimator</h1>
-        <p className="text-muted-foreground mt-1">
-          Estimate your total startup capital with PH-specific registration
-          costs.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Startup Cost Estimator</h1>
+          <p className="text-muted-foreground mt-1">
+            Estimate your total startup capital with PH-specific registration
+            costs.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       <Card>

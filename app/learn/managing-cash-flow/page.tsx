@@ -2,12 +2,16 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Callout } from "@/components/shared/callout";
 
 export default function ManagingCashFlowPage() {
   return (
     <article className="prose prose-invert max-w-none">
       <h1 className="text-2xl font-bold mb-2">Managing Cash Flow</h1>
-      <p className="text-sm text-muted-foreground mb-6">6 min read</p>
+      <p className="text-sm text-muted-foreground mb-1">6 min read</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        By Kevin — CPA, MBA, CEO of IOL Inc.
+      </p>
 
       <p>
         Cash flow kills more startups than bad ideas, bad products, or bad
@@ -78,11 +82,11 @@ export default function ManagingCashFlowPage() {
         <strong>6-9 months of runway left</strong>. Any later and you&apos;re
         in the yellow/red zone during negotiations.
       </p>
-      <p>
-        Kevin&apos;s rule: <strong>cut expenses before chasing revenue</strong>.
-        A 20% expense cut extends runway immediately. A 20% revenue increase
-        takes months to materialize and isn&apos;t guaranteed.
-      </p>
+      <Callout variant="insight">
+        Cut expenses before chasing revenue. A 20% expense cut extends runway
+        immediately. A 20% revenue increase takes months to materialize and
+        isn&apos;t guaranteed.
+      </Callout>
 
       <h2 className="text-xl font-semibold mt-8 mb-3">Working Capital: DSO, DPO, and Cash Conversion</h2>
       <p>

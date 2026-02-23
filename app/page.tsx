@@ -77,7 +77,7 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/tools/valuation-calculator">
+                <Link href="/tools">
                   Browse All Tools
                 </Link>
               </Button>
@@ -98,7 +98,7 @@ export default function HomePage() {
                   const Icon = iconMap[tool.icon as keyof typeof iconMap];
                   return (
                     <Link key={tool.id} href={tool.href}>
-                      <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
+                      <Card className="h-full hover:border-primary/50 hover:shadow-[0_0_15px_-3px] hover:shadow-primary/15 transition-all cursor-pointer">
                         <CardHeader>
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-md bg-primary/10">

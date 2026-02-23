@@ -26,7 +26,9 @@ import {
   type ScorecardFactor,
 } from "@/lib/calculations/valuation";
 import { BERKUS_FACTORS, SCORECARD_FACTORS, DEFAULT_DISCOUNT_RATE, CHART_COLORS } from "@/lib/constants";
-import { Trash2, Plus } from "lucide-react";
+import { LearnLink } from "@/components/shared/learn-link";
+import { ExportPDFButton } from "@/components/shared/export-pdf-button";
+import { Trash2, Plus, RotateCcw } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -72,6 +74,28 @@ export default function ValuationCalculatorPage() {
   const [targetReturn, setTargetReturn] = useState(10);
   const [expectedDilution, setExpectedDilution] = useState(30);
 
+  const handleReset = () => {
+    setCashFlows([500000, 800000, 1200000, 1800000, 2500000]);
+    setDiscountRate(DEFAULT_DISCOUNT_RATE);
+    setTerminalGrowth(3);
+    setBerkusMaxPerFactor(500000);
+    setBerkusFactors(BERKUS_FACTORS.map((f) => ({ ...f, value: 250000 })));
+    setMedianValuation(10000000);
+    setScorecardFactors(
+      SCORECARD_FACTORS.map((f) => ({
+        id: f.id,
+        label: f.label,
+        weight: f.defaultWeight,
+        score: 1.0,
+      }))
+    );
+    setAnnualRevenue(5000000);
+    setRevenueMultiple(3);
+    setExitValue(100000000);
+    setTargetReturn(10);
+    setExpectedDilution(30);
+  };
+
   // Calculate all methods
   const dcfValue = calculateDCF({ cashFlows, discountRate, terminalGrowthRate: terminalGrowth });
   const adjustedBerkusFactors = berkusFactors.map((f) => ({ ...f, maxValue: berkusMaxPerFactor }));
@@ -98,13 +122,23 @@ export default function ValuationCalculatorPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Startup Valuation Calculator</h1>
-        <p className="text-muted-foreground mt-1">
-          Estimate your startup&apos;s value using 5 industry-standard methods.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Startup Valuation Calculator</h1>
+          <p className="text-muted-foreground mt-1">
+            Estimate your startup&apos;s value using 5 industry-standard methods.
+          </p>
+          <LearnLink toolHref="/tools/valuation-calculator" />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <ExportPDFButton elementId="valuation-results" filename="Valuation Calculator" enableEmailCapture />
+        </div>
       </div>
 
+      <div id="valuation-results" className="space-y-6">
       {/* Summary Panel */}
       <Card className="border-primary/30 bg-primary/5">
         <CardHeader>
@@ -350,6 +384,7 @@ export default function ValuationCalculatorPage() {
           </div>
         </TabsContent>
       </Tabs>
+      </div>
 
       <AiInsightsPanel
         explanation={ai.explanation}

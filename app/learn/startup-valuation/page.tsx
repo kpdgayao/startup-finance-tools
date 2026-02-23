@@ -2,12 +2,16 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Callout } from "@/components/shared/callout";
 
 export default function StartupValuationPage() {
   return (
     <article className="prose prose-invert max-w-none">
       <h1 className="text-2xl font-bold mb-2">Startup Valuation</h1>
-      <p className="text-sm text-muted-foreground mb-6">5 min read</p>
+      <p className="text-sm text-muted-foreground mb-1">5 min read</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        By Kevin — CPA, MBA, CEO of IOL Inc.
+      </p>
 
       <p>
         Valuation determines how much of your company you give away for
@@ -67,6 +71,11 @@ export default function StartupValuationPage() {
         dilution in future rounds, they need to own ~14% now. So
         post-money = ₱10M / 14% = ~₱71M.
       </p>
+
+      <Callout variant="formula">
+        Post-Money Valuation = Investment / Required Ownership<br />
+        Required Ownership = Investment x Target Return / Exit Value x (1 - Future Dilution)
+      </Callout>
       <p>
         <strong>When to use:</strong> when talking to VCs. This is how they
         think — backwards from exit. You need defensible exit comparables

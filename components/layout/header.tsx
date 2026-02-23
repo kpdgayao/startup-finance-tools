@@ -6,7 +6,7 @@ import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
-  { label: "Tools", href: "/tools/valuation-calculator", prefix: "/tools" },
+  { label: "Tools", href: "/tools", prefix: "/tools" },
   { label: "Learn", href: "/learn", prefix: "/learn" },
   { label: "About", href: "/about", prefix: "/about" },
 ] as const;

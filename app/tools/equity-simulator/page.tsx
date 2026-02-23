@@ -18,7 +18,8 @@ import {
   type FundingRound,
 } from "@/lib/calculations/equity";
 import { CHART_COLORS } from "@/lib/constants";
-import { Trash2, Plus, UserPlus } from "lucide-react";
+import { ExportPDFButton } from "@/components/shared/export-pdf-button";
+import { Trash2, Plus, UserPlus, RotateCcw } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -45,6 +46,19 @@ export default function EquitySimulatorPage() {
   ]);
 
   const ai = useAiExplain("equity-simulator");
+
+  const handleReset = () => {
+    setFounders([
+      { id: "f1", name: "Founder A", equity: 50 },
+      { id: "f2", name: "Founder B", equity: 30 },
+      { id: "f3", name: "Founder C", equity: 20 },
+    ]);
+    setRounds([
+      { id: "r1", name: "Seed Round", investment: 5000000, preMoneyValuation: 20000000, esopPool: 10 },
+    ]);
+    nextFounderId = 3;
+    nextRoundId = 1;
+  };
 
   const totalFounderEquity = founders.reduce((sum, f) => sum + f.equity, 0);
   const results = simulateCapTable(founders, rounds);
@@ -79,13 +93,22 @@ export default function EquitySimulatorPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Equity & Cap Table Simulator</h1>
-        <p className="text-muted-foreground mt-1">
-          Set up founders, add funding rounds, and visualize ownership dilution.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Equity & Cap Table Simulator</h1>
+          <p className="text-muted-foreground mt-1">
+            Set up founders, add funding rounds, and visualize ownership dilution.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <ExportPDFButton elementId="equity-results" filename="Equity & Cap Table" enableEmailCapture />
+        </div>
       </div>
 
+      <div id="equity-results" className="space-y-6">
       {/* Founder Setup */}
       <Card>
         <CardHeader>
@@ -291,6 +314,7 @@ export default function EquitySimulatorPage() {
           <p><strong className="text-foreground">ESOP (Employee Stock Option Pool):</strong> Typically 10-20% set aside before a funding round to attract key hires. This dilutes existing shareholders proportionally.</p>
         </CardContent>
       </Card>
+      </div>
 
       <AiInsightsPanel
         explanation={ai.explanation}
