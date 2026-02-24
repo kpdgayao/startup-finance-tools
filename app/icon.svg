@@ -7,9 +7,13 @@
   </defs>
   <rect width="32" height="32" rx="6" fill="#0a0a0a"/>
   <!-- Bar 1 (shortest) -->
-  <rect x="5" y="18" width="6" height="10" rx="1.5" fill="url(#g)" opacity="0.7"/>
+  <rect x="3" y="18" width="7" height="11" rx="1.5" fill="url(#g)" opacity="0.7"/>
   <!-- Bar 2 (medium) -->
-  <rect x="13" y="12" width="6" height="16" rx="1.5" fill="url(#g)" opacity="0.85"/>
+  <rect x="12.5" y="12" width="7" height="17" rx="1.5" fill="url(#g)" opacity="0.85"/>
   <!-- Bar 3 (tallest) -->
-  <rect x="21" y="6" width="6" height="22" rx="1.5" fill="url(#g)"/>
+  <rect x="22" y="6" width="7" height="23" rx="1.5" fill="url(#g)"/>
+  <!-- Growth line -->
+  <path d="M4 26 Q12 19 16 16 Q20 13 28 5" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <!-- Dot at end of growth line -->
+  <circle cx="28" cy="5" r="1.75" fill="#8b5cf6"/>
 </svg>
