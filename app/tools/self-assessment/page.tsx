@@ -106,19 +106,20 @@ export default function SelfAssessmentPage() {
               <div>
                 <CardTitle>Ready to test your knowledge?</CardTitle>
                 <CardDescription>
-                  {totalQuestions} questions across 5 categories
+                  {totalQuestions} questions across 6 categories
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {[
                 { label: "Financial Statements", desc: "P&L, Balance Sheet, Cash Flow" },
                 { label: "Valuation", desc: "DCF, Berkus, Revenue Multiples" },
                 { label: "Cash Management", desc: "Burn rate, runway, working capital" },
                 { label: "Fundraising", desc: "Dilution, cap tables, investor metrics" },
                 { label: "Compliance", desc: "SEC, DTI, BIR, CREATE Act" },
+                { label: "Revenue & Pricing", desc: "Pricing, break-even, market sizing" },
               ].map((cat) => (
                 <div key={cat.label} className="flex items-start gap-2 p-3 rounded-md bg-muted/50">
                   <BookOpen className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
@@ -146,7 +147,7 @@ export default function SelfAssessmentPage() {
         <div>
           <h1 className="text-3xl font-bold">Your Results</h1>
           <p className="text-muted-foreground mt-1">
-            Here&apos;s how you scored across all 5 categories.
+            Here&apos;s how you scored across all 6 categories.
           </p>
         </div>
 
@@ -351,6 +352,7 @@ function getCategoryLabel(category: QuizCategory): string {
     "cash-management": "Cash Management",
     fundraising: "Fundraising",
     compliance: "Compliance",
+    "revenue-pricing": "Revenue & Pricing",
   };
   return labels[category];
 }

@@ -3,7 +3,8 @@ export type QuizCategory =
   | "valuation"
   | "cash-management"
   | "fundraising"
-  | "compliance";
+  | "compliance"
+  | "revenue-pricing";
 
 export interface QuizQuestion {
   id: string;
@@ -38,6 +39,7 @@ const CATEGORY_LABELS: Record<QuizCategory, string> = {
   "cash-management": "Cash Management",
   fundraising: "Fundraising",
   compliance: "Compliance",
+  "revenue-pricing": "Revenue & Pricing",
 };
 
 const CATEGORY_TOOL_MAP: Record<QuizCategory, { id: string; name: string; reason: string }[]> = {
@@ -52,13 +54,21 @@ const CATEGORY_TOOL_MAP: Record<QuizCategory, { id: string; name: string; reason
   "cash-management": [
     { id: "burn-rate", name: "Burn Rate & Runway", reason: "Model your runway and practice what-if scenarios" },
     { id: "cash-flow-forecast", name: "Cash Flow Forecaster", reason: "Build 12-month cash projections" },
+    { id: "startup-costs", name: "Startup Cost Estimator", reason: "Estimate PH-specific registration and launch costs" },
   ],
   fundraising: [
     { id: "equity-simulator", name: "Equity & Cap Table", reason: "Simulate funding rounds and understand dilution" },
     { id: "unit-economics", name: "Unit Economics", reason: "Calculate the metrics investors care about most" },
+    { id: "safe-calculator", name: "SAFE Calculator", reason: "Model SAFE and convertible note conversions" },
+    { id: "fundraising-guide", name: "Fundraising Guide", reason: "Follow the full fundraising lifecycle from R&D to scaling" },
   ],
   compliance: [
     { id: "compliance-checklist", name: "PH Compliance Checklist", reason: "Walk through SEC, DTI, BIR, and LGU registration step by step" },
+  ],
+  "revenue-pricing": [
+    { id: "pricing-calculator", name: "Pricing Calculator", reason: "Explore 6 pricing strategies and find the right model for your product" },
+    { id: "market-sizing", name: "Market Sizing", reason: "Calculate your TAM, SAM, and SOM with top-down and bottom-up methods" },
+    { id: "break-even", name: "Break-Even Analysis", reason: "Find your break-even point and model what-if scenarios" },
   ],
 };
 
@@ -136,7 +146,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     explanation: "No single method is 'correct.' DCF assumes predictable cash flows, Berkus is qualitative, VC Method depends on exit assumptions. A range from multiple methods gives a more reliable picture.",
   },
 
-  // Cash Management (3 questions)
+  // Cash Management (4 questions)
   {
     id: "cm-1",
     category: "cash-management",
@@ -166,8 +176,21 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     correctIndex: 1,
     explanation: "Kevin's rule: cut expenses before chasing revenue. A 20% expense cut extends runway immediately, while a 20% revenue increase takes months to materialize. Cutting buys you time to execute other strategies.",
   },
+  {
+    id: "cm-4",
+    category: "cash-management",
+    question: "Which of these is typically the LARGEST initial cost when registering a corporation in the Philippines?",
+    options: [
+      "Barangay clearance",
+      "SEC registration fee",
+      "BIR registration (Form 0605)",
+      "Mayor's/business permit",
+    ],
+    correctIndex: 3,
+    explanation: "Mayor's/business permit fees vary by city but are typically the largest registration cost, often ₱5K-₱30K+ depending on location and capitalization. SEC fees, BIR's ₱500 registration, and barangay clearance are all relatively small by comparison.",
+  },
 
-  // Fundraising (4 questions)
+  // Fundraising (6 questions)
   {
     id: "fr-1",
     category: "fundraising",
@@ -200,6 +223,32 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     correctIndex: 1,
     explanation: "An LTV:CAC ratio of 3:1 means each customer generates 3x more value than the cost to acquire them. Below 1:1 means you're losing money per customer. Above 5:1 may mean you're underinvesting in growth.",
   },
+  {
+    id: "fr-5",
+    category: "fundraising",
+    question: "What happens to a SAFE (Simple Agreement for Future Equity) when a startup raises a priced round?",
+    options: [
+      "It expires worthless",
+      "It converts to equity at a discount or valuation cap",
+      "It gets repaid as debt with interest",
+      "Nothing — SAFEs are permanent instruments",
+    ],
+    correctIndex: 1,
+    explanation: "A SAFE converts to equity when a qualifying priced round occurs. The investor gets shares at either a discounted price or a price based on the valuation cap — whichever gives them more shares.",
+  },
+  {
+    id: "fr-6",
+    category: "fundraising",
+    question: "A SAFE has a ₱20M valuation cap and a 20% discount. The Series A prices at ₱30M pre-money. Which conversion term gives the SAFE investor a better deal?",
+    options: [
+      "The valuation cap (₱20M)",
+      "The discount (20% off ₱30M = ₱24M)",
+      "They're exactly the same",
+      "Neither applies at this valuation",
+    ],
+    correctIndex: 0,
+    explanation: "The cap converts at ₱20M effective valuation, the discount at ₱30M × 80% = ₱24M. Lower effective valuation = more shares per peso invested. The SAFE holder gets whichever is better for them.",
+  },
 
   // Compliance (3 questions)
   {
@@ -231,6 +280,40 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     correctIndex: 1,
     explanation: "BIR penalties are harsh: 25% surcharge on the tax due + 20% annual interest. Penalties compound quickly. Even if you have zero tax due, you must still file — failure to file is a separate violation.",
   },
+
+  // Revenue & Pricing (4 questions)
+  {
+    id: "rp-1",
+    category: "revenue-pricing",
+    question: "Your startup has ₱200K/month in fixed costs and a 40% contribution margin. What is your monthly break-even revenue?",
+    options: ["₱200K", "₱500K", "₱800K", "₱2M"],
+    correctIndex: 1,
+    explanation: "Break-even Revenue = Fixed Costs / Contribution Margin = ₱200K / 0.40 = ₱500K. Below this revenue, you lose money each month; above it, you're profitable.",
+  },
+  {
+    id: "rp-2",
+    category: "revenue-pricing",
+    question: "Which pricing strategy sets price based on perceived customer value rather than cost?",
+    options: ["Cost-plus pricing", "Value-based pricing", "Penetration pricing", "Freemium"],
+    correctIndex: 1,
+    explanation: "Value-based pricing captures willingness to pay. Cost-plus adds a markup to costs. Penetration underprices to gain share. Freemium gives a free tier — it's a distribution model, not a pricing method.",
+  },
+  {
+    id: "rp-3",
+    category: "revenue-pricing",
+    question: "Your product serves Filipino SMEs. There are 1M SMEs in the Philippines, 200K use software like yours, and you can realistically reach 5K in year one. What is your SOM?",
+    options: ["1M SMEs (TAM)", "200K SMEs (SAM)", "5K SMEs (SOM)", "None of these"],
+    correctIndex: 2,
+    explanation: "SOM (Serviceable Obtainable Market) is the realistic share you can capture short-term. TAM = total market (1M), SAM = addressable segment (200K), SOM = what you can actually win (5K).",
+  },
+  {
+    id: "rp-4",
+    category: "revenue-pricing",
+    question: "A product sells for ₱1,000 with ₱600 in variable costs. What is the contribution margin?",
+    options: ["60%", "40%", "₱400", "Both 40% and ₱400"],
+    correctIndex: 3,
+    explanation: "Contribution margin = (Price - Variable Cost) / Price = ₱400 / ₱1,000 = 40%. It can be expressed as a percentage (40%) or absolute value (₱400 per unit). Both are correct.",
+  },
 ];
 
 export function calculateQuizResult(answers: Record<string, number>): QuizResult {
@@ -240,6 +323,7 @@ export function calculateQuizResult(answers: Record<string, number>): QuizResult
     "cash-management",
     "fundraising",
     "compliance",
+    "revenue-pricing",
   ];
 
   let totalCorrect = 0;
