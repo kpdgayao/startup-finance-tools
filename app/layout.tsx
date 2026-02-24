@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     description: "Interactive financial tools for Filipino startup founders.",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: "/icon.svg",
   },
 };
 
