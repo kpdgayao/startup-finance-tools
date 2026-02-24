@@ -564,22 +564,30 @@ describe("calculateDPO", () => {
 // ─── CSV Export ────────────────────────────────────────────────────────────
 
 describe("exportToCSV", () => {
-  it("has correct number of rows (header + 12 months)", () => {
+  it("has correct number of rows (meta + header + 12 months)", () => {
     const projections = projectMonthlyCashFlow(makeInputs(), STARTING_BALANCE);
     const csv = exportToCSV(projections);
     const lines = csv.split("\n");
-    expect(lines).toHaveLength(13); // 1 header + 12 data rows
+    // 3 meta lines (title, date, blank) + 1 header + 12 data rows = 16
+    expect(lines).toHaveLength(16);
   });
 
   it("header has correct columns", () => {
     const projections = projectMonthlyCashFlow(makeInputs(), STARTING_BALANCE);
     const csv = exportToCSV(projections);
-    const header = csv.split("\n")[0];
+    const lines = csv.split("\n");
+    const header = lines[3]; // After 3 meta lines
     expect(header).toContain("Month");
     expect(header).toContain("Opening Balance");
     expect(header).toContain("Cash Inflow");
     expect(header).toContain("Cash Outflow");
     expect(header).toContain("Closing Balance");
+  });
+
+  it("includes branding in meta header", () => {
+    const projections = projectMonthlyCashFlow(makeInputs(), STARTING_BALANCE);
+    const csv = exportToCSV(projections);
+    expect(csv).toContain("Startup Finance Toolkit");
   });
 });
 

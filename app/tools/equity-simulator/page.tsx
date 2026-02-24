@@ -18,7 +18,7 @@ import {
   type FundingRound,
 } from "@/lib/calculations/equity";
 import { CHART_COLORS } from "@/lib/constants";
-import { ExportPDFButton } from "@/components/shared/export-pdf-button";
+import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { Trash2, Plus, UserPlus, RotateCcw } from "lucide-react";
 import {
   BarChart,
@@ -104,7 +104,58 @@ export default function EquitySimulatorPage() {
           <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <ExportPDFButton elementId="equity-results" filename="Equity & Cap Table" enableEmailCapture />
+          <ExportPDFButton
+            filename="Equity & Cap Table"
+            enableEmailCapture
+            buildPrintContent={() => {
+              return [
+                // Founders
+                section("Founders", table(
+                  ["Name", "Initial Equity"],
+                  founders.map((f) => [f.name, formatPercent(f.equity)])
+                )),
+
+                // Funding rounds
+                section("Funding Rounds", rounds.length > 0
+                  ? table(
+                      ["Round", "Investment", "Pre-Money Valuation", "Post-Money", "ESOP Pool"],
+                      rounds.map((r) => [
+                        r.name,
+                        formatPHP(r.investment),
+                        formatPHP(r.preMoneyValuation),
+                        formatPHP(r.preMoneyValuation + r.investment),
+                        formatPercent(r.esopPool || 0),
+                      ])
+                    )
+                  : `<p class="note">No funding rounds added.</p>`
+                ),
+
+                // Final cap table
+                section("Final Cap Table", table(
+                  ["Stakeholder", "Type", "Ownership %", "Round Added"],
+                  latestRound.entries.map((e) => [
+                    e.stakeholder,
+                    e.type.charAt(0).toUpperCase() + e.type.slice(1),
+                    formatPercent(e.percentage),
+                    e.roundAdded,
+                  ])
+                )),
+
+                // Dilution summary across rounds
+                results.length > 1
+                  ? section("Ownership Across Rounds", table(
+                      ["Stakeholder", ...results.map((r) => r.roundName)],
+                      stakeholderList.map((s) =>
+                        [s, ...results.map((r) => {
+                          const entry = r.entries.find((e) => e.stakeholder === s);
+                          return entry ? formatPercent(entry.percentage) : "—";
+                        })]
+                      )
+                    ))
+                  : "",
+              ].join("");
+            }}
+          />
         </div>
       </div>
 

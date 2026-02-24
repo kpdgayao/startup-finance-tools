@@ -193,6 +193,13 @@ export function calculateDPO(payables: number, expenses: number): number {
 }
 
 export function exportToCSV(projections: MonthlyProjection[]): string {
+  const date = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
+  const meta = [
+    "Cash Flow Forecast — Startup Finance Toolkit",
+    `Generated on ${date}`,
+    "",
+  ];
+
   const headers = [
     "Month",
     "Opening Balance",
@@ -223,5 +230,5 @@ export function exportToCSV(projections: MonthlyProjection[]): string {
     p.variableCosts.toFixed(2),
   ]);
 
-  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  return [...meta, headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
 }

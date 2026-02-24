@@ -27,7 +27,7 @@ import {
 } from "@/lib/calculations/valuation";
 import { BERKUS_FACTORS, SCORECARD_FACTORS, DEFAULT_DISCOUNT_RATE, CHART_COLORS } from "@/lib/constants";
 import { LearnLink } from "@/components/shared/learn-link";
-import { ExportPDFButton } from "@/components/shared/export-pdf-button";
+import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
 import {
   BarChart,
@@ -134,7 +134,67 @@ export default function ValuationCalculatorPage() {
           <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <ExportPDFButton elementId="valuation-results" filename="Valuation Calculator" enableEmailCapture />
+          <ExportPDFButton
+            filename="Valuation Calculator"
+            enableEmailCapture
+            buildPrintContent={() => {
+              const methodRows = [
+                ["Discounted Cash Flow (DCF)", formatPHP(dcfValue)],
+                ["Berkus Method", formatPHP(berkusValue)],
+                ["Scorecard Method", formatPHP(scorecardValue)],
+                ["VC Method", formatPHP(vcValue)],
+                ["Revenue Multiple", formatPHP(revMultipleValue)],
+              ];
+              return [
+                // Summary
+                `<div class="summary-grid">
+                  ${summaryCard("Suggested Range", `${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`, { variant: "highlight" })}
+                  ${summaryCard("Average Valuation", formatPHP(summary.average), { variant: "success" })}
+                  ${summaryCard("Methods Used", String(comparisonData.filter((d) => d.value > 0).length), { sublabel: "DCF, Berkus, Scorecard, VC, Rev Multiple" })}
+                </div>`,
+
+                // Method comparison table
+                section("Valuation by Method", table(["Method", "Estimated Value"], methodRows)),
+
+                // DCF inputs
+                section("DCF Inputs", [
+                  table(
+                    ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"],
+                    [cashFlows.map((cf) => formatPHP(cf))]
+                  ),
+                  `<p class="note">Discount Rate: ${discountRate}% · Terminal Growth: ${terminalGrowth}%</p>`,
+                ].join("")),
+
+                // Berkus detail
+                section("Berkus Method Detail", table(
+                  ["Factor", "Value"],
+                  adjustedBerkusFactors.map((f) => [f.label, formatPHP(Math.min(f.value, berkusMaxPerFactor))])
+                )),
+
+                // Scorecard detail
+                section("Scorecard Method Detail", [
+                  `<p class="note">Median Valuation: ${formatPHP(medianValuation)}</p>`,
+                  table(
+                    ["Factor", "Weight", "Score"],
+                    scorecardFactors.map((f) => [f.label, `${f.weight}%`, `${f.score.toFixed(1)}x`])
+                  ),
+                ].join("")),
+
+                // VC Method inputs
+                section("VC Method Inputs", `<div class="summary-grid">
+                  ${summaryCard("Expected Exit", formatPHP(exitValue))}
+                  ${summaryCard("Target Return", `${targetReturn}x`)}
+                  ${summaryCard("Expected Dilution", `${expectedDilution}%`)}
+                </div>`),
+
+                // Revenue Multiple inputs
+                section("Revenue Multiple Inputs", `<div class="summary-grid">
+                  ${summaryCard("Annual Revenue (ARR)", formatPHP(annualRevenue))}
+                  ${summaryCard("Multiple", `${revenueMultiple}x`)}
+                </div>`),
+              ].join("");
+            }}
+          />
         </div>
       </div>
 

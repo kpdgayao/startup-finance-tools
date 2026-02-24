@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Linkedin } from "lucide-react";
 import { NewsletterSection } from "@/components/shared/newsletter-section";
 import { EcosystemStrip } from "@/components/shared/ecosystem-strip";
@@ -26,16 +27,25 @@ export function Footer() {
           Designed for Filipino startup founders. All calculations run
           client-side.
         </p>
-        <a
-          href="https://www.linkedin.com/in/kpdgayao/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 mt-3 text-muted-foreground hover:text-primary transition-colors"
-          aria-label="Kevin's LinkedIn"
-        >
-          <Linkedin className="h-4 w-4" />
-          <span className="text-xs">Kevin Philip D. Gayao</span>
-        </a>
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <a
+            href="https://www.linkedin.com/in/kpdgayao/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+            aria-label="Kevin's LinkedIn"
+          >
+            <Linkedin className="h-4 w-4" />
+            <span className="text-xs">Kevin Philip D. Gayao</span>
+          </a>
+          <span className="text-border">|</span>
+          <Link
+            href="/contact"
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            Contact Kevin
+          </Link>
+        </div>
       </div>
     </footer>
   );

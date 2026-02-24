@@ -13,7 +13,7 @@ import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
 import { LearnLink } from "@/components/shared/learn-link";
-import { ExportPDFButton } from "@/components/shared/export-pdf-button";
+import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import {
@@ -92,7 +92,72 @@ export default function BurnRatePage() {
           <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <ExportPDFButton elementId="burn-rate-results" filename="Burn Rate & Runway" enableEmailCapture />
+          <ExportPDFButton
+            filename="Burn Rate & Runway"
+            enableEmailCapture
+            buildPrintContent={() => {
+              const runwayText = burnResult.runway === Infinity ? "Sustainable" : `${burnResult.runway.toFixed(1)} months`;
+              const runwayVariant = zone === "red" ? "danger" as const : zone === "yellow" ? "warning" as const : "success" as const;
+              const parts: string[] = [];
+
+              // Key inputs
+              parts.push(section("Monthly Financials", `<div class="summary-grid">
+                ${summaryCard("Cash Balance", formatPHP(cashBalance))}
+                ${summaryCard("Monthly Revenue", formatPHP(monthlyRevenue))}
+                ${summaryCard("Monthly Expenses", formatPHP(monthlyExpenses))}
+              </div>`));
+
+              // Key metrics
+              parts.push(section("Key Metrics", `<div class="summary-grid">
+                ${summaryCard("Gross Burn", formatPHP(burnResult.grossBurn), { sublabel: "Total monthly expenses" })}
+                ${summaryCard("Net Burn", formatPHP(burnResult.netBurn), {
+                  sublabel: burnResult.netBurn < 0 ? "Net surplus" : "Expenses minus revenue",
+                  variant: burnResult.netBurn < 0 ? "success" : undefined,
+                })}
+                ${summaryCard("Runway", runwayText, {
+                  sublabel: zone === "red" ? "Critical — less than 3 months" : zone === "yellow" ? "Caution — 3 to 6 months" : "Healthy — 6+ months",
+                  variant: runwayVariant,
+                })}
+                ${summaryCard("Monthly Cash Flow", formatPHP(monthlyRevenue - monthlyExpenses), {
+                  variant: monthlyRevenue >= monthlyExpenses ? "success" : "danger",
+                })}
+              </div>`));
+
+              // Cash projection table
+              parts.push(section("18-Month Cash Projection", table(
+                ["Month", "Current Path", ...(expenseCut > 0 || revenueIncrease > 0 ? ["Adjusted Path"] : [])],
+                baseProjection.map((b, i) => [
+                  `M${b.month}`,
+                  formatPHP(Math.max(0, b.balance)),
+                  ...(expenseCut > 0 || revenueIncrease > 0
+                    ? [formatPHP(Math.max(0, adjustedProjection[i]?.balance ?? 0))]
+                    : []),
+                ])
+              )));
+
+              // What-if scenario
+              if (expenseCut > 0 || revenueIncrease > 0) {
+                const adjRunwayText = adjustedBurn.runway === Infinity ? "Sustainable" : `${adjustedBurn.runway.toFixed(1)} months`;
+                const adjVariant = adjustedZone === "red" ? "danger" as const : adjustedZone === "yellow" ? "warning" as const : "success" as const;
+                const delta = burnResult.runway === Infinity && adjustedBurn.runway === Infinity
+                  ? "No change"
+                  : burnResult.runway !== Infinity && adjustedBurn.runway === Infinity
+                    ? "Now sustainable"
+                    : `${(adjustedBurn.runway - burnResult.runway) >= 0 ? "+" : ""}${(adjustedBurn.runway - burnResult.runway).toFixed(1)} months`;
+
+                parts.push(section("What-If Scenario", [
+                  `<p class="note" style="margin-bottom:8px">Expense cut: ${expenseCut}% · Revenue increase: ${revenueIncrease}%</p>`,
+                  `<div class="summary-grid">
+                    ${summaryCard("Adjusted Net Burn", formatPHP(adjustedBurn.netBurn))}
+                    ${summaryCard("Adjusted Runway", adjRunwayText, { variant: adjVariant })}
+                    ${summaryCard("Runway Change", delta, { variant: adjustedBurn.runway >= burnResult.runway ? "success" : "danger" })}
+                  </div>`,
+                ].join("")));
+              }
+
+              return parts.join("");
+            }}
+          />
         </div>
       </div>
 

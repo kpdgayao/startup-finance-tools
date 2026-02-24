@@ -304,7 +304,12 @@ export function exportFinancialModelCSV(
   seed: BalanceSheetSeed
 ): string {
   const fmt = (n: number) => n.toFixed(2);
-  const lines: string[] = [];
+  const date = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
+  const lines: string[] = [
+    "3-Year Financial Model — Startup Finance Toolkit",
+    `Generated on ${date}`,
+    "",
+  ];
 
   // P&L
   lines.push("PROFIT & LOSS,,Year 1,Year 2,Year 3");

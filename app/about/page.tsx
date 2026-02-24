@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Linkedin } from "lucide-react";
+import { ArrowRight, Linkedin, MessageSquare } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About",
@@ -83,6 +83,14 @@ export default function AboutPage() {
               — from pricing their first product to modeling their cap table
               through multiple funding rounds.
             </p>
+            <div className="pt-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/contact">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Contact Kevin
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
