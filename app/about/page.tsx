@@ -51,6 +51,33 @@ export default function AboutPage() {
               financial modeling.
             </p>
             <p>
+              Kevin&apos;s startup finance teachings come from direct, hands-on
+              experience raising and managing funds. For IOL Inc., he secured a
+              DOST-PCIEERD Startup Grant (2021) and a DOST-TAPI TECHNiCOM Grant
+              (2023), and raised angel investment after completing the IdeaSpace
+              Foundation Incubation Program (Cohort 7). He also served as
+              Finance Manager of Vivita Philippines Corp. (2020–2024), where he
+              managed investment funds from Mistletoe Ventures (investor of
+              Vivita International), developed financial sustainability plans
+              for the organization&apos;s transition to a non-profit, and helped
+              raise funds for both Vivita Philippines and IOL Inc. as part of
+              the EU-Philippines Green Economy Partnership grant program. His
+              startup finance experience spans pre-seed fundraising, grant
+              administration, angel investor relations, and international donor
+              funding.
+            </p>
+            <p>
+              Beyond fundraising, Kevin has been invited as a resource speaker
+              by USTP CDO b.i.t.e.s. (Cohort 9 Incubation Program), CHED
+              Region I (BANKS Summit, 2024–2025), and NATCCO (National
+              Confederation of Cooperatives). He serves as Finance Mentor at
+              the New Energy Nexus Startup Acceleration Program, is a certified
+              mentor under PCE – Go Negosyo, a Philippine Startup Challenge
+              Finalist, and an ARISE Plus Ye! Boost graduate. He also serves as
+              a Visiting Lecturer at Saint Louis University&apos;s graduate
+              school.
+            </p>
+            <p>
               This toolkit transforms those teachings into interactive
               calculators that founders can use to make real financial decisions
               — from pricing their first product to modeling their cap table
