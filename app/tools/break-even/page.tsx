@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { CurrencyInput } from "@/components/shared/currency-input";
@@ -127,11 +128,17 @@ export default function BreakEvenPage() {
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CurrencyInput
-              label="Current Monthly Volume (optional)"
-              value={currentVolume}
-              onChange={setCurrentVolume}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="currentVolume">Current Monthly Volume (optional)</Label>
+              <Input
+                id="currentVolume"
+                type="number"
+                min={0}
+                placeholder="e.g. 500"
+                value={currentVolume || ""}
+                onChange={(e) => setCurrentVolume(Number(e.target.value))}
+              />
+            </div>
             <PercentageInput
               label="Target Profit Margin (optional)"
               value={targetMargin}
