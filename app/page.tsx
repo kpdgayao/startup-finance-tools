@@ -56,8 +56,19 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main id="main-content" className="flex-1">
-        <section className="bg-gradient-to-b from-primary/5 to-transparent">
-          <div className="container mx-auto px-4 py-16 text-center">
+        <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-transparent">
+          {/* Subtle grid background with radial fade */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+              backgroundSize: "48px 48px",
+              maskImage: "radial-gradient(ellipse 60% 70% at 50% 40%, black 20%, transparent 100%)",
+              WebkitMaskImage: "radial-gradient(ellipse 60% 70% at 50% 40%, black 20%, transparent 100%)",
+            }}
+          />
+          <div className="relative container mx-auto px-4 py-16 text-center">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               Startup Finance Toolkit
             </h1>
