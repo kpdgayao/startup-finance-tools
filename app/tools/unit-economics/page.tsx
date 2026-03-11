@@ -14,6 +14,7 @@ import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
+import { ExportPDFButton, summaryCard, section } from "@/components/shared/export-pdf-button";
 import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
@@ -96,9 +97,60 @@ export default function UnitEconomicsPage() {
             Calculate CAC, LTV, and the metrics investors care about most.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <ExportPDFButton
+            filename="Unit Economics"
+            enableEmailCapture
+            buildPrintContent={() => {
+              const parts: string[] = [];
+
+              // Inputs
+              parts.push(section("Inputs", `<div class="summary-grid">
+                ${summaryCard("Monthly Marketing Spend", formatPHP(monthlyMarketingSpend))}
+                ${summaryCard("New Customers/Month", `${newCustomersPerMonth}`)}
+                ${summaryCard("Monthly Revenue/Customer (ARPU)", formatPHP(revenuePerCustomer))}
+                ${summaryCard("Gross Margin %", `${grossMarginPercent}%`)}
+                ${summaryCard("Monthly Churn Rate", `${monthlyChurnRate}%`)}
+              </div>`));
+
+              // Key Metrics
+              const ltvText = result.ltv === Infinity ? "∞" : formatPHP(result.ltv);
+              const ltvCacText = result.ltvCacRatio === Infinity ? "∞" : `${result.ltvCacRatio.toFixed(1)}x`;
+              const ltvCacVariant = result.ltvCacRatio === Infinity || result.ltvCacRatio >= 3
+                ? "success" as const
+                : result.ltvCacRatio >= 1
+                  ? "warning" as const
+                  : "danger" as const;
+              const paybackText = result.paybackMonths === Infinity ? "N/A" : `${result.paybackMonths.toFixed(1)} months`;
+              const lifetimeText = result.avgLifetimeMonths === Infinity ? "∞" : `${result.avgLifetimeMonths.toFixed(1)} months`;
+              const breakEvenText = result.breakEvenCustomers === Infinity ? "N/A" : `${result.breakEvenCustomers}`;
+
+              parts.push(section("Key Metrics", `<div class="summary-grid">
+                ${summaryCard("CAC", formatPHP(result.cac), { sublabel: "Customer Acquisition Cost" })}
+                ${summaryCard("LTV", ltvText, { sublabel: "Lifetime Value" })}
+                ${summaryCard("LTV:CAC Ratio", ltvCacText, { variant: ltvCacVariant })}
+                ${summaryCard("Payback Period", paybackText, { sublabel: "Time to recover CAC" })}
+                ${summaryCard("Avg Customer Lifetime", lifetimeText, { sublabel: "1 / monthly churn rate" })}
+                ${summaryCard("Monthly Gross Profit", formatPHP(result.monthlyGrossProfit), { sublabel: "Per customer per month" })}
+                ${summaryCard("Break-Even Customers", breakEvenText, { sublabel: "To cover marketing spend" })}
+              </div>`));
+
+              // Health Assessment
+              const healthNote = result.ltvCacRatio === Infinity || result.ltvCacRatio >= 3
+                ? "Healthy — Your customers generate significantly more value than they cost to acquire. This is the sweet spot investors look for."
+                : result.ltvCacRatio >= 1
+                  ? "Warning — You're making money per customer, but the margin is thin. Focus on improving retention or reducing acquisition costs."
+                  : "Unhealthy — You're spending more to acquire customers than they're worth. This is unsustainable — reduce CAC or increase LTV urgently.";
+
+              parts.push(section("Health Assessment", `<div class="note">${healthNote}</div>`));
+
+              return parts.join("");
+            }}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

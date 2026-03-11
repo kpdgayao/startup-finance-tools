@@ -41,6 +41,7 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/constants";
+import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { RotateCcw } from "lucide-react";
 
 type InstrumentType = "safe" | "convertible-note";
@@ -99,9 +100,71 @@ export default function SafeCalculatorPage() {
           </p>
           <LearnLink toolHref="/tools/safe-calculator" />
         </div>
-        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <ExportPDFButton
+            filename="SAFE & Convertible Note Analysis"
+            enableEmailCapture
+            buildPrintContent={() => {
+              const parts: string[] = [];
+
+              // Instrument Details
+              const isNote = instrumentType === "convertible-note";
+              parts.push(section("Instrument Details", `<div class="summary-grid">
+                ${summaryCard("Instrument Type", isNote ? "Convertible Note" : "SAFE")}
+                ${summaryCard("Investment Amount", formatPHP(investmentAmount))}
+                ${summaryCard("Valuation Cap", formatPHP(valuationCap))}
+                ${summaryCard("Discount Rate", `${discountRate}%`)}
+                ${isNote ? summaryCard("Interest Rate", `${interestRate}%`) : ""}
+                ${isNote ? summaryCard("Term", `${termMonths} months`) : ""}
+              </div>`));
+
+              // Priced Round
+              parts.push(section("Priced Round", `<div class="summary-grid">
+                ${summaryCard("Pre-Money Valuation", formatPHP(preMoneyValuation))}
+                ${summaryCard("Round Size", formatPHP(roundSize))}
+              </div>`));
+
+              if (result) {
+                // Conversion Results
+                parts.push(section("Conversion Results", `<div class="summary-grid">
+                  ${summaryCard("Conversion Method", result.conversionMethod === "cap" ? "Cap" : "Discount", { variant: "highlight" })}
+                  ${summaryCard("Effective Price/Share", formatPHP(result.effectivePrice))}
+                  ${summaryCard("Shares Issued", Math.round(result.sharesIssued).toLocaleString())}
+                  ${summaryCard("Ownership %", formatPercent(result.ownershipPercent), { variant: "success" })}
+                </div>`));
+
+                // Scenario Comparison
+                if (result.scenarios.length > 0) {
+                  parts.push(section("Scenario Comparison", table(
+                    ["Scenario", "Price/Share", "Shares", "Ownership"],
+                    result.scenarios.map((s) => [
+                      s.label,
+                      formatPHP(s.effectivePricePerShare),
+                      Math.round(s.sharesIssued).toLocaleString(),
+                      formatPercent(s.ownershipPercent),
+                    ])
+                  )));
+                }
+
+                // Post-Conversion Cap Table
+                if (result.pieData.length > 0) {
+                  parts.push(section("Post-Conversion Cap Table", table(
+                    ["Stakeholder", "Ownership %"],
+                    result.pieData.map((d) => [
+                      d.name,
+                      `${d.value.toFixed(2)}%`,
+                    ])
+                  )));
+                }
+              }
+
+              return parts.join("");
+            }}
+          />
+        </div>
       </div>
 
       <Card>

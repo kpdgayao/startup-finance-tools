@@ -20,6 +20,7 @@ import {
   exportToCSV,
   type CashFlowInputs,
 } from "@/lib/calculations/cash-flow";
+import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { Download, TrendingUp, TrendingDown, ArrowUpDown, RotateCcw, AlertTriangle } from "lucide-react";
 import {
   ComposedChart,
@@ -160,6 +161,65 @@ export default function CashFlowForecastPage() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
+          <ExportPDFButton
+            filename="Cash Flow Forecast"
+            enableEmailCapture
+            buildPrintContent={() => {
+              const parts: string[] = [];
+
+              // Assumptions
+              parts.push(section("Assumptions", `<div class="summary-grid">
+                ${summaryCard("Starting Balance", formatPHP(startingBalance))}
+                ${summaryCard("Monthly Revenue", formatPHP(mrr))}
+                ${summaryCard("Fixed Costs", formatPHP(fixedCosts))}
+                ${summaryCard("Variable Cost %", `${variableCostPercent}%`)}
+                ${summaryCard("Payment Terms (DSO)", `${paymentTerms} days`)}
+                ${summaryCard("Payable Terms (DPO)", `${payableTerms} days`)}
+              </div>`));
+
+              // Key Metrics
+              const negMonthsVariant = stats.negativeMonths === 0 ? "success" as const : stats.negativeMonths <= 3 ? "warning" as const : "danger" as const;
+              parts.push(section("Key Metrics", `<div class="summary-grid">
+                ${summaryCard("Total 12-Month Inflow", formatPHP(stats.totalInflow))}
+                ${summaryCard("Total Outflow", formatPHP(stats.totalOutflow))}
+                ${summaryCard("Ending Cash Balance", formatPHP(stats.finalBalance), { variant: stats.finalBalance > 0 ? "success" : "danger" })}
+                ${summaryCard("Negative Cash Flow Months", `${stats.negativeMonths} of 12`, { variant: negMonthsVariant })}
+                ${summaryCard("Avg Monthly Net Flow", formatPHP(stats.avgNetFlow))}
+                ${summaryCard("Cash Conversion Cycle", `${stats.cashConversionCycle} days`)}
+              </div>`));
+
+              // Monthly Projection Table
+              const totalRevenue = projections.reduce((s, p) => s + p.revenue, 0);
+              const totalExpenses = projections.reduce((s, p) => s + p.totalExpenses, 0);
+              parts.push(section("Monthly Projection", table(
+                ["Month", "Opening", "Revenue", "Cash In", "Expenses", "Cash Out", "Net Flow", "Closing"],
+                [
+                  ...projections.map((p) => [
+                    p.monthLabel,
+                    formatPHP(p.openingBalance),
+                    formatPHP(p.revenue),
+                    formatPHP(p.cashInflow),
+                    formatPHP(p.totalExpenses),
+                    formatPHP(p.cashOutflow),
+                    formatPHP(p.netCashFlow),
+                    formatPHP(p.closingBalance),
+                  ]),
+                  [
+                    "Total / Final",
+                    "",
+                    formatPHP(totalRevenue),
+                    formatPHP(stats.totalInflow),
+                    formatPHP(totalExpenses),
+                    formatPHP(stats.totalOutflow),
+                    formatPHP(stats.totalNetFlow),
+                    formatPHP(stats.finalBalance),
+                  ],
+                ]
+              )));
+
+              return parts.join("");
+            }}
+          />
         </div>
       </div>
 

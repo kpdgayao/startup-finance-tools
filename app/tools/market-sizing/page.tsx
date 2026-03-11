@@ -15,6 +15,7 @@ import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
+import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
@@ -106,9 +107,56 @@ export default function MarketSizingPage() {
             Estimate TAM, SAM, SOM using top-down and bottom-up methods.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <ExportPDFButton
+            filename="Market Sizing"
+            enableEmailCapture
+            buildPrintContent={() => {
+              const parts: string[] = [];
+
+              // Market Sizing Method
+              const methodCards = approach === "top-down"
+                ? [
+                    summaryCard("Approach", "Top-Down", { variant: "highlight" }),
+                    summaryCard("TAM (Total Market)", formatPHP(totalMarketSize)),
+                    summaryCard("SAM %", `${samPercent}%`),
+                    summaryCard("SOM %", `${somPercent}%`),
+                  ]
+                : [
+                    summaryCard("Approach", "Bottom-Up", { variant: "highlight" }),
+                    summaryCard("Total Customers", totalCustomers.toLocaleString("en-PH")),
+                    summaryCard("Target Segment %", `${targetPercent}%`),
+                    summaryCard("Revenue per Customer", formatPHP(revenuePerCustomer)),
+                  ];
+              parts.push(section("Market Sizing Method", `<div class="summary-grid">${methodCards.join("")}</div>`));
+
+              // Market Size Results
+              parts.push(section("Market Size Results", `<div class="summary-grid">
+                ${summaryCard("TAM", formatPHP(marketSize.tam), { variant: "highlight", sublabel: "Total Addressable Market" })}
+                ${summaryCard("SAM", formatPHP(marketSize.sam), { variant: "warning", sublabel: "Serviceable Available Market" })}
+                ${summaryCard("SOM", formatPHP(marketSize.som), { variant: "success", sublabel: "Serviceable Obtainable Market" })}
+              </div>`));
+
+              // 3-Year Revenue Projection
+              parts.push(section("3-Year Revenue Projection", table(
+                ["Year", "Market Share", "Revenue", "Gross Margin", "OpEx", "Profit"],
+                projections.map((p) => [
+                  `Year ${p.year}`,
+                  `${p.marketShare.toFixed(1)}%`,
+                  formatPHP(p.revenue),
+                  formatPHP(p.grossMargin),
+                  formatPHP(p.opex),
+                  formatPHP(p.profit),
+                ])
+              )));
+
+              return parts.join("");
+            }}
+          />
+        </div>
       </div>
 
       <Tabs value={approach} onValueChange={setApproach}>

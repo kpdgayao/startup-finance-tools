@@ -19,6 +19,7 @@ import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
 import { LearnLink } from "@/components/shared/learn-link";
+import { ExportPDFButton, summaryCard, section } from "@/components/shared/export-pdf-button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import {
@@ -94,9 +95,64 @@ export default function BreakEvenPage() {
           </p>
           <LearnLink toolHref="/tools/break-even" />
         </div>
-        <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <ExportPDFButton
+            filename="Break-Even Analysis"
+            enableEmailCapture
+            buildPrintContent={() => {
+              const parts: string[] = [];
+
+              // Inputs
+              parts.push(section("Inputs", `<div class="summary-grid">
+                ${summaryCard("Monthly Fixed Costs", formatPHP(fixedCosts))}
+                ${summaryCard("Variable Cost/Unit", formatPHP(variableCost))}
+                ${summaryCard("Selling Price/Unit", formatPHP(sellingPrice))}
+                ${summaryCard("Current Volume", `${currentVolume.toLocaleString()} units`)}
+                ${summaryCard("Target Profit Margin", `${targetMargin}%`)}
+              </div>`));
+
+              // What-If Adjustments
+              if (priceAdj !== 0 || variableAdj !== 0 || fixedAdj !== 0) {
+                parts.push(section("What-If Adjustments", `<div class="summary-grid">
+                  ${priceAdj !== 0 ? summaryCard("Price Adjustment", `${priceAdj > 0 ? "+" : ""}${priceAdj}%`, { sublabel: `Adjusted: ${formatPHP(adjustedInputs.sellingPricePerUnit)}` }) : ""}
+                  ${variableAdj !== 0 ? summaryCard("Variable Cost Adjustment", `${variableAdj > 0 ? "+" : ""}${variableAdj}%`, { sublabel: `Adjusted: ${formatPHP(adjustedInputs.variableCostPerUnit)}` }) : ""}
+                  ${fixedAdj !== 0 ? summaryCard("Fixed Cost Adjustment", `${fixedAdj > 0 ? "+" : ""}${fixedAdj}%`, { sublabel: `Adjusted: ${formatPHP(adjustedInputs.fixedCostsMonthly)}` }) : ""}
+                </div>`));
+              }
+
+              if (result) {
+                // Break-Even Results
+                parts.push(section("Break-Even Results", `<div class="summary-grid">
+                  ${summaryCard("Break-Even Units", result.breakEvenUnits.toLocaleString(), { variant: "success" })}
+                  ${summaryCard("Break-Even Revenue", formatPHP(result.breakEvenRevenue))}
+                  ${summaryCard("Contribution Margin/Unit", formatPHP(result.contributionMarginPerUnit))}
+                  ${summaryCard("CM Ratio", `${(result.contributionMarginRatio * 100).toFixed(1)}%`)}
+                </div>`));
+
+                // Margin of Safety
+                if (result.marginOfSafety !== null) {
+                  parts.push(section("Margin of Safety", `<div class="summary-grid">
+                    ${summaryCard("Margin of Safety (units)", result.marginOfSafety.toLocaleString(), { variant: result.marginOfSafety > 0 ? "success" : "danger" })}
+                    ${summaryCard("Margin of Safety %", `${result.marginOfSafetyPercent!.toFixed(1)}%`, { variant: result.marginOfSafetyPercent! > 0 ? "success" : "danger" })}
+                  </div>`));
+                }
+
+                // Target Profit
+                if (result.targetProfitUnits !== null) {
+                  parts.push(section("Target Profit", `<div class="summary-grid">
+                    ${summaryCard(`Units for ${targetMargin}% Profit`, result.targetProfitUnits.toLocaleString())}
+                    ${summaryCard(`Revenue for ${targetMargin}% Profit`, formatPHP(result.targetProfitRevenue!))}
+                  </div>`));
+                }
+              }
+
+              return parts.join("");
+            }}
+          />
+        </div>
       </div>
 
       <Card>
