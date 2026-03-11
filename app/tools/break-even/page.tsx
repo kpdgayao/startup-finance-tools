@@ -136,7 +136,7 @@ export default function BreakEvenPage() {
                 if (result.marginOfSafety !== null) {
                   parts.push(section("Margin of Safety", `<div class="summary-grid">
                     ${summaryCard("Margin of Safety (units)", result.marginOfSafety.toLocaleString(), { variant: result.marginOfSafety > 0 ? "success" : "danger" })}
-                    ${summaryCard("Margin of Safety %", `${result.marginOfSafetyPercent!.toFixed(1)}%`, { variant: result.marginOfSafetyPercent! > 0 ? "success" : "danger" })}
+                    ${summaryCard("Margin of Safety %", `${(result.marginOfSafetyPercent ?? 0).toFixed(1)}%`, { variant: (result.marginOfSafetyPercent ?? 0) > 0 ? "success" : "danger" })}
                   </div>`));
                 }
 
@@ -144,7 +144,7 @@ export default function BreakEvenPage() {
                 if (result.targetProfitUnits !== null) {
                   parts.push(section("Target Profit", `<div class="summary-grid">
                     ${summaryCard(`Units for ${targetMargin}% Profit`, result.targetProfitUnits.toLocaleString())}
-                    ${summaryCard(`Revenue for ${targetMargin}% Profit`, formatPHP(result.targetProfitRevenue!))}
+                    ${summaryCard(`Revenue for ${targetMargin}% Profit`, formatPHP(result.targetProfitRevenue ?? 0))}
                   </div>`));
                 }
               }

@@ -52,27 +52,27 @@ export default function UnitEconomicsPage() {
 
   const ai = useAiExplain("unit-economics");
 
-  const inputs = {
+  const inputs = useMemo(() => ({
     monthlyMarketingSpend,
     newCustomersPerMonth,
     revenuePerCustomer,
     grossMarginPercent,
     monthlyChurnRate,
-  };
+  }), [monthlyMarketingSpend, newCustomersPerMonth, revenuePerCustomer, grossMarginPercent, monthlyChurnRate]);
 
-  const result = calculateUnitEconomics(inputs);
+  const result = useMemo(() => calculateUnitEconomics(inputs), [inputs]);
 
   const churnRange = useMemo(
     () => Array.from({ length: 15 }, (_, i) => i + 1),
     []
   );
-  const sensitivityData = generateSensitivity(inputs, churnRange);
+  const sensitivityData = useMemo(() => generateSensitivity(inputs, churnRange), [inputs, churnRange]);
 
-  const chartData = sensitivityData.map((p) => ({
+  const chartData = useMemo(() => sensitivityData.map((p) => ({
     churn: `${p.churnRate}%`,
     churnNum: p.churnRate,
     "LTV:CAC": parseFloat(p.ltvCacRatio.toFixed(2)),
-  }));
+  })), [sensitivityData]);
 
   const healthVariant =
     result.ltvCacRatio === Infinity || result.ltvCacRatio >= 3

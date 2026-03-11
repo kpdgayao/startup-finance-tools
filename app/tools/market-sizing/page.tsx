@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -73,30 +73,32 @@ export default function MarketSizingPage() {
 
   const ai = useAiExplain("market-sizing");
 
-  const marketSize =
+  const marketSize = useMemo(() =>
     approach === "top-down"
       ? calculateTopDown({ totalMarketSize, samPercent, somPercent })
-      : calculateBottomUp({ totalCustomers, targetPercent, revenuePerCustomer });
+      : calculateBottomUp({ totalCustomers, targetPercent, revenuePerCustomer }),
+    [approach, totalMarketSize, samPercent, somPercent, totalCustomers, targetPercent, revenuePerCustomer]
+  );
 
-  const projections = projectRevenue(
+  const projections = useMemo(() => projectRevenue(
     marketSize.som,
     [year1Share, year2Share, year3Share],
     grossMarginPct,
     opexPct
-  );
+  ), [marketSize.som, year1Share, year2Share, year3Share, grossMarginPct, opexPct]);
 
-  const funnelData = [
+  const funnelData = useMemo(() => [
     { name: "TAM", value: marketSize.tam, fill: "#3b82f6" },
     { name: "SAM", value: marketSize.sam, fill: "#8b5cf6" },
     { name: "SOM", value: marketSize.som, fill: "#22c55e" },
-  ];
+  ], [marketSize]);
 
-  const revenueChartData = projections.map((p) => ({
+  const revenueChartData = useMemo(() => projections.map((p) => ({
     name: `Year ${p.year}`,
     Revenue: p.revenue,
     "Gross Margin": p.grossMargin,
     Profit: p.profit,
-  }));
+  })), [projections]);
 
   return (
     <div className="space-y-6">

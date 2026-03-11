@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import {
   Card,
   CardContent,
@@ -321,8 +321,6 @@ function CFTable({ annual }: { annual: AnnualRow[] }) {
   );
 }
 
-import { Fragment } from "react";
-
 export default function FinancialModelBuilderPage() {
   // Revenue
   const [startingRevenue, setStartingRevenue] = useState(200_000);
@@ -401,14 +399,14 @@ export default function FinancialModelBuilderPage() {
   };
 
   // Chart data
-  const plChartData = annual.map((a) => ({
+  const plChartData = useMemo(() => annual.map((a) => ({
     name: `Year ${a.year}`,
     Revenue: a.revenue,
     "Gross Profit": a.grossProfit,
     "Net Income": a.netIncome,
-  }));
+  })), [annual]);
 
-  const bsChartData = [
+  const bsChartData = useMemo(() => [
     {
       name: "Year 0",
       Cash: seed.cash,
@@ -421,14 +419,14 @@ export default function FinancialModelBuilderPage() {
       "Accounts Receivable": a.accountsReceivable,
       "Net PP&E": a.netPPE,
     })),
-  ];
+  ], [annual, seed]);
 
-  const cfChartData = annual.map((a) => ({
+  const cfChartData = useMemo(() => annual.map((a) => ({
     name: `Year ${a.year}`,
     "Operating CF": a.operatingCF,
     "CapEx": a.investingCF,
     "Net CF": a.netCashFlow,
-  }));
+  })), [annual]);
 
   const tickFormatter = (v: number) => {
     const abs = Math.abs(v);
