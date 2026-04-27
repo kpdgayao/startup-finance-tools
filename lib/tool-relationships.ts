@@ -81,6 +81,12 @@ export const TOOL_RELATIONSHIPS: Record<ToolId, RelatedTool[]> = {
     { toolId: "burn-rate", reason: "Use this estimate as your starting burn rate" },
     { toolId: "financial-model-builder", reason: "Build these costs into a 3-year model" },
   ],
+  "msme-financial-plan": [
+    { toolId: "break-even", reason: "Find the volume needed to start covering costs each year" },
+    { toolId: "cash-flow-forecast", reason: "Drill into the monthly cash timing behind year 1" },
+    { toolId: "financial-model-builder", reason: "Compare with the startup-flavored 3-year model" },
+    { toolId: "compliance-checklist", reason: "Make sure your registration and BIR setup is complete" },
+  ],
 };
 
 export function getRelatedTools(toolId: ToolId): RelatedTool[] {

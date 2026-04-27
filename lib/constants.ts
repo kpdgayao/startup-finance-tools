@@ -104,6 +104,13 @@ export const TOOLS = [
     href: "/tools/fundraising-guide",
     icon: "Map",
   },
+  {
+    id: "msme-financial-plan",
+    name: "MSME 5-Year Financial Plan",
+    description: "Realistic 5-year financial plan for Filipino MSMEs and cooperatives with three scenarios",
+    href: "/tools/msme-financial-plan",
+    icon: "LineChart",
+  },
 ] as const;
 
 export const TOOL_GROUPS = [
@@ -111,6 +118,7 @@ export const TOOL_GROUPS = [
   { label: "Valuation & Fundraising", tools: ["valuation-calculator", "equity-simulator", "pre-post-money", "safe-calculator"] },
   { label: "Revenue & Growth", tools: ["break-even", "pricing-calculator", "market-sizing", "unit-economics"] },
   { label: "Cash & Operations", tools: ["startup-costs", "burn-rate", "cash-flow-forecast", "financial-model-builder", "compliance-checklist"] },
+  { label: "DTI MSME Toolkit", tools: ["msme-financial-plan"] },
 ] as const;
 
 export const LEARN_MODULES = [

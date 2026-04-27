@@ -39,7 +39,8 @@ export type EcosystemToolId =
   | "burn-rate"
   | "financial-model-builder"
   | "compliance-checklist"
-  | "fundraising-guide";
+  | "fundraising-guide"
+  | "msme-financial-plan";
 
 export interface EcosystemBannerConfig {
   platformId: string;
@@ -66,6 +67,11 @@ export const ECOSYSTEM_BANNERS: Record<EcosystemToolId, EcosystemBannerConfig> =
     platformId: "talinohr",
     message:
       "Scaling your team post-funding? TalinoHR is an AI-native HRIS built for Philippine startups.",
+  },
+  "msme-financial-plan": {
+    platformId: "talinohr",
+    message:
+      "Salaries are a major line in your plan. TalinoHR automates Philippine payroll, SSS, PhilHealth & Pag-IBIG so you stay compliant as you grow.",
   },
 };
 

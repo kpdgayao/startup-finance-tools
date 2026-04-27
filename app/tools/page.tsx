@@ -24,6 +24,7 @@ import {
   FileText,
   Scale,
   Landmark,
+  LineChart,
 } from "lucide-react";
 
 const iconMap = {
@@ -42,6 +43,7 @@ const iconMap = {
   FileText,
   Scale,
   Landmark,
+  LineChart,
 } as const;
 
 export const metadata: Metadata = {

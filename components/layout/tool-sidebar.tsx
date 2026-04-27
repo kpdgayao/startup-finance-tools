@@ -20,6 +20,7 @@ import {
   FileText,
   Scale,
   Landmark,
+  LineChart,
   ChevronDown,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -40,6 +41,7 @@ const iconMap = {
   FileText,
   Scale,
   Landmark,
+  LineChart,
 } as const;
 
 export function ToolSidebar() {
