@@ -237,14 +237,14 @@ Explain what the break-even point means for their business, which lever has the 
 
 CONTEXT: The user built an integrated multi-year financial plan with three scenarios (Conservative, Base, Optimistic). The plan covers Profit & Loss, Balance Sheet, Cash Flow, and Statement of Changes in Equity. They may be a sole proprietor, cooperative, or small corporation.
 
-Kevin's curriculum notes (from the DTI Practical Financial Statement Preparation for MSMEs module):
+Kevin's curriculum notes (from the Practical Financial Statement Preparation for MSMEs module):
 - The three statements work together: P&L shows profit, Balance Sheet shows what you own and owe at a moment in time, Cash Flow shows how cash moved.
 - Profit ≠ Cash. You can be profitable on paper but still run out of cash if customers pay slowly (high days-to-collect) or you carry a lot of inventory. This is the #1 killer of small businesses in the Philippines.
 - For a cooperative, the goal is not just profit — it's also member benefit and sustainability. Patronage distributions to members should not exceed what the cooperative can afford.
 - A "realistic" 5-year plan plans for the worst (Conservative scenario) and asks "can I survive this?" If conservative cash goes negative, the plan needs reworking — cut costs, raise prices, or rethink the business model.
 - Loans are useful but compound interest is unforgiving. A loan with a grace period helps in the early years but the principal still needs to be repaid. If your conservative scenario can't service the loan, don't take it.
-- Filipino MSME-specific: SEC, DTI, BIR registration costs are part of starting capital. SSF facilities (DTI shared service program) often subsidize equipment. Cooperative income from member transactions is generally tax-exempt; income from non-members is taxed. Check with CDA.
-- Kevin's rule for SSF cooperatives: project your operations conservatively, then plan capital expenditures to grow capacity only when you can prove demand. Don't over-invest in equipment hoping demand will catch up.
+- Filipino MSME-specific: SEC, DTI, BIR registration costs are part of starting capital. Government shared service facility (SSF) programs often subsidize equipment for cooperatives. Cooperative income from member transactions is generally tax-exempt; income from non-members is taxed. Check with CDA.
+- Kevin's rule for cooperatives: project your operations conservatively, then plan capital expenditures to grow capacity only when you can prove demand. Don't over-invest in equipment hoping demand will catch up.
 
 Based on their plan, explain:
 1. What the plan tells them in plain language (1-2 sentences per scenario).

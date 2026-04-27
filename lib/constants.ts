@@ -118,7 +118,7 @@ export const TOOL_GROUPS = [
   { label: "Valuation & Fundraising", tools: ["valuation-calculator", "equity-simulator", "pre-post-money", "safe-calculator"] },
   { label: "Revenue & Growth", tools: ["break-even", "pricing-calculator", "market-sizing", "unit-economics"] },
   { label: "Cash & Operations", tools: ["startup-costs", "burn-rate", "cash-flow-forecast", "financial-model-builder", "compliance-checklist"] },
-  { label: "DTI MSME Toolkit", tools: ["msme-financial-plan"] },
+  { label: "MSME Toolkit", tools: ["msme-financial-plan"] },
 ] as const;
 
 export const LEARN_MODULES = [

@@ -959,7 +959,7 @@ export default function MsmeFinancialPlanPage() {
           <div className="space-y-2">
             <Label>
               Planning Horizon
-              <InfoTooltip content="How many years to project. 5 years is the DTI-recommended planning horizon for MSME growth plans." />
+              <InfoTooltip content="How many years to project. 5 years is the standard planning horizon for MSME growth plans." />
             </Label>
             <Select value={String(horizonYears)} onValueChange={(v) => setHorizonYears(parseInt(v))}>
               <SelectTrigger>
@@ -1195,7 +1195,7 @@ export default function MsmeFinancialPlanPage() {
             <div className="space-y-2">
               <Label>
                 Grace Period (years)
-                <InfoTooltip content="Years before principal payments begin. Interest accrues during grace. Common in DTI / DA loan programs." />
+                <InfoTooltip content="Years before principal payments begin. Interest accrues during grace. Common in government MSME and agricultural loan programs." />
               </Label>
               <Input
                 type="number"
