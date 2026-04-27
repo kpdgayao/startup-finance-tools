@@ -11,32 +11,32 @@ function makeInputs(overrides: Partial<MsmeFinancialPlanInputs> = {}): MsmeFinan
     startingCapital: 500_000,
     horizonYears: 5,
     revenueModel: "lump-sum",
-    startingAnnualRevenue: 1_500_000,
+    startingAnnualRevenue: 2_400_000,
     annualGrowthRate: 15,
-    startingUnits: 5_000,
-    unitPrice: 250,
+    startingUnits: 12_000,
+    unitPrice: 200,
     unitGrowthRate: 12,
     priceGrowthRate: 3,
-    cogsPercent: 50,
+    cogsPercent: 45,
     opex: {
-      rent: 180_000,
-      utilities: 60_000,
-      salaries: 720_000,
-      marketing: 80_000,
-      transportation: 40_000,
+      rent: 120_000,
+      utilities: 48_000,
+      salaries: 540_000,
+      marketing: 50_000,
+      transportation: 36_000,
       supplies: 30_000,
-      insurance: 20_000,
-      other: 30_000,
+      insurance: 24_000,
+      other: 24_000,
     },
     opexAnnualGrowth: 5,
     daysToCollect: 30,
     daysToPay: 30,
     inventoryDays: 45,
     capExSchedule: [300_000, 50_000, 100_000, 0, 50_000],
-    usefulLifeYears: 5,
+    usefulLifeYears: 7,
     loanEnabled: true,
     loanPrincipal: 500_000,
-    loanInterestRate: 10,
+    loanInterestRate: 8,
     loanTermYears: 5,
     loanGracePeriodYears: 1,
     taxRate: 20,
@@ -160,5 +160,19 @@ describe("buildMsmeFinancialPlan", () => {
     expect(result.scenarios.optimistic.summary.finalYearCash).toBeGreaterThan(
       result.scenarios.conservative.summary.finalYearCash
     );
+  });
+
+  it("demo defaults: base scenario breaks even within horizon and ends with positive cash", () => {
+    const result = buildMsmeFinancialPlan(makeInputs());
+    expect(result.scenarios.base.summary.breakEvenYear).not.toBeNull();
+    expect(result.scenarios.base.summary.breakEvenYear).toBeLessThanOrEqual(2);
+    expect(result.scenarios.base.summary.finalYearCash).toBeGreaterThan(0);
+    expect(result.scenarios.base.summary.finalYearNetIncome).toBeGreaterThan(0);
+  });
+
+  it("demo defaults: even conservative scenario stays positive on net income by final year", () => {
+    const result = buildMsmeFinancialPlan(makeInputs());
+    expect(result.scenarios.conservative.summary.finalYearNetIncome).toBeGreaterThan(0);
+    expect(result.scenarios.conservative.summary.finalYearCash).toBeGreaterThan(0);
   });
 });
