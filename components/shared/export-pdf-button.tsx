@@ -212,13 +212,34 @@ export function ExportPDFButton({
   const doPrint = () => {
     const content = buildPrintContent();
     const html = buildPrintShell(filename, content);
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
 
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        // print may fail in some sandboxed contexts; swallow
+      }
+      // Generous cleanup delay so the print dialog has time to read the doc.
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        iframe.remove();
+      }, 5000);
+    };
+
+    iframe.src = url;
+    document.body.appendChild(iframe);
   };
 
   const handleClick = () => {

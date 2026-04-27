@@ -430,6 +430,10 @@ function fmt(n: number): string {
   return n.toFixed(2);
 }
 
+function csvField(s: string): string {
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 export function exportMsmePlanCSV(
   result: MsmeFinancialPlanResult,
   inputs: MsmeFinancialPlanInputs
@@ -441,17 +445,20 @@ export function exportMsmePlanCSV(
   });
   const N = inputs.horizonYears;
   const yearHeaders = Array.from({ length: N }, (_, i) => `Year ${i + 1}`).join(",");
+  const capitalLabel = entityCapitalLabel(inputs.entityType);
+  const distLabel = entityDistributionLabel(inputs.entityType);
   const lines: string[] = [
     `MSME ${N}-Year Financial Plan — Startup Finance Toolkit`,
     `Generated on ${date}`,
-    `Entity Type: ${inputs.entityType}`,
+    `Entity Type,${csvField(inputs.entityType)}`,
     "",
   ];
 
   // Assumptions
   lines.push("ASSUMPTIONS");
+  lines.push(`Horizon (years),${N}`);
   lines.push(`Starting Capital,${fmt(inputs.startingCapital)}`);
-  lines.push(`Revenue Model,${inputs.revenueModel}`);
+  lines.push(`Revenue Model,${csvField(inputs.revenueModel)}`);
   if (inputs.revenueModel === "lump-sum") {
     lines.push(`Starting Annual Revenue,${fmt(inputs.startingAnnualRevenue)}`);
     lines.push(`Annual Growth %,${fmt(inputs.annualGrowthRate)}`);
@@ -462,19 +469,64 @@ export function exportMsmePlanCSV(
     lines.push(`Price Growth %,${fmt(inputs.priceGrowthRate)}`);
   }
   lines.push(`COGS %,${fmt(inputs.cogsPercent)}`);
+  lines.push("");
+
+  lines.push("OPERATING EXPENSES (Year 1 starting values)");
+  for (const line of OPEX_LINES) {
+    lines.push(`${csvField(line.label)},${fmt(inputs.opex[line.key])}`);
+  }
   lines.push(`OpEx Annual Growth %,${fmt(inputs.opexAnnualGrowth)}`);
+  lines.push("");
+
+  lines.push("WORKING CAPITAL");
   lines.push(`Days to Collect,${inputs.daysToCollect}`);
   lines.push(`Days to Pay,${inputs.daysToPay}`);
   lines.push(`Inventory Days,${inputs.inventoryDays}`);
+  lines.push("");
+
+  lines.push("CAPITAL EXPENDITURES");
+  lines.push(`,${yearHeaders}`);
+  const capExRow = Array.from({ length: N }, (_, i) => fmt(inputs.capExSchedule[i] ?? 0)).join(",");
+  lines.push(`CapEx,${capExRow}`);
   lines.push(`Useful Life (yrs),${inputs.usefulLifeYears}`);
+  lines.push("");
+
+  lines.push("FINANCING");
+  lines.push(`Loan Enabled,${inputs.loanEnabled ? "Yes" : "No"}`);
   if (inputs.loanEnabled) {
     lines.push(`Loan Principal,${fmt(inputs.loanPrincipal)}`);
     lines.push(`Loan Rate %,${fmt(inputs.loanInterestRate)}`);
     lines.push(`Loan Term (yrs),${inputs.loanTermYears}`);
     lines.push(`Loan Grace (yrs),${inputs.loanGracePeriodYears}`);
   }
+  lines.push("");
+
+  lines.push("TAX & DISTRIBUTIONS");
   lines.push(`Tax Rate %,${fmt(inputs.taxRate)}`);
-  lines.push(`Distribution %,${fmt(inputs.distributionPercent)}`);
+  lines.push(`${csvField(distLabel)} % of Net Income,${fmt(inputs.distributionPercent)}`);
+  lines.push("");
+
+  lines.push("SCENARIO MULTIPLIERS");
+  lines.push("Scenario,Revenue Growth ×,COGS Addend (pp),OpEx Growth Addend (pp)");
+  for (const key of SCENARIO_KEYS) {
+    const m = inputs.scenarios[key];
+    const label = key.charAt(0).toUpperCase() + key.slice(1);
+    lines.push(`${label},${fmt(m.revenueGrowthMultiplier)},${fmt(m.cogsAddend)},${fmt(m.opexGrowthAddend)}`);
+  }
+  lines.push("");
+
+  // Cross-scenario summary
+  lines.push("SCENARIO COMPARISON SUMMARY");
+  lines.push("Metric,Conservative,Base,Optimistic");
+  const summaryRow = (label: string, fn: (s: ScenarioSummary) => string) =>
+    `${csvField(label)},${SCENARIO_KEYS.map((k) => fn(result.scenarios[k].summary)).join(",")}`;
+  lines.push(summaryRow("Horizon Revenue", (s) => fmt(s.horizonRevenue)));
+  lines.push(summaryRow("Avg Gross Margin %", (s) => fmt(s.avgGrossMargin)));
+  lines.push(summaryRow("Final-Year EBIT", (s) => fmt(s.finalYearEbit)));
+  lines.push(summaryRow("Final-Year Net Income", (s) => fmt(s.finalYearNetIncome)));
+  lines.push(summaryRow("Final-Year Cash", (s) => fmt(s.finalYearCash)));
+  lines.push(summaryRow("Cumulative Net Income", (s) => fmt(s.cumulativeNetIncome)));
+  lines.push(summaryRow("Break-even Year", (s) => (s.breakEvenYear === null ? "n/a" : String(s.breakEvenYear))));
   lines.push("");
 
   for (const key of SCENARIO_KEYS) {
@@ -485,21 +537,22 @@ export function exportMsmePlanCSV(
 
     lines.push(`PROFIT & LOSS,${yearHeaders}`);
     lines.push(`Revenue,${out.annual.map((r) => fmt(r.revenue)).join(",")}`);
-    lines.push(`COGS,${out.annual.map((r) => fmt(r.cogs)).join(",")}`);
+    lines.push(`Cost of Goods Sold,${out.annual.map((r) => fmt(r.cogs)).join(",")}`);
     lines.push(`Gross Profit,${out.annual.map((r) => fmt(r.grossProfit)).join(",")}`);
     lines.push(`Gross Margin %,${out.annual.map((r) => fmt(r.grossMarginPercent)).join(",")}`);
     for (const line of OPEX_LINES) {
-      lines.push(`${line.label},${out.annual.map((r) => fmt(r.opex[line.key])).join(",")}`);
+      lines.push(`${csvField(line.label)},${out.annual.map((r) => fmt(r.opex[line.key])).join(",")}`);
     }
     lines.push(`Total Operating Expenses,${out.annual.map((r) => fmt(r.opex.total)).join(",")}`);
     lines.push(`EBITDA,${out.annual.map((r) => fmt(r.ebitda)).join(",")}`);
     lines.push(`Depreciation,${out.annual.map((r) => fmt(r.depreciation)).join(",")}`);
-    lines.push(`EBIT,${out.annual.map((r) => fmt(r.ebit)).join(",")}`);
+    lines.push(`EBIT (Operating Profit),${out.annual.map((r) => fmt(r.ebit)).join(",")}`);
     lines.push(`Interest Expense,${out.annual.map((r) => fmt(r.interestExpense)).join(",")}`);
     lines.push(`Pre-tax Income,${out.annual.map((r) => fmt(r.preTaxIncome)).join(",")}`);
     lines.push(`Tax,${out.annual.map((r) => fmt(r.tax)).join(",")}`);
     lines.push(`Net Income,${out.annual.map((r) => fmt(r.netIncome)).join(",")}`);
     lines.push(`Net Margin %,${out.annual.map((r) => fmt(r.netMarginPercent)).join(",")}`);
+    lines.push(`${csvField(distLabel)},${out.annual.map((r) => fmt(r.distributions)).join(",")}`);
     lines.push("");
 
     const bsHeaders = `,Year 0,${yearHeaders}`;
@@ -512,25 +565,26 @@ export function exportMsmePlanCSV(
     lines.push(`Accounts Payable,${fmt(out.seed.accountsPayable)},${out.annual.map((r) => fmt(r.accountsPayable)).join(",")}`);
     lines.push(`Loan Balance,${fmt(out.seed.loanBalance)},${out.annual.map((r) => fmt(r.loanBalance)).join(",")}`);
     lines.push(`Total Liabilities,${fmt(out.seed.totalLiabilities)},${out.annual.map((r) => fmt(r.totalLiabilities)).join(",")}`);
-    lines.push(`Capital,${fmt(out.seed.capital)},${out.annual.map((r) => fmt(r.capital)).join(",")}`);
+    lines.push(`${csvField(capitalLabel)},${fmt(out.seed.capital)},${out.annual.map((r) => fmt(r.capital)).join(",")}`);
     lines.push(`Retained Earnings,${fmt(out.seed.retainedEarnings)},${out.annual.map((r) => fmt(r.retainedEarnings)).join(",")}`);
     lines.push(`Total Equity,${fmt(out.seed.totalEquity)},${out.annual.map((r) => fmt(r.totalEquity)).join(",")}`);
     lines.push("");
 
     lines.push(`CASH FLOW,${yearHeaders}`);
     lines.push(`Operating Cash Flow,${out.annual.map((r) => fmt(r.operatingCF)).join(",")}`);
-    lines.push(`Investing Cash Flow,${out.annual.map((r) => fmt(r.investingCF)).join(",")}`);
+    lines.push(`Investing Cash Flow (CapEx),${out.annual.map((r) => fmt(r.investingCF)).join(",")}`);
     lines.push(`Financing Cash Flow,${out.annual.map((r) => fmt(r.financingCF)).join(",")}`);
+    lines.push(`  of which ${csvField(distLabel)},${out.annual.map((r) => fmt(-r.distributions)).join(",")}`);
     lines.push(`Net Cash Flow,${out.annual.map((r) => fmt(r.netCashFlow)).join(",")}`);
     lines.push(`Ending Cash,${out.annual.map((r) => fmt(r.cash)).join(",")}`);
     lines.push("");
 
     lines.push(`STATEMENT OF CHANGES IN EQUITY,${yearHeaders}`);
-    lines.push(`Beginning Capital,${out.sce.map((r) => fmt(r.beginningCapital)).join(",")}`);
+    lines.push(`Beginning ${csvField(capitalLabel)},${out.sce.map((r) => fmt(r.beginningCapital)).join(",")}`);
     lines.push(`Contributions,${out.sce.map((r) => fmt(r.contributions)).join(",")}`);
     lines.push(`Net Income,${out.sce.map((r) => fmt(r.netIncome)).join(",")}`);
-    lines.push(`Distributions,${out.sce.map((r) => fmt(r.distributions)).join(",")}`);
-    lines.push(`Ending Capital,${out.sce.map((r) => fmt(r.endingCapital)).join(",")}`);
+    lines.push(`${csvField(distLabel)},${out.sce.map((r) => fmt(r.distributions)).join(",")}`);
+    lines.push(`Ending ${csvField(capitalLabel)},${out.sce.map((r) => fmt(r.endingCapital)).join(",")}`);
     lines.push("");
     lines.push("");
   }
