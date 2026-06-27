@@ -1,0 +1,38 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  TrendingUp,
+  PieChart,
+  Calculator,
+  Flame,
+  Tag,
+  BarChart3,
+  Target,
+  Users,
+  FileSpreadsheet,
+  ClipboardCheck,
+  GraduationCap,
+  Map,
+  FileText,
+  Scale,
+  Landmark,
+  LineChart,
+} from "lucide-react";
+
+export const iconMap: Record<string, LucideIcon> = {
+  TrendingUp,
+  PieChart,
+  Calculator,
+  Flame,
+  Tag,
+  BarChart3,
+  Target,
+  Users,
+  FileSpreadsheet,
+  ClipboardCheck,
+  GraduationCap,
+  Map,
+  FileText,
+  Scale,
+  Landmark,
+  LineChart,
+};

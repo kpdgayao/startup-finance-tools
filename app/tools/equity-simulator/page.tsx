@@ -31,10 +31,9 @@ import {
   Legend,
 } from "recharts";
 
-let nextFounderId = 3;
-let nextRoundId = 1;
-
 export default function EquitySimulatorPage() {
+  const [nextFounderId, setNextFounderId] = useState(3);
+  const [nextRoundId, setNextRoundId] = useState(1);
   const [founders, setFounders] = useState<Founder[]>([
     { id: "f1", name: "Founder A", equity: 50 },
     { id: "f2", name: "Founder B", equity: 30 },
@@ -56,8 +55,8 @@ export default function EquitySimulatorPage() {
     setRounds([
       { id: "r1", name: "Seed Round", investment: 5000000, preMoneyValuation: 20000000, esopPool: 10 },
     ]);
-    nextFounderId = 3;
-    nextRoundId = 1;
+    setNextFounderId(3);
+    setNextRoundId(1);
   };
 
   const totalFounderEquity = founders.reduce((sum, f) => sum + f.equity, 0);
@@ -80,15 +79,17 @@ export default function EquitySimulatorPage() {
 
   const addFounder = () => {
     if (founders.length >= 5) return;
-    nextFounderId++;
-    setFounders([...founders, { id: `f${nextFounderId}`, name: `Founder ${String.fromCharCode(64 + founders.length + 1)}`, equity: 0 }]);
+    const newId = nextFounderId + 1;
+    setNextFounderId(newId);
+    setFounders([...founders, { id: `f${newId}`, name: `Founder ${String.fromCharCode(64 + founders.length + 1)}`, equity: 0 }]);
   };
 
   const addRound = () => {
-    nextRoundId++;
+    const newId = nextRoundId + 1;
+    setNextRoundId(newId);
     const roundNames = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C"];
     const name = roundNames[rounds.length] || `Round ${rounds.length + 1}`;
-    setRounds([...rounds, { id: `r${nextRoundId}`, name, investment: 0, preMoneyValuation: 0, esopPool: 0 }]);
+    setRounds([...rounds, { id: `r${newId}`, name, investment: 0, preMoneyValuation: 0, esopPool: 0 }]);
   };
 
   return (

@@ -11,6 +11,7 @@ import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { Button } from "@/components/ui/button";
 import { formatPHP, formatPercent } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { validateFinancialAmount, validatePercentage, sanitizeFinancialAmount, sanitizePercentage } from "@/lib/validation";
 import { RotateCcw } from "lucide-react";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
@@ -32,22 +33,35 @@ export default function PrePostMoneyPage() {
   const [investment, setInvestment] = useState(3250000);
   const [equityPercent, setEquityPercent] = useState(20.63);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const preMoneyError = touched.preMoney ? validateFinancialAmount(preMoney).error : undefined;
+  const investmentError = touched.investment ? validateFinancialAmount(investment).error : undefined;
+  const equityPercentError = touched.equityPercent ? validatePercentage(equityPercent).error : undefined;
+
+  const hasErrors = !!(preMoneyError || investmentError || equityPercentError);
+
+  const safePreMoney = sanitizeFinancialAmount(preMoney);
+  const safeInvestment = sanitizeFinancialAmount(investment);
+  const safeEquityPercent = sanitizePercentage(equityPercent);
+
   const calculate = () => {
     switch (solveFor) {
       case "equity": {
-        const postMoney = preMoney + investment;
-        const equity = postMoney > 0 ? (investment / postMoney) * 100 : 0;
-        return { preMoney, investment, postMoney, equityPercent: equity };
+        const postMoney = safePreMoney + safeInvestment;
+        const equity = postMoney > 0 ? (safeInvestment / postMoney) * 100 : 0;
+        return { preMoney: safePreMoney, investment: safeInvestment, postMoney, equityPercent: equity };
       }
       case "preMoney": {
-        if (equityPercent <= 0 || equityPercent >= 100) return null;
-        const postMoney = investment / (equityPercent / 100);
-        return { preMoney: postMoney - investment, investment, postMoney, equityPercent };
+        if (safeEquityPercent <= 0 || safeEquityPercent >= 100) return null;
+        const postMoney = safeInvestment / (safeEquityPercent / 100);
+        return { preMoney: postMoney - safeInvestment, investment: safeInvestment, postMoney, equityPercent: safeEquityPercent };
       }
       case "investment": {
-        if (equityPercent <= 0 || equityPercent >= 100) return null;
-        const postMoney = preMoney / (1 - equityPercent / 100);
-        return { preMoney, investment: postMoney - preMoney, postMoney, equityPercent };
+        if (safeEquityPercent <= 0 || safeEquityPercent >= 100) return null;
+        const postMoney = safePreMoney / (1 - safeEquityPercent / 100);
+        return { preMoney: safePreMoney, investment: postMoney - safePreMoney, postMoney, equityPercent: safeEquityPercent };
       }
     }
   };
@@ -57,6 +71,7 @@ export default function PrePostMoneyPage() {
     setPreMoney(12500000);
     setInvestment(3250000);
     setEquityPercent(20.63);
+    setTouched({});
   };
 
   const ai = useAiExplain("pre-post-money");
@@ -115,6 +130,8 @@ export default function PrePostMoneyPage() {
                 label="Pre-Money Valuation"
                 value={preMoney}
                 onChange={setPreMoney}
+                onBlur={() => markTouched("preMoney")}
+                error={preMoneyError}
               />
             )}
             {solveFor !== "investment" && (
@@ -122,6 +139,8 @@ export default function PrePostMoneyPage() {
                 label="Investment Amount"
                 value={investment}
                 onChange={setInvestment}
+                onBlur={() => markTouched("investment")}
+                error={investmentError}
               />
             )}
             {solveFor !== "equity" && (
@@ -129,6 +148,8 @@ export default function PrePostMoneyPage() {
                 label="Investor Equity %"
                 value={equityPercent}
                 onChange={setEquityPercent}
+                onBlur={() => markTouched("equityPercent")}
+                error={equityPercentError}
               />
             )}
           </div>
@@ -227,6 +248,7 @@ export default function PrePostMoneyPage() {
           explanation={ai.explanation}
           isLoading={ai.isLoading}
           error={ai.error}
+          disabled={hasErrors}
           onExplain={() =>
             ai.explain({
               preMoney: result.preMoney,

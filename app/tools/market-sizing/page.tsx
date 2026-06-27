@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { RotateCcw } from "lucide-react";
+import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import {
   calculateTopDown,
   calculateBottomUp,
@@ -56,6 +57,35 @@ export default function MarketSizingPage() {
   const [grossMarginPct, setGrossMarginPct] = useState(55);
   const [opexPct, setOpexPct] = useState(40);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const totalMarketSizeError = touched.totalMarketSize ? validateFinancialAmount(totalMarketSize, { allowZero: false }).error : undefined;
+  const samPercentError = touched.samPercent ? validatePercentage(samPercent).error : undefined;
+  const somPercentError = touched.somPercent ? validatePercentage(somPercent).error : undefined;
+  const totalCustomersError = touched.totalCustomers ? validatePositiveInteger(totalCustomers).error : undefined;
+  const targetPercentError = touched.targetPercent ? validatePercentage(targetPercent).error : undefined;
+  const revenuePerCustomerError = touched.revenuePerCustomer ? validateFinancialAmount(revenuePerCustomer).error : undefined;
+  const year1ShareError = touched.year1Share ? validatePercentage(year1Share).error : undefined;
+  const year2ShareError = touched.year2Share ? validatePercentage(year2Share).error : undefined;
+  const year3ShareError = touched.year3Share ? validatePercentage(year3Share).error : undefined;
+  const grossMarginPctError = touched.grossMarginPct ? validatePercentage(grossMarginPct).error : undefined;
+  const opexPctError = touched.opexPct ? validatePercentage(opexPct).error : undefined;
+
+  const hasErrors = !!(totalMarketSizeError || samPercentError || somPercentError || totalCustomersError || targetPercentError || revenuePerCustomerError || year1ShareError || year2ShareError || year3ShareError || grossMarginPctError || opexPctError);
+
+  const safeTotalMarketSize = sanitizeFinancialAmount(totalMarketSize);
+  const safeSamPercent = sanitizePercentage(samPercent);
+  const safeSomPercent = sanitizePercentage(somPercent);
+  const safeTotalCustomers = sanitizePositiveInteger(totalCustomers);
+  const safeTargetPercent = sanitizePercentage(targetPercent);
+  const safeRevenuePerCustomer = sanitizeFinancialAmount(revenuePerCustomer);
+  const safeYear1Share = sanitizePercentage(year1Share);
+  const safeYear2Share = sanitizePercentage(year2Share);
+  const safeYear3Share = sanitizePercentage(year3Share);
+  const safeGrossMarginPct = sanitizePercentage(grossMarginPct);
+  const safeOpexPct = sanitizePercentage(opexPct);
+
   const handleReset = () => {
     setApproach("top-down");
     setTotalMarketSize(10_000_000_000);
@@ -69,23 +99,24 @@ export default function MarketSizingPage() {
     setYear3Share(4);
     setGrossMarginPct(55);
     setOpexPct(40);
+    setTouched({});
   };
 
   const ai = useAiExplain("market-sizing");
 
   const marketSize = useMemo(() =>
     approach === "top-down"
-      ? calculateTopDown({ totalMarketSize, samPercent, somPercent })
-      : calculateBottomUp({ totalCustomers, targetPercent, revenuePerCustomer }),
-    [approach, totalMarketSize, samPercent, somPercent, totalCustomers, targetPercent, revenuePerCustomer]
+      ? calculateTopDown({ totalMarketSize: safeTotalMarketSize, samPercent: safeSamPercent, somPercent: safeSomPercent })
+      : calculateBottomUp({ totalCustomers: safeTotalCustomers, targetPercent: safeTargetPercent, revenuePerCustomer: safeRevenuePerCustomer }),
+    [approach, safeTotalMarketSize, safeSamPercent, safeSomPercent, safeTotalCustomers, safeTargetPercent, safeRevenuePerCustomer]
   );
 
   const projections = useMemo(() => projectRevenue(
     marketSize.som,
-    [year1Share, year2Share, year3Share],
-    grossMarginPct,
-    opexPct
-  ), [marketSize.som, year1Share, year2Share, year3Share, grossMarginPct, opexPct]);
+    [safeYear1Share, safeYear2Share, safeYear3Share],
+    safeGrossMarginPct,
+    safeOpexPct
+  ), [marketSize.som, safeYear1Share, safeYear2Share, safeYear3Share, safeGrossMarginPct, safeOpexPct]);
 
   const funnelData = useMemo(() => [
     { name: "TAM", value: marketSize.tam, fill: "#3b82f6" },
@@ -180,6 +211,8 @@ export default function MarketSizingPage() {
                 label="Total Market Size (TAM)"
                 value={totalMarketSize}
                 onChange={setTotalMarketSize}
+                onBlur={() => markTouched("totalMarketSize")}
+                error={totalMarketSizeError}
               />
             </CardContent>
           </Card>
@@ -197,11 +230,15 @@ export default function MarketSizingPage() {
                   label="SAM (% of TAM)"
                   value={samPercent}
                   onChange={setSamPercent}
+                  onBlur={() => markTouched("samPercent")}
+                  error={samPercentError}
                 />
                 <PercentageInput
                   label="SOM (% of SAM)"
                   value={somPercent}
                   onChange={setSomPercent}
+                  onBlur={() => markTouched("somPercent")}
+                  error={somPercentError}
                 />
               </div>
             </CardContent>
@@ -233,17 +270,23 @@ export default function MarketSizingPage() {
                       );
                       setTotalCustomers(isNaN(val) ? 0 : val);
                     }}
+                    onBlur={() => markTouched("totalCustomers")}
                   />
+                  {totalCustomersError && <p className="text-xs text-red-500 mt-1">{totalCustomersError}</p>}
                 </div>
                 <PercentageInput
                   label="Target Segment (%)"
                   value={targetPercent}
                   onChange={setTargetPercent}
+                  onBlur={() => markTouched("targetPercent")}
+                  error={targetPercentError}
                 />
                 <CurrencyInput
                   label="Revenue per Customer/Year"
                   value={revenuePerCustomer}
                   onChange={setRevenuePerCustomer}
+                  onBlur={() => markTouched("revenuePerCustomer")}
+                  error={revenuePerCustomerError}
                 />
               </div>
             </CardContent>
@@ -339,26 +382,36 @@ export default function MarketSizingPage() {
               label="Year 1 Market Share"
               value={year1Share}
               onChange={setYear1Share}
+              onBlur={() => markTouched("year1Share")}
+              error={year1ShareError}
             />
             <PercentageInput
               label="Year 2 Market Share"
               value={year2Share}
               onChange={setYear2Share}
+              onBlur={() => markTouched("year2Share")}
+              error={year2ShareError}
             />
             <PercentageInput
               label="Year 3 Market Share"
               value={year3Share}
               onChange={setYear3Share}
+              onBlur={() => markTouched("year3Share")}
+              error={year3ShareError}
             />
             <PercentageInput
               label="Gross Margin %"
               value={grossMarginPct}
               onChange={setGrossMarginPct}
+              onBlur={() => markTouched("grossMarginPct")}
+              error={grossMarginPctError}
             />
             <PercentageInput
               label="OpEx % of Gross Margin"
               value={opexPct}
               onChange={setOpexPct}
+              onBlur={() => markTouched("opexPct")}
+              error={opexPctError}
             />
           </div>
 
@@ -460,6 +513,7 @@ export default function MarketSizingPage() {
         explanation={ai.explanation}
         isLoading={ai.isLoading}
         error={ai.error}
+        disabled={hasErrors}
         onExplain={() =>
           ai.explain({
             approach,
@@ -473,8 +527,8 @@ export default function MarketSizingPage() {
               grossMargin: p.grossMargin,
               profit: p.profit,
             })),
-            grossMarginPct,
-            opexPct,
+            grossMarginPct: safeGrossMarginPct,
+            opexPct: safeOpexPct,
           })
         }
         onDismiss={ai.reset}

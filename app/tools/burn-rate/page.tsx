@@ -9,6 +9,7 @@ import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { validateFinancialAmount, validatePercentage, sanitizeFinancialAmount, sanitizePercentage } from "@/lib/validation";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
@@ -39,6 +40,23 @@ export default function BurnRatePage() {
   const [monthlyExpenses, setMonthlyExpenses] = useState(800000);
   const [expenseCut, setExpenseCut] = useState(0);
   const [revenueIncrease, setRevenueIncrease] = useState(0);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const cashBalanceError = touched.cashBalance ? validateFinancialAmount(cashBalance).error : undefined;
+  const monthlyRevenueError = touched.monthlyRevenue ? validateFinancialAmount(monthlyRevenue).error : undefined;
+  const monthlyExpensesError = touched.monthlyExpenses ? validateFinancialAmount(monthlyExpenses).error : undefined;
+  const expenseCutError = touched.expenseCut ? validatePercentage(expenseCut).error : undefined;
+  const revenueIncreaseError = touched.revenueIncrease ? validatePercentage(revenueIncrease).error : undefined;
+
+  const hasErrors = !!(cashBalanceError || monthlyRevenueError || monthlyExpensesError || expenseCutError || revenueIncreaseError);
+
+  const safeCashBalance = sanitizeFinancialAmount(cashBalance);
+  const safeMonthlyRevenue = sanitizeFinancialAmount(monthlyRevenue);
+  const safeMonthlyExpenses = sanitizeFinancialAmount(monthlyExpenses);
+  const safeExpenseCut = sanitizePercentage(expenseCut);
+  const safeRevenueIncrease = sanitizePercentage(revenueIncrease);
 
   const ai = useAiExplain("burn-rate");
 
@@ -48,23 +66,24 @@ export default function BurnRatePage() {
     setMonthlyExpenses(800000);
     setExpenseCut(0);
     setRevenueIncrease(0);
+    setTouched({});
   };
 
-  const burnResult = calculateBurnRate({ cashBalance, monthlyRevenue, monthlyExpenses });
-  const baseProjection = projectCashBalance(cashBalance, monthlyRevenue, monthlyExpenses, 18);
+  const burnResult = calculateBurnRate({ cashBalance: safeCashBalance, monthlyRevenue: safeMonthlyRevenue, monthlyExpenses: safeMonthlyExpenses });
+  const baseProjection = projectCashBalance(safeCashBalance, safeMonthlyRevenue, safeMonthlyExpenses, 18);
   const adjustedProjection = projectWithAdjustments(
-    cashBalance,
-    monthlyRevenue,
-    monthlyExpenses,
-    expenseCut,
-    revenueIncrease,
+    safeCashBalance,
+    safeMonthlyRevenue,
+    safeMonthlyExpenses,
+    safeExpenseCut,
+    safeRevenueIncrease,
     18
   );
 
   const adjustedBurn = calculateBurnRate({
-    cashBalance,
-    monthlyRevenue: monthlyRevenue * (1 + revenueIncrease / 100),
-    monthlyExpenses: monthlyExpenses * (1 - expenseCut / 100),
+    cashBalance: safeCashBalance,
+    monthlyRevenue: safeMonthlyRevenue * (1 + safeRevenueIncrease / 100),
+    monthlyExpenses: safeMonthlyExpenses * (1 - safeExpenseCut / 100),
   });
 
   const zone = getRunwayZone(burnResult.runway);
@@ -171,9 +190,9 @@ export default function BurnRatePage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <CurrencyInput label="Current Cash Balance" value={cashBalance} onChange={setCashBalance} />
-            <CurrencyInput label="Monthly Revenue" value={monthlyRevenue} onChange={setMonthlyRevenue} />
-            <CurrencyInput label="Monthly Expenses" value={monthlyExpenses} onChange={setMonthlyExpenses} />
+            <CurrencyInput label="Current Cash Balance" value={cashBalance} onChange={setCashBalance} onBlur={() => markTouched("cashBalance")} error={cashBalanceError} />
+            <CurrencyInput label="Monthly Revenue" value={monthlyRevenue} onChange={setMonthlyRevenue} onBlur={() => markTouched("monthlyRevenue")} error={monthlyRevenueError} />
+            <CurrencyInput label="Monthly Expenses" value={monthlyExpenses} onChange={setMonthlyExpenses} onBlur={() => markTouched("monthlyExpenses")} error={monthlyExpensesError} />
           </div>
         </CardContent>
       </Card>
@@ -339,17 +358,18 @@ export default function BurnRatePage() {
         explanation={ai.explanation}
         isLoading={ai.isLoading}
         error={ai.error}
+        disabled={hasErrors}
         onExplain={() =>
           ai.explain({
-            cashBalance,
-            monthlyRevenue,
-            monthlyExpenses,
+            cashBalance: safeCashBalance,
+            monthlyRevenue: safeMonthlyRevenue,
+            monthlyExpenses: safeMonthlyExpenses,
             grossBurn: burnResult.grossBurn,
             netBurn: burnResult.netBurn,
             runway: burnResult.runway === Infinity ? "Sustainable" : `${burnResult.runway.toFixed(1)} months`,
             zone,
-            expenseCut,
-            revenueIncrease,
+            expenseCut: safeExpenseCut,
+            revenueIncrease: safeRevenueIncrease,
             adjustedRunway: adjustedBurn.runway === Infinity ? "Sustainable" : `${adjustedBurn.runway.toFixed(1)} months`,
             adjustedZone,
           })

@@ -12,6 +12,7 @@ interface AiInsightsPanelProps {
   error: string | null;
   onExplain: () => void;
   onDismiss: () => void;
+  disabled?: boolean;
 }
 
 export function AiInsightsPanel({
@@ -20,6 +21,7 @@ export function AiInsightsPanel({
   error,
   onExplain,
   onDismiss,
+  disabled,
 }: AiInsightsPanelProps) {
   const isOpen = isLoading || !!explanation || !!error;
 
@@ -29,7 +31,8 @@ export function AiInsightsPanel({
         <Button
           variant="outline"
           onClick={onExplain}
-          className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+          disabled={disabled}
+          className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="h-4 w-4 mr-2" />
           Explain My Results

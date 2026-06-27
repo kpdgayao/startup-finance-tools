@@ -8,43 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { TOOLS, TOOL_GROUPS } from "@/lib/constants";
-import {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
-  Tag,
-  BarChart3,
-  Target,
-  Users,
-  FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
-  FileText,
-  Scale,
-  Landmark,
-  LineChart,
-} from "lucide-react";
+import { iconMap } from "@/lib/icon-map";
 
-const iconMap = {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
-  Tag,
-  BarChart3,
-  Target,
-  Users,
-  FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
-  FileText,
-  Scale,
-  Landmark,
-  LineChart,
-} as const;
+
 
 export const metadata: Metadata = {
   title: "All Tools",

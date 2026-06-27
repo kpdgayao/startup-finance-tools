@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import Mailjet from "node-mailjet";
+import { RateLimiter } from "@/app/lib/rate-limit";
+
+const rateLimiter = new RateLimiter(5, 60_000);
 
 const INQUIRY_TYPES = [
   "Consulting & Mentoring",
@@ -20,6 +23,14 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  const { allowed, headers: rateLimitHeaders } = rateLimiter.check(request);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: rateLimitHeaders }
+    );
+  }
+
   try {
     const body = await request.json();
     const data = schema.parse(body);
@@ -27,7 +38,7 @@ export async function POST(request: Request) {
     // Reject honeypot
     if (data.website) {
       // Silently succeed to not tip off bots
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true }, { headers: rateLimitHeaders });
     }
 
     const apiKey = process.env.MJ_APIKEY_PUBLIC;
@@ -36,7 +47,7 @@ export async function POST(request: Request) {
     if (!apiKey || !apiSecret) {
       console.log(`[Contact] Would send message from ${data.name} <${data.email}>: ${data.inquiryType}`);
       console.log(`[Contact] Message: ${data.message}`);
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true }, { headers: rateLimitHeaders });
     }
 
     const mailjet = Mailjet.apiConnect(apiKey, apiSecret);
@@ -124,17 +135,20 @@ Sent from startupfinance.tools contact form`;
       ],
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: rateLimitHeaders });
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.issues[0]?.message ?? "Invalid input";
-      return NextResponse.json({ error: firstError }, { status: 400 });
+      return NextResponse.json(
+        { error: firstError },
+        { status: 400, headers: rateLimitHeaders }
+      );
     }
 
     console.error("[Contact] Error:", error);
     return NextResponse.json(
       { error: "Failed to send message. Please try again." },
-      { status: 500 }
+      { status: 500, headers: rateLimitHeaders }
     );
   }
 }
