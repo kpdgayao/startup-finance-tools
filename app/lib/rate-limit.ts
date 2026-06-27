@@ -11,10 +11,11 @@ export class RateLimiter {
   constructor(
     private maxRequests: number,
     private windowMs: number,
-    cleanupIntervalMs: number = 60000
+    // Hard cap on tracked IPs so a flood of distinct keys can't grow the Map
+    // without bound (expiry-based cleanup frees nothing during such a flood).
+    private maxEntries: number = 10_000
   ) {
     this.cleanupThreshold = Math.max(100, Math.floor(maxRequests * 10));
-    setInterval(() => this.cleanup(), cleanupIntervalMs);
   }
 
   check(request: Request): RateLimitResult {
@@ -24,6 +25,9 @@ export class RateLimiter {
       this.cleanup();
     }
 
+    // Note: keyed on the client-supplied X-Forwarded-For and stored in-memory,
+    // so the limit is best-effort and per-instance (each serverless instance
+    // keeps its own counts). Use a shared store for strict global limiting.
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
@@ -52,6 +56,16 @@ export class RateLimiter {
 
     timestamps.push(now);
     this.store.set(ip, timestamps);
+
+    if (this.store.size > this.maxEntries) {
+      const overflow = this.store.size - this.maxEntries;
+      const keys = this.store.keys();
+      for (let i = 0; i < overflow; i++) {
+        const oldest = keys.next().value;
+        if (oldest === undefined) break;
+        if (oldest !== ip) this.store.delete(oldest);
+      }
+    }
 
     return {
       allowed: true,

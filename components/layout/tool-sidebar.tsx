@@ -4,45 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { TOOLS, TOOL_GROUPS } from "@/lib/constants";
-import {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
-  Tag,
-  BarChart3,
-  Target,
-  Users,
-  FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
-  FileText,
-  Scale,
-  Landmark,
-  LineChart,
-  ChevronDown,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { iconMap } from "@/lib/icon-map";
 import { useState, useRef, useEffect } from "react";
-
-const iconMap = {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
-  Tag,
-  BarChart3,
-  Target,
-  Users,
-  FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
-  FileText,
-  Scale,
-  Landmark,
-  LineChart,
-} as const;
 
 export function ToolSidebar() {
   const pathname = usePathname();
@@ -105,7 +69,7 @@ function MobileToolNav({
   const containerRef = useRef<HTMLDivElement>(null);
   const CurrentIcon = currentTool
     ? iconMap[currentTool.icon as keyof typeof iconMap]
-    : BarChart3;
+    : iconMap.BarChart3;
 
   useEffect(() => {
     if (!isOpen) return;

@@ -121,9 +121,9 @@ export default function BurnRatePage() {
 
               // Key inputs
               parts.push(section("Monthly Financials", `<div class="summary-grid">
-                ${summaryCard("Cash Balance", formatPHP(cashBalance))}
-                ${summaryCard("Monthly Revenue", formatPHP(monthlyRevenue))}
-                ${summaryCard("Monthly Expenses", formatPHP(monthlyExpenses))}
+                ${summaryCard("Cash Balance", formatPHP(safeCashBalance))}
+                ${summaryCard("Monthly Revenue", formatPHP(safeMonthlyRevenue))}
+                ${summaryCard("Monthly Expenses", formatPHP(safeMonthlyExpenses))}
               </div>`));
 
               // Key metrics
@@ -137,8 +137,8 @@ export default function BurnRatePage() {
                   sublabel: zone === "red" ? "Critical — less than 3 months" : zone === "yellow" ? "Caution — 3 to 6 months" : "Healthy — 6+ months",
                   variant: runwayVariant,
                 })}
-                ${summaryCard("Monthly Cash Flow", formatPHP(monthlyRevenue - monthlyExpenses), {
-                  variant: monthlyRevenue >= monthlyExpenses ? "success" : "danger",
+                ${summaryCard("Monthly Cash Flow", formatPHP(safeMonthlyRevenue - safeMonthlyExpenses), {
+                  variant: safeMonthlyRevenue >= safeMonthlyExpenses ? "success" : "danger",
                 })}
               </div>`));
 
@@ -290,7 +290,7 @@ export default function BurnRatePage() {
             <div className="flex items-center justify-between">
               <Label>Cut Expenses by {expenseCut}%</Label>
               <span className="text-sm text-muted-foreground">
-                {formatPHP(monthlyExpenses * (1 - expenseCut / 100))}/mo
+                {formatPHP(safeMonthlyExpenses * (1 - safeExpenseCut / 100))}/mo
               </span>
             </div>
             <Slider
@@ -305,7 +305,7 @@ export default function BurnRatePage() {
             <div className="flex items-center justify-between">
               <Label>Increase Revenue by {revenueIncrease}%</Label>
               <span className="text-sm text-muted-foreground">
-                {formatPHP(monthlyRevenue * (1 + revenueIncrease / 100))}/mo
+                {formatPHP(safeMonthlyRevenue * (1 + safeRevenueIncrease / 100))}/mo
               </span>
             </div>
             <Slider

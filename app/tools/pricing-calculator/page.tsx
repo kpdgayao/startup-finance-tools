@@ -54,7 +54,7 @@ export default function PricingCalculatorPage() {
   const fixedCostsError = touched.fixedCosts ? validateFinancialAmount(fixedCosts).error : undefined;
   const variableCostError = touched.variableCost ? validateFinancialAmount(variableCost).error : undefined;
   const expectedUnitsError = touched.expectedUnits ? validatePositiveInteger(expectedUnits).error : undefined;
-  const marginPercentError = touched.marginPercent ? validatePercentage(marginPercent).error : undefined;
+  const marginPercentError = touched.marginPercent ? validatePercentage(marginPercent, { max: 500 }).error : undefined;
   const perceivedValueError = touched.perceivedValue ? validateFinancialAmount(perceivedValue).error : undefined;
   const valueDiscountError = touched.valueDiscount ? validatePercentage(valueDiscount).error : undefined;
   const marketPriceError = touched.marketPrice ? validateFinancialAmount(marketPrice).error : undefined;
@@ -66,7 +66,7 @@ export default function PricingCalculatorPage() {
   const safeFixedCosts = sanitizeFinancialAmount(fixedCosts);
   const safeVariableCost = sanitizeFinancialAmount(variableCost);
   const safeExpectedUnits = sanitizePositiveInteger(expectedUnits);
-  const safeMarginPercent = sanitizePercentage(marginPercent);
+  const safeMarginPercent = sanitizePercentage(marginPercent, { max: 500 });
   const safePerceivedValue = sanitizeFinancialAmount(perceivedValue);
   const safeValueDiscount = sanitizePercentage(valueDiscount);
   const safeMarketPrice = sanitizeFinancialAmount(marketPrice);

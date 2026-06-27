@@ -38,25 +38,40 @@ export function validateFinancialAmount(
   return { valid: true };
 }
 
-export function validatePercentage(value: number): ValidationResult {
+export function validatePercentage(
+  value: number,
+  options?: { min?: number; max?: number }
+): ValidationResult {
+  const min = options?.min ?? 0;
+  const max = options?.max ?? 100;
+
   if (!Number.isFinite(value)) {
     return { valid: false, error: "Please enter a valid number" };
   }
 
-  if (value < 0) {
-    return { valid: false, error: "Must be at least 0%" };
+  if (value < min) {
+    return { valid: false, error: `Must be at least ${min}%` };
   }
 
-  if (value > 100) {
-    return { valid: false, error: "Must be at most 100%" };
+  if (value > max) {
+    return { valid: false, error: `Must be at most ${max}%` };
   }
 
   return { valid: true };
 }
 
-export function validatePositiveInteger(value: number): ValidationResult {
+export function validatePositiveInteger(
+  value: number,
+  options?: { allowZero?: boolean }
+): ValidationResult {
+  const allowZero = options?.allowZero ?? false;
+
   if (!Number.isFinite(value)) {
     return { valid: false, error: "Please enter a valid number" };
+  }
+
+  if (allowZero && value === 0) {
+    return { valid: true };
   }
 
   if (value < 1) {
@@ -80,12 +95,21 @@ export function sanitizeFinancialAmount(
   return Math.min(max, Math.max(min, value));
 }
 
-export function sanitizePercentage(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(100, Math.max(0, value));
+export function sanitizePercentage(
+  value: number,
+  options?: { min?: number; max?: number }
+): number {
+  const min = options?.min ?? 0;
+  const max = options?.max ?? 100;
+  if (!Number.isFinite(value)) return Math.min(max, Math.max(min, 0));
+  return Math.min(max, Math.max(min, value));
 }
 
-export function sanitizePositiveInteger(value: number): number {
-  if (!Number.isFinite(value)) return 1;
-  return Math.max(1, Math.floor(value));
+export function sanitizePositiveInteger(
+  value: number,
+  options?: { allowZero?: boolean }
+): number {
+  const floor = options?.allowZero ? 0 : 1;
+  if (!Number.isFinite(value)) return floor;
+  return Math.max(floor, Math.floor(value));
 }

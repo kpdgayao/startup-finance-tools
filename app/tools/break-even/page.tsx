@@ -59,7 +59,7 @@ export default function BreakEvenPage() {
   const fixedCostsError = touched.fixedCosts ? validateFinancialAmount(fixedCosts).error : undefined;
   const variableCostError = touched.variableCost ? validateFinancialAmount(variableCost).error : undefined;
   const sellingPriceError = touched.sellingPrice ? validateFinancialAmount(sellingPrice).error : undefined;
-  const currentVolumeError = touched.currentVolume ? validatePositiveInteger(currentVolume).error : undefined;
+  const currentVolumeError = touched.currentVolume ? validatePositiveInteger(currentVolume, { allowZero: true }).error : undefined;
   const targetMarginError = touched.targetMargin ? validatePercentage(targetMargin).error : undefined;
 
   const hasErrors = !!(fixedCostsError || variableCostError || sellingPriceError || currentVolumeError || targetMarginError);
@@ -67,7 +67,7 @@ export default function BreakEvenPage() {
   const safeFixedCosts = sanitizeFinancialAmount(fixedCosts);
   const safeVariableCost = sanitizeFinancialAmount(variableCost);
   const safeSellingPrice = sanitizeFinancialAmount(sellingPrice);
-  const safeCurrentVolume = sanitizePositiveInteger(currentVolume);
+  const safeCurrentVolume = sanitizePositiveInteger(currentVolume, { allowZero: true });
   const safeTargetMargin = sanitizePercentage(targetMargin);
 
   const handleReset = () => {
@@ -84,9 +84,9 @@ export default function BreakEvenPage() {
 
   const adjustedInputs = useMemo(
     () => ({
-      fixedCostsMonthly: safeFixedCosts * (1 + sanitizePercentage(fixedAdj) / 100),
-      variableCostPerUnit: safeVariableCost * (1 + sanitizePercentage(variableAdj) / 100),
-      sellingPricePerUnit: safeSellingPrice * (1 + sanitizePercentage(priceAdj) / 100),
+      fixedCostsMonthly: safeFixedCosts * (1 + sanitizePercentage(fixedAdj, { min: -50, max: 50 }) / 100),
+      variableCostPerUnit: safeVariableCost * (1 + sanitizePercentage(variableAdj, { min: -50, max: 50 }) / 100),
+      sellingPricePerUnit: safeSellingPrice * (1 + sanitizePercentage(priceAdj, { min: -50, max: 50 }) / 100),
       currentMonthlyVolume: safeCurrentVolume,
       targetProfitMargin: safeTargetMargin,
     }),
