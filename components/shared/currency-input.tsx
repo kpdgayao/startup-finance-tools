@@ -14,6 +14,8 @@ interface CurrencyInputProps {
   id?: string;
   min?: number;
   max?: number;
+  error?: string;
+  onBlur?: () => void;
 }
 
 export function CurrencyInput({
@@ -24,6 +26,8 @@ export function CurrencyInput({
   id,
   min,
   max,
+  error,
+  onBlur: onBlurProp,
 }: CurrencyInputProps) {
   const [focused, setFocused] = useState(false);
   const [displayValue, setDisplayValue] = useState(value ? String(value) : "");
@@ -64,7 +68,8 @@ export function CurrencyInput({
 
   const handleBlur = useCallback(() => {
     setFocused(false);
-  }, []);
+    onBlurProp?.();
+  }, [onBlurProp]);
 
   return (
     <div className="space-y-2">
@@ -84,6 +89,7 @@ export function CurrencyInput({
           onBlur={handleBlur}
           placeholder={placeholder}
         />
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </div>
     </div>
   );

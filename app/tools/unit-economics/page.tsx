@@ -18,6 +18,7 @@ import { ExportPDFButton, summaryCard, section } from "@/components/shared/expor
 import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { RotateCcw } from "lucide-react";
 import {
   calculateUnitEconomics,
@@ -42,23 +43,41 @@ export default function UnitEconomicsPage() {
   const [grossMarginPercent, setGrossMarginPercent] = useState(70);
   const [monthlyChurnRate, setMonthlyChurnRate] = useState(5);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const monthlyMarketingSpendError = touched.monthlyMarketingSpend ? validateFinancialAmount(monthlyMarketingSpend).error : undefined;
+  const newCustomersPerMonthError = touched.newCustomersPerMonth ? validatePositiveInteger(newCustomersPerMonth).error : undefined;
+  const revenuePerCustomerError = touched.revenuePerCustomer ? validateFinancialAmount(revenuePerCustomer).error : undefined;
+  const grossMarginPercentError = touched.grossMarginPercent ? validatePercentage(grossMarginPercent).error : undefined;
+  const monthlyChurnRateError = touched.monthlyChurnRate ? validatePercentage(monthlyChurnRate).error : undefined;
+
+  const hasErrors = !!(monthlyMarketingSpendError || newCustomersPerMonthError || revenuePerCustomerError || grossMarginPercentError || monthlyChurnRateError);
+
+  const safeMonthlyMarketingSpend = sanitizeFinancialAmount(monthlyMarketingSpend);
+  const safeNewCustomersPerMonth = sanitizePositiveInteger(newCustomersPerMonth);
+  const safeRevenuePerCustomer = sanitizeFinancialAmount(revenuePerCustomer);
+  const safeGrossMarginPercent = sanitizePercentage(grossMarginPercent);
+  const safeMonthlyChurnRate = sanitizePercentage(monthlyChurnRate);
+
   const handleReset = () => {
     setMonthlyMarketingSpend(100_000);
     setNewCustomersPerMonth(20);
     setRevenuePerCustomer(5_000);
     setGrossMarginPercent(70);
     setMonthlyChurnRate(5);
+    setTouched({});
   };
 
   const ai = useAiExplain("unit-economics");
 
   const inputs = useMemo(() => ({
-    monthlyMarketingSpend,
-    newCustomersPerMonth,
-    revenuePerCustomer,
-    grossMarginPercent,
-    monthlyChurnRate,
-  }), [monthlyMarketingSpend, newCustomersPerMonth, revenuePerCustomer, grossMarginPercent, monthlyChurnRate]);
+    monthlyMarketingSpend: safeMonthlyMarketingSpend,
+    newCustomersPerMonth: safeNewCustomersPerMonth,
+    revenuePerCustomer: safeRevenuePerCustomer,
+    grossMarginPercent: safeGrossMarginPercent,
+    monthlyChurnRate: safeMonthlyChurnRate,
+  }), [safeMonthlyMarketingSpend, safeNewCustomersPerMonth, safeRevenuePerCustomer, safeGrossMarginPercent, safeMonthlyChurnRate]);
 
   const result = useMemo(() => calculateUnitEconomics(inputs), [inputs]);
 
@@ -166,6 +185,8 @@ export default function UnitEconomicsPage() {
               label="Monthly Marketing Spend"
               value={monthlyMarketingSpend}
               onChange={setMonthlyMarketingSpend}
+              onBlur={() => markTouched("monthlyMarketingSpend")}
+              error={monthlyMarketingSpendError}
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">
@@ -180,8 +201,10 @@ export default function UnitEconomicsPage() {
                   const val = parseInt(e.target.value, 10);
                   setNewCustomersPerMonth(isNaN(val) ? 0 : Math.max(0, val));
                 }}
+                onBlur={() => markTouched("newCustomersPerMonth")}
                 placeholder="0"
               />
+              {newCustomersPerMonthError && <p className="text-xs text-red-500 mt-1">{newCustomersPerMonthError}</p>}
             </div>
           </CardContent>
         </Card>
@@ -198,16 +221,22 @@ export default function UnitEconomicsPage() {
               label="Monthly Revenue per Customer (ARPU)"
               value={revenuePerCustomer}
               onChange={setRevenuePerCustomer}
+              onBlur={() => markTouched("revenuePerCustomer")}
+              error={revenuePerCustomerError}
             />
             <PercentageInput
               label="Gross Margin %"
               value={grossMarginPercent}
               onChange={setGrossMarginPercent}
+              onBlur={() => markTouched("grossMarginPercent")}
+              error={grossMarginPercentError}
             />
             <PercentageInput
               label="Monthly Churn Rate"
               value={monthlyChurnRate}
               onChange={setMonthlyChurnRate}
+              onBlur={() => markTouched("monthlyChurnRate")}
+              error={monthlyChurnRateError}
               max={50}
             />
           </CardContent>
@@ -442,6 +471,7 @@ export default function UnitEconomicsPage() {
         explanation={ai.explanation}
         isLoading={ai.isLoading}
         error={ai.error}
+        disabled={hasErrors}
         onExplain={() =>
           ai.explain({
             cac: result.cac,
@@ -460,11 +490,11 @@ export default function UnitEconomicsPage() {
                 : result.avgLifetimeMonths.toFixed(1),
             monthlyGrossProfit: result.monthlyGrossProfit,
             breakEvenCustomers: result.breakEvenCustomers,
-            monthlyChurnRate,
-            monthlyMarketingSpend,
-            newCustomersPerMonth,
-            revenuePerCustomer,
-            grossMarginPercent,
+            monthlyChurnRate: safeMonthlyChurnRate,
+            monthlyMarketingSpend: safeMonthlyMarketingSpend,
+            newCustomersPerMonth: safeNewCustomersPerMonth,
+            revenuePerCustomer: safeRevenuePerCustomer,
+            grossMarginPercent: safeGrossMarginPercent,
           })
         }
         onDismiss={ai.reset}

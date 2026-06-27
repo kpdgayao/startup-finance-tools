@@ -1,6 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getSystemPrompt, isValidToolId } from "@/lib/ai/prompts";
+import { RateLimiter } from "@/app/lib/rate-limit";
+
+const rateLimiter = new RateLimiter(10, 60_000);
 
 const requestSchema = z.object({
   toolId: z.string(),
@@ -8,11 +11,19 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const { allowed, headers: rateLimitHeaders } = rateLimiter.check(request);
+  if (!allowed) {
+    return Response.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: rateLimitHeaders }
+    );
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return Response.json(
       { error: "ANTHROPIC_API_KEY is not configured on the server." },
-      { status: 500 }
+      { status: 500, headers: rateLimitHeaders }
     );
   }
 
@@ -20,21 +31,27 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    return Response.json(
+      { error: "Invalid JSON body." },
+      { status: 400, headers: rateLimitHeaders }
+    );
   }
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
     return Response.json(
       { error: "Invalid request: toolId (string) and data (object) required." },
-      { status: 400 }
+      { status: 400, headers: rateLimitHeaders }
     );
   }
 
   const { toolId, data } = parsed.data;
 
   if (!isValidToolId(toolId)) {
-    return Response.json({ error: `Unknown tool: ${toolId}` }, { status: 400 });
+    return Response.json(
+      { error: `Unknown tool: ${toolId}` },
+      { status: 400, headers: rateLimitHeaders }
+    );
   }
 
   const systemPrompt = getSystemPrompt(toolId);
@@ -44,7 +61,7 @@ export async function POST(request: Request) {
     const client = new Anthropic({ apiKey });
 
     const stream = await client.messages.stream({
-      model: "claude-haiku-4-5-20251001",
+      model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
@@ -73,11 +90,15 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
+        ...rateLimitHeaders,
       },
     });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Failed to get AI explanation.";
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json(
+      { error: message },
+      { status: 500, headers: rateLimitHeaders }
+    );
   }
 }

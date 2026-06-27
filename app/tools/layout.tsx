@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ToolSidebar } from "@/components/layout/tool-sidebar";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 
 export default function ToolsLayout({
   children,
@@ -14,7 +15,7 @@ export default function ToolsLayout({
         <ToolSidebar />
         <main id="main-content" className="flex-1 overflow-auto">
           <div className="mx-auto px-4 py-6 lg:py-8 max-w-5xl">
-            {children}
+            <ErrorBoundary>{children}</ErrorBoundary>
           </div>
         </main>
       </div>

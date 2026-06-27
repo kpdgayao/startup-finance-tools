@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import Mailjet from "node-mailjet";
+import { RateLimiter } from "@/app/lib/rate-limit";
+
+const rateLimiter = new RateLimiter(10, 60_000);
 
 const schema = z.object({
   email: z.string().email(),
 });
 
 export async function POST(request: Request) {
+  const { allowed, headers: rateLimitHeaders } = rateLimiter.check(request);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: rateLimitHeaders }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email } = schema.parse(body);
@@ -17,7 +28,7 @@ export async function POST(request: Request) {
 
     if (!apiKey || !apiSecret || !listId) {
       console.log(`[Newsletter] Would subscribe: ${email} (env vars not set)`);
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true }, { headers: rateLimitHeaders });
     }
 
     const mailjet = Mailjet.apiConnect(apiKey, apiSecret);
@@ -54,7 +65,7 @@ export async function POST(request: Request) {
           Messages: [
             {
               From: {
-                Email: "hello@startupfinance.tools",
+                Email: process.env.NEWSLETTER_FROM_EMAIL || "hello@startupfinance.tools",
                 Name: "Startup Finance Toolkit",
               },
               To: [{ Email: email, Name: email.split("@")[0] }],
@@ -152,19 +163,19 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: rateLimitHeaders });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid email address" },
-        { status: 400 }
+        { status: 400, headers: rateLimitHeaders }
       );
     }
 
     console.error("[Newsletter] Error:", error);
     return NextResponse.json(
       { error: "Failed to subscribe. Please try again." },
-      { status: 500 }
+      { status: 500, headers: rateLimitHeaders }
     );
   }
 }

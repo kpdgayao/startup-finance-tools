@@ -5,44 +5,10 @@ import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TOOLS, TOOL_GROUPS } from "@/lib/constants";
-import {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
-  Tag,
-  BarChart3,
-  Target,
-  Users,
-  FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
-  FileText,
-  Scale,
-  Landmark,
-  LineChart,
-  ArrowRight,
-} from "lucide-react";
+import { iconMap } from "@/lib/icon-map";
+import { ArrowRight } from "lucide-react";
 
-const iconMap = {
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Flame,
-  Tag,
-  BarChart3,
-  Target,
-  Users,
-  FileSpreadsheet,
-  ClipboardCheck,
-  GraduationCap,
-  Map,
-  FileText,
-  Scale,
-  Landmark,
-  LineChart,
-} as const;
+
 
 export const metadata: Metadata = {
   title: { absolute: "Startup Finance Toolkit | IOL Inc." },

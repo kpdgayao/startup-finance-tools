@@ -13,6 +13,8 @@ interface PercentageInputProps {
   max?: number;
   step?: number;
   id?: string;
+  error?: string;
+  onBlur?: () => void;
 }
 
 export function PercentageInput({
@@ -23,6 +25,8 @@ export function PercentageInput({
   max = 100,
   step = 0.1,
   id,
+  error,
+  onBlur: onBlurProp,
 }: PercentageInputProps) {
   const [clamped, setClamped] = useState(false);
   const clampTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -53,12 +57,14 @@ export function PercentageInput({
 
             onChange(clampedVal);
           }}
+          onBlur={() => onBlurProp?.()}
           placeholder="0"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
           %
         </span>
       </div>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }

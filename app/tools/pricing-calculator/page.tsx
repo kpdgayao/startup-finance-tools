@@ -12,6 +12,7 @@ import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP, formatNumber } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import {
@@ -47,6 +48,31 @@ export default function PricingCalculatorPage() {
   const [bundleItems, setBundleItems] = useState<number[]>([10000, 8000, 5000]);
   const [bundleDiscount, setBundleDiscount] = useState(15);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const fixedCostsError = touched.fixedCosts ? validateFinancialAmount(fixedCosts).error : undefined;
+  const variableCostError = touched.variableCost ? validateFinancialAmount(variableCost).error : undefined;
+  const expectedUnitsError = touched.expectedUnits ? validatePositiveInteger(expectedUnits).error : undefined;
+  const marginPercentError = touched.marginPercent ? validatePercentage(marginPercent, { max: 500 }).error : undefined;
+  const perceivedValueError = touched.perceivedValue ? validateFinancialAmount(perceivedValue).error : undefined;
+  const valueDiscountError = touched.valueDiscount ? validatePercentage(valueDiscount).error : undefined;
+  const marketPriceError = touched.marketPrice ? validateFinancialAmount(marketPrice).error : undefined;
+  const penetrationDiscountError = touched.penetrationDiscount ? validatePercentage(penetrationDiscount).error : undefined;
+  const bundleDiscountError = touched.bundleDiscount ? validatePercentage(bundleDiscount).error : undefined;
+
+  const hasErrors = !!(fixedCostsError || variableCostError || expectedUnitsError || marginPercentError || perceivedValueError || valueDiscountError || marketPriceError || penetrationDiscountError || bundleDiscountError);
+
+  const safeFixedCosts = sanitizeFinancialAmount(fixedCosts);
+  const safeVariableCost = sanitizeFinancialAmount(variableCost);
+  const safeExpectedUnits = sanitizePositiveInteger(expectedUnits);
+  const safeMarginPercent = sanitizePercentage(marginPercent, { max: 500 });
+  const safePerceivedValue = sanitizeFinancialAmount(perceivedValue);
+  const safeValueDiscount = sanitizePercentage(valueDiscount);
+  const safeMarketPrice = sanitizeFinancialAmount(marketPrice);
+  const safePenetrationDiscount = sanitizePercentage(penetrationDiscount);
+  const safeBundleDiscount = sanitizePercentage(bundleDiscount);
+
   const handleReset = () => {
     setFixedCosts(130000);
     setVariableCost(0);
@@ -59,19 +85,20 @@ export default function PricingCalculatorPage() {
     setCompetitorPrices([15000, 18000, 22000, 25000]);
     setBundleItems([10000, 8000, 5000]);
     setBundleDiscount(15);
+    setTouched({});
   };
 
   const ai = useAiExplain("pricing-calculator");
 
   const costPlusResult = calculateCostPlus(
-    { fixedCosts, variableCostPerUnit: variableCost, expectedUnits },
-    marginPercent
+    { fixedCosts: safeFixedCosts, variableCostPerUnit: safeVariableCost, expectedUnits: safeExpectedUnits },
+    safeMarginPercent
   );
 
-  const valueBased = perceivedValue * (1 - valueDiscount / 100);
-  const penetrationPrice = calculatePenetrationPrice(marketPrice, penetrationDiscount);
-  const competitive = calculateCompetitivePosition(competitorPrices);
-  const bundle = calculateBundlePrice(bundleItems, bundleDiscount);
+  const valueBased = safePerceivedValue * (1 - safeValueDiscount / 100);
+  const penetrationPrice = calculatePenetrationPrice(safeMarketPrice, safePenetrationDiscount);
+const competitive = calculateCompetitivePosition(competitorPrices.map((v) => sanitizeFinancialAmount(v)));
+const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmount(v)), safeBundleDiscount);
   const psychologicalPrice = suggestPsychologicalPrice(costPlusResult.price);
 
   return (
@@ -112,8 +139,8 @@ export default function PricingCalculatorPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CurrencyInput label="Total Fixed Costs (monthly)" value={fixedCosts} onChange={setFixedCosts} />
-                <CurrencyInput label="Variable Cost per Unit" value={variableCost} onChange={setVariableCost} />
+                <CurrencyInput label="Total Fixed Costs (monthly)" value={fixedCosts} onChange={setFixedCosts} onBlur={() => markTouched("fixedCosts")} error={fixedCostsError} />
+                <CurrencyInput label="Variable Cost per Unit" value={variableCost} onChange={setVariableCost} onBlur={() => markTouched("variableCost")} error={variableCostError} />
                 <div className="space-y-2">
                   <Label>Expected Units / Clients</Label>
                   <Input
@@ -121,9 +148,11 @@ export default function PricingCalculatorPage() {
                     min={1}
                     value={expectedUnits || ""}
                     onChange={(e) => setExpectedUnits(parseInt(e.target.value) || 0)}
+                    onBlur={() => markTouched("expectedUnits")}
                   />
+                  {expectedUnitsError && <p className="text-xs text-red-500 mt-1">{expectedUnitsError}</p>}
                 </div>
-                <PercentageInput label="Target Margin %" value={marginPercent} onChange={setMarginPercent} max={500} />
+                <PercentageInput label="Target Margin %" value={marginPercent} onChange={setMarginPercent} max={500} onBlur={() => markTouched("marginPercent")} error={marginPercentError} />
               </div>
             </CardContent>
           </Card>
@@ -147,8 +176,8 @@ export default function PricingCalculatorPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CurrencyInput label="Customer Perceived Value" value={perceivedValue} onChange={setPerceivedValue} />
-                <PercentageInput label="Discount from Value %" value={valueDiscount} onChange={setValueDiscount} />
+                <CurrencyInput label="Customer Perceived Value" value={perceivedValue} onChange={setPerceivedValue} onBlur={() => markTouched("perceivedValue")} error={perceivedValueError} />
+                <PercentageInput label="Discount from Value %" value={valueDiscount} onChange={setValueDiscount} onBlur={() => markTouched("valueDiscount")} error={valueDiscountError} />
               </div>
             </CardContent>
           </Card>
@@ -170,8 +199,8 @@ export default function PricingCalculatorPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CurrencyInput label="Market Price" value={marketPrice} onChange={setMarketPrice} />
-                <PercentageInput label="Entry Discount %" value={penetrationDiscount} onChange={setPenetrationDiscount} />
+                <CurrencyInput label="Market Price" value={marketPrice} onChange={setMarketPrice} onBlur={() => markTouched("marketPrice")} error={marketPriceError} />
+                <PercentageInput label="Entry Discount %" value={penetrationDiscount} onChange={setPenetrationDiscount} onBlur={() => markTouched("penetrationDiscount")} error={penetrationDiscountError} />
               </div>
             </CardContent>
           </Card>
@@ -280,7 +309,7 @@ export default function PricingCalculatorPage() {
                   Add Item
                 </Button>
               )}
-              <PercentageInput label="Bundle Discount %" value={bundleDiscount} onChange={setBundleDiscount} />
+              <PercentageInput label="Bundle Discount %" value={bundleDiscount} onChange={setBundleDiscount} onBlur={() => markTouched("bundleDiscount")} error={bundleDiscountError} />
             </CardContent>
           </Card>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -321,20 +350,21 @@ export default function PricingCalculatorPage() {
         explanation={ai.explanation}
         isLoading={ai.isLoading}
         error={ai.error}
+        disabled={hasErrors}
         onExplain={() =>
           ai.explain({
             costPlus: {
-              fixedCosts,
-              variableCost,
-              expectedUnits,
-              marginPercent,
+              fixedCosts: safeFixedCosts,
+              variableCost: safeVariableCost,
+              expectedUnits: safeExpectedUnits,
+              marginPercent: safeMarginPercent,
               price: costPlusResult.price,
               breakeven: costPlusResult.breakeven,
             },
-            valueBased: { perceivedValue, valueDiscount, suggestedPrice: valueBased },
-            penetration: { marketPrice, penetrationDiscount, entryPrice: penetrationPrice },
-            competitive: { competitorPrices, ...competitive },
-            bundle: { bundleItems, bundleDiscount, ...bundle },
+            valueBased: { perceivedValue: safePerceivedValue, valueDiscount: safeValueDiscount, suggestedPrice: valueBased },
+            penetration: { marketPrice: safeMarketPrice, penetrationDiscount: safePenetrationDiscount, entryPrice: penetrationPrice },
+            competitive: { competitorPrices: competitorPrices.map((v) => sanitizeFinancialAmount(v)), ...competitive },
+            bundle: { bundleItems: bundleItems.map((v) => sanitizeFinancialAmount(v)), bundleDiscount: safeBundleDiscount, ...bundle },
             psychologicalPrice,
           })
         }

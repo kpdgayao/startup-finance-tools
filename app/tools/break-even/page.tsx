@@ -22,6 +22,7 @@ import { LearnLink } from "@/components/shared/learn-link";
 import { ExportPDFButton, summaryCard, section } from "@/components/shared/export-pdf-button";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import {
   calculateBreakEven,
   generateBreakEvenChartData,
@@ -52,6 +53,23 @@ export default function BreakEvenPage() {
   const [variableAdj, setVariableAdj] = useState(0);
   const [fixedAdj, setFixedAdj] = useState(0);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const fixedCostsError = touched.fixedCosts ? validateFinancialAmount(fixedCosts).error : undefined;
+  const variableCostError = touched.variableCost ? validateFinancialAmount(variableCost).error : undefined;
+  const sellingPriceError = touched.sellingPrice ? validateFinancialAmount(sellingPrice).error : undefined;
+  const currentVolumeError = touched.currentVolume ? validatePositiveInteger(currentVolume, { allowZero: true }).error : undefined;
+  const targetMarginError = touched.targetMargin ? validatePercentage(targetMargin).error : undefined;
+
+  const hasErrors = !!(fixedCostsError || variableCostError || sellingPriceError || currentVolumeError || targetMarginError);
+
+  const safeFixedCosts = sanitizeFinancialAmount(fixedCosts);
+  const safeVariableCost = sanitizeFinancialAmount(variableCost);
+  const safeSellingPrice = sanitizeFinancialAmount(sellingPrice);
+  const safeCurrentVolume = sanitizePositiveInteger(currentVolume, { allowZero: true });
+  const safeTargetMargin = sanitizePercentage(targetMargin);
+
   const handleReset = () => {
     setFixedCosts(150000);
     setVariableCost(200);
@@ -61,17 +79,18 @@ export default function BreakEvenPage() {
     setPriceAdj(0);
     setVariableAdj(0);
     setFixedAdj(0);
+    setTouched({});
   };
 
   const adjustedInputs = useMemo(
     () => ({
-      fixedCostsMonthly: fixedCosts * (1 + fixedAdj / 100),
-      variableCostPerUnit: variableCost * (1 + variableAdj / 100),
-      sellingPricePerUnit: sellingPrice * (1 + priceAdj / 100),
-      currentMonthlyVolume: currentVolume,
-      targetProfitMargin: targetMargin,
+      fixedCostsMonthly: safeFixedCosts * (1 + sanitizePercentage(fixedAdj, { min: -50, max: 50 }) / 100),
+      variableCostPerUnit: safeVariableCost * (1 + sanitizePercentage(variableAdj, { min: -50, max: 50 }) / 100),
+      sellingPricePerUnit: safeSellingPrice * (1 + sanitizePercentage(priceAdj, { min: -50, max: 50 }) / 100),
+      currentMonthlyVolume: safeCurrentVolume,
+      targetProfitMargin: safeTargetMargin,
     }),
-    [fixedCosts, variableCost, sellingPrice, currentVolume, targetMargin, priceAdj, variableAdj, fixedAdj]
+    [safeFixedCosts, safeVariableCost, safeSellingPrice, safeCurrentVolume, safeTargetMargin, priceAdj, variableAdj, fixedAdj]
   );
 
   const ai = useAiExplain("break-even");
@@ -171,16 +190,22 @@ export default function BreakEvenPage() {
               label="Monthly Fixed Costs"
               value={fixedCosts}
               onChange={setFixedCosts}
+              onBlur={() => markTouched("fixedCosts")}
+              error={fixedCostsError}
             />
             <CurrencyInput
               label="Variable Cost per Unit"
               value={variableCost}
               onChange={setVariableCost}
+              onBlur={() => markTouched("variableCost")}
+              error={variableCostError}
             />
             <CurrencyInput
               label="Selling Price per Unit"
               value={sellingPrice}
               onChange={setSellingPrice}
+              onBlur={() => markTouched("sellingPrice")}
+              error={sellingPriceError}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -193,12 +218,16 @@ export default function BreakEvenPage() {
                 placeholder="e.g. 500"
                 value={currentVolume || ""}
                 onChange={(e) => setCurrentVolume(Number(e.target.value))}
+                onBlur={() => markTouched("currentVolume")}
               />
+              {currentVolumeError && <p className="text-xs text-red-500 mt-1">{currentVolumeError}</p>}
             </div>
             <PercentageInput
               label="Target Profit Margin (optional)"
               value={targetMargin}
               onChange={setTargetMargin}
+              onBlur={() => markTouched("targetMargin")}
+              error={targetMarginError}
             />
           </div>
         </CardContent>
@@ -383,6 +412,7 @@ export default function BreakEvenPage() {
           explanation={ai.explanation}
           isLoading={ai.isLoading}
           error={ai.error}
+          disabled={hasErrors}
           onExplain={() =>
             ai.explain({
               fixedCostsMonthly: adjustedInputs.fixedCostsMonthly,
@@ -394,7 +424,7 @@ export default function BreakEvenPage() {
               contributionMarginRatio: result.contributionMarginRatio,
               marginOfSafety: result.marginOfSafety,
               marginOfSafetyPercent: result.marginOfSafetyPercent,
-              currentVolume,
+              currentVolume: safeCurrentVolume,
             })
           }
           onDismiss={ai.reset}

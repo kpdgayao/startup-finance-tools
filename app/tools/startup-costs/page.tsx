@@ -21,6 +21,7 @@ import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { validateFinancialAmount, validatePositiveInteger, sanitizeFinancialAmount, sanitizePositiveInteger } from "@/lib/validation";
 import { type BusinessType } from "@/lib/calculations/compliance-checklist";
 import {
   type CostCategory,
@@ -69,10 +70,34 @@ export default function StartupCostsPage() {
   );
   const [bufferMonths, setBufferMonths] = useState(3);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const bufferMonthsError = touched.bufferMonths ? validatePositiveInteger(bufferMonths).error : undefined;
+  const itemAmountErrors = categories.flatMap((cat) =>
+    cat.items.map((item) => validateFinancialAmount(item.amount).error)
+  ).filter(Boolean);
+
+  const hasErrors = !!(bufferMonthsError || itemAmountErrors.length > 0);
+
+  const safeCategories = useMemo(() =>
+    categories.map((cat) => ({
+      ...cat,
+      items: cat.items.map((item) => ({
+        ...item,
+        amount: sanitizeFinancialAmount(item.amount),
+      })),
+    })),
+    [categories]
+  );
+
+  const safeBufferMonths = sanitizePositiveInteger(bufferMonths);
+
   const handleReset = () => {
     setBusinessType("corporation");
     setCategories(getDefaultCategories);
     setBufferMonths(3);
+    setTouched({});
   };
 
   const ai = useAiExplain("startup-costs");
@@ -86,11 +111,11 @@ export default function StartupCostsPage() {
     () =>
       calculateTotalStartupCosts({
         businessType,
-        categories,
-        bufferMonths,
+        categories: safeCategories,
+        bufferMonths: safeBufferMonths,
         contingencyPercent: 20,
       }),
-    [businessType, categories, bufferMonths]
+    [businessType, safeCategories, safeBufferMonths]
   );
 
   const updateItem = useCallback(

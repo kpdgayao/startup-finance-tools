@@ -28,6 +28,7 @@ import { LearnLink } from "@/components/shared/learn-link";
 import { Button } from "@/components/ui/button";
 import { formatPHP, formatPercent } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
+import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import {
   calculateSafeConversion,
   calculateNoteConversion,
@@ -57,6 +58,27 @@ export default function SafeCalculatorPage() {
   const [preMoneyValuation, setPreMoneyValuation] = useState(40000000);
   const [roundSize, setRoundSize] = useState(10000000);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const investmentAmountError = touched.investmentAmount ? validateFinancialAmount(investmentAmount, { allowZero: false }).error : undefined;
+  const valuationCapError = touched.valuationCap ? validateFinancialAmount(valuationCap, { allowZero: false }).error : undefined;
+  const discountRateError = touched.discountRate ? validatePercentage(discountRate).error : undefined;
+  const interestRateError = touched.interestRate ? validatePercentage(interestRate).error : undefined;
+  const termMonthsError = touched.termMonths ? validatePositiveInteger(termMonths).error : undefined;
+  const preMoneyValuationError = touched.preMoneyValuation ? validateFinancialAmount(preMoneyValuation, { allowZero: false }).error : undefined;
+  const roundSizeError = touched.roundSize ? validateFinancialAmount(roundSize, { allowZero: false }).error : undefined;
+
+  const hasErrors = !!(investmentAmountError || valuationCapError || discountRateError || interestRateError || termMonthsError || preMoneyValuationError || roundSizeError);
+
+  const safeInvestmentAmount = sanitizeFinancialAmount(investmentAmount);
+  const safeValuationCap = sanitizeFinancialAmount(valuationCap);
+  const safeDiscountRate = sanitizePercentage(discountRate);
+  const safeInterestRate = sanitizePercentage(interestRate);
+  const safeTermMonths = sanitizePositiveInteger(termMonths);
+  const safePreMoneyValuation = sanitizeFinancialAmount(preMoneyValuation);
+  const safeRoundSize = sanitizeFinancialAmount(roundSize);
+
   const handleReset = () => {
     setInstrumentType("safe");
     setInvestmentAmount(1000000);
@@ -66,6 +88,7 @@ export default function SafeCalculatorPage() {
     setTermMonths(18);
     setPreMoneyValuation(40000000);
     setRoundSize(10000000);
+    setTouched({});
   };
 
   const ai = useAiExplain("safe-calculator");
@@ -73,18 +96,18 @@ export default function SafeCalculatorPage() {
   const result =
     instrumentType === "safe"
       ? calculateSafeConversion(
-          { investmentAmount, valuationCap, discountRate },
-          { preMoneyValuation, roundSize }
+          { investmentAmount: safeInvestmentAmount, valuationCap: safeValuationCap, discountRate: safeDiscountRate },
+          { preMoneyValuation: safePreMoneyValuation, roundSize: safeRoundSize }
         )
       : calculateNoteConversion(
           {
-            investmentAmount,
-            valuationCap,
-            discountRate,
-            interestRate,
-            termMonths,
+            investmentAmount: safeInvestmentAmount,
+            valuationCap: safeValuationCap,
+            discountRate: safeDiscountRate,
+            interestRate: safeInterestRate,
+            termMonths: safeTermMonths,
           },
-          { preMoneyValuation, roundSize }
+          { preMoneyValuation: safePreMoneyValuation, roundSize: safeRoundSize }
         );
 
   return (
@@ -205,16 +228,22 @@ export default function SafeCalculatorPage() {
               label="Investment Amount"
               value={investmentAmount}
               onChange={setInvestmentAmount}
+              onBlur={() => markTouched("investmentAmount")}
+              error={investmentAmountError}
             />
             <CurrencyInput
               label="Valuation Cap"
               value={valuationCap}
               onChange={setValuationCap}
+              onBlur={() => markTouched("valuationCap")}
+              error={valuationCapError}
             />
             <PercentageInput
               label="Discount Rate"
               value={discountRate}
               onChange={setDiscountRate}
+              onBlur={() => markTouched("discountRate")}
+              error={discountRateError}
             />
           </div>
 
@@ -224,6 +253,8 @@ export default function SafeCalculatorPage() {
                 label="Annual Interest Rate"
                 value={interestRate}
                 onChange={setInterestRate}
+                onBlur={() => markTouched("interestRate")}
+                error={interestRateError}
               />
               <div className="space-y-2">
                 <Label htmlFor="term-months">Term (months)</Label>
@@ -237,7 +268,9 @@ export default function SafeCalculatorPage() {
                   onChange={(e) =>
                     setTermMonths(Math.max(1, parseInt(e.target.value) || 1))
                   }
+                  onBlur={() => markTouched("termMonths")}
                 />
+                {termMonthsError && <p className="text-xs text-red-500 mt-1">{termMonthsError}</p>}
               </div>
             </div>
           )}
@@ -257,11 +290,15 @@ export default function SafeCalculatorPage() {
               label="Pre-Money Valuation"
               value={preMoneyValuation}
               onChange={setPreMoneyValuation}
+              onBlur={() => markTouched("preMoneyValuation")}
+              error={preMoneyValuationError}
             />
             <CurrencyInput
               label="Round Size"
               value={roundSize}
               onChange={setRoundSize}
+              onBlur={() => markTouched("roundSize")}
+              error={roundSizeError}
             />
           </div>
         </CardContent>
@@ -417,17 +454,18 @@ export default function SafeCalculatorPage() {
           explanation={ai.explanation}
           isLoading={ai.isLoading}
           error={ai.error}
+          disabled={hasErrors}
           onExplain={() =>
             ai.explain({
               instrumentType,
-              investmentAmount,
-              valuationCap,
-              discountRate,
+              investmentAmount: safeInvestmentAmount,
+              valuationCap: safeValuationCap,
+              discountRate: safeDiscountRate,
               ...(instrumentType === "convertible-note"
-                ? { interestRate, termMonths }
+                ? { interestRate: safeInterestRate, termMonths: safeTermMonths }
                 : {}),
-              preMoneyValuation,
-              roundSize,
+              preMoneyValuation: safePreMoneyValuation,
+              roundSize: safeRoundSize,
               conversionMethod: result.conversionMethod,
               effectivePrice: result.effectivePrice,
               ownershipPercent: result.ownershipPercent,
