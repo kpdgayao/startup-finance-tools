@@ -25,12 +25,19 @@ export class RateLimiter {
       this.cleanup();
     }
 
-    // Note: keyed on the client-supplied X-Forwarded-For and stored in-memory,
-    // so the limit is best-effort and per-instance (each serverless instance
-    // keeps its own counts). Use a shared store for strict global limiting.
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      "unknown";
+    // Railway's edge proxy APPENDS the real client IP to the RIGHTMOST position
+    // of X-Forwarded-For, so take the last entry — a client can prepend fake
+    // entries but cannot control the one the trusted edge added. Using the
+    // leftmost value would be attacker-controllable and let a spoofed header
+    // rotate past this limit. Still in-memory/per-instance (best-effort); use a
+    // shared store for strict global limiting.
+    const xff = request.headers.get("x-forwarded-for");
+    const parts = xff
+      ? xff.split(",").map((p) => p.trim()).filter(Boolean)
+      : [];
+    const ip = parts.length
+      ? parts[parts.length - 1]
+      : request.headers.get("x-real-ip")?.trim() || "unknown";
     const now = Date.now();
     const windowStart = now - this.windowMs;
 
