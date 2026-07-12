@@ -3,7 +3,9 @@ import { z } from "zod";
 import Mailjet from "node-mailjet";
 import { RateLimiter } from "@/app/lib/rate-limit";
 
-const rateLimiter = new RateLimiter(10, 60_000);
+// 5 subscribe attempts per 5 minutes per IP — ample for a real signup, caps how
+// fast an attacker can inject addresses into the Mailjet list / relay welcome mail.
+const rateLimiter = new RateLimiter(5, 5 * 60_000);
 
 const schema = z.object({
   email: z.string().email(),
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
     // Send welcome email only to new subscribers
     if (isNewContact) {
       try {
-        await mailjet.post("send", { version: "v3.1" }).request({
+        const sendResponse = await mailjet.post("send", { version: "v3.1" }).request({
           Messages: [
             {
               From: {
@@ -157,6 +159,20 @@ export async function POST(request: Request) {
             },
           ],
         });
+
+        // Mailjet v3.1 returns HTTP 200 even when a message is rejected; the real
+        // result is the per-message Status. Log non-"success" so a dropped welcome
+        // email is visible instead of silently appearing sent.
+        const sendBody = sendResponse.body as {
+          Messages?: Array<{ Status?: string; Errors?: Array<{ ErrorMessage?: string }> }>;
+        };
+        if (sendBody.Messages?.[0]?.Status !== "success") {
+          console.error(
+            "[Newsletter] Welcome email non-success status:",
+            sendBody.Messages?.[0]?.Status,
+            sendBody.Messages?.[0]?.Errors
+          );
+        }
       } catch (emailErr) {
         // Don't fail the subscription if welcome email fails
         console.error("[Newsletter] Welcome email failed:", emailErr);
