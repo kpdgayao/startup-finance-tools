@@ -117,12 +117,12 @@ export function CashFlowCharts({
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="bottom" height={36} />
                 <Bar dataKey="Cash Inflow" fill={CHART_COLORS[3]} radius={[3, 3, 0, 0]} opacity={0.85} />
-                <Bar dataKey="Cash Outflow" fill={STATUS_COLORS.bad} radius={[3, 3, 0, 0]} opacity={0.85} />
+                <Bar dataKey="Cash Outflow" fill={CHART_COLORS[4]} radius={[3, 3, 0, 0]} opacity={0.85} />
                 <Line type="monotone" dataKey="Cash Balance" stroke={CHART_COLORS[0]} strokeWidth={2.5} dot={{ r: 3, fill: CHART_COLORS[0] }} />
               </ComposedChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted-foreground text-center mt-2">
-              Bars show cash-basis inflows and outflows. Blue line shows running cash balance.
+              Bars show cash-basis inflows and outflows. The line shows running cash balance.
             </p>
           </TabsContent>
 
@@ -212,7 +212,7 @@ export function CashFlowCharts({
                 />
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="bottom" height={36} />
-                <Bar dataKey="Fixed Costs" stackId="costs" fill={STATUS_COLORS.bad} opacity={0.7} radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Fixed Costs" stackId="costs" fill={CHART_COLORS[4]} opacity={0.7} radius={[0, 0, 0, 0]} />
                 <Bar dataKey="Variable Costs" stackId="costs" fill={CHART_COLORS[7]} opacity={0.7} radius={[3, 3, 0, 0]} />
                 <Line type="monotone" dataKey="Revenue (Accrual)" stroke={CHART_COLORS[3]} strokeWidth={2.5} dot={{ r: 3, fill: CHART_COLORS[3] }} />
               </ComposedChart>

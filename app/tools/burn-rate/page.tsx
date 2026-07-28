@@ -17,7 +17,7 @@ import { LearnLink } from "@/components/shared/learn-link";
 import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import { CHART_COLORS, STATUS_COLORS } from "@/lib/constants";
+import { CHART_COLORS } from "@/lib/constants";
 import {
   calculateBurnRate,
   projectCashBalance,
@@ -259,11 +259,11 @@ export default function BurnRatePage() {
                 <Area
                   type="monotone"
                   dataKey="Adjusted Path"
-                  stroke={STATUS_COLORS.good}
+                  stroke={CHART_COLORS[3]}
                   strokeWidth={2.5}
-                  fill={STATUS_COLORS.good}
+                  fill={CHART_COLORS[3]}
                   fillOpacity={0.12}
-                  dot={{ r: 2, fill: STATUS_COLORS.good }}
+                  dot={{ r: 2, fill: CHART_COLORS[3] }}
                 />
               )}
             </AreaChart>
