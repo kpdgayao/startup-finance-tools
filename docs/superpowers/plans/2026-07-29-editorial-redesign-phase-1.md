@@ -392,7 +392,23 @@ const jetbrainsMono = JetBrains_Mono({
 
 All three are variable fonts, so omitting `weight` gives the full `wght` range. Do **not** add a `weight` array — combining it with `axes` is a build error.
 
-Then replace the body className:
+Then move the font variables onto `<html>`, **not** `<body>`. Replace:
+
+```tsx
+    <html lang="en" suppressHydrationWarning>
+```
+
+with:
+
+```tsx
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+    >
+```
+
+and replace the body className:
 
 ```tsx
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -401,8 +417,12 @@ Then replace the body className:
 with:
 
 ```tsx
-        className={`${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
+        className="antialiased"
 ```
+
+**This placement is load-bearing, and the pre-existing Geist setup had it wrong.** Tailwind's `@theme inline` emits `--font-sans: var(--font-inter)` at `:root` — that is `<html>`. If `--font-inter` is only defined further down the tree (by a `.variable` class on `<body>`), the `var()` at `:root` is *invalid at computed-value time*, and it is that invalid value which inherits downward. It does **not** re-resolve at `<body>` where the variable finally exists. The result is a page that silently falls back to system fonts while every rule looks correct.
+
+`next-themes` mutates `<html>` via `classList.add`/`remove`, so a static `className` there coexists with the theme class without conflict.
 
 - [ ] **Step 2: Verify the fonts resolve**
 
@@ -647,7 +667,7 @@ Expected: unchanged pass count.
 pnpm dev
 ```
 
-- `/` in light mode is warm cream (`#F6F2EA`), not white. Headings render in a serif.
+- `/` in light mode is warm cream (`#F6F2EA`), not white. Headings render in a serif — confirm with `getComputedStyle(document.querySelector("h1")).fontFamily`, which must name Source Serif, not a system fallback.
 - Toggle to dark: background is warm near-black (`#16150F`), text is bone (`#EFE9DB`), not pure white.
 - On `/learn/pricing-your-product`, inline prose links are teal and underlined; hovering turns them ochre.
 - On `/tools`, the tool card titles are **not** teal — they inherit foreground. If they are teal, the link scoping in Step 7 was applied incorrectly.
