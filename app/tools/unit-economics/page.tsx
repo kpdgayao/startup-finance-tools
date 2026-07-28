@@ -20,6 +20,7 @@ import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { RotateCcw } from "lucide-react";
+import { CHART_COLORS } from "@/lib/constants";
 import {
   calculateUnitEconomics,
   generateSensitivity,
@@ -195,7 +196,7 @@ export default function UnitEconomicsPage() {
               <input
                 type="number"
                 min={0}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={newCustomersPerMonth || ""}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
@@ -421,32 +422,32 @@ export default function UnitEconomicsPage() {
               />
               <ReferenceLine
                 y={3}
-                stroke="#22c55e"
+                stroke={CHART_COLORS[3]}
                 strokeDasharray="5 5"
                 label={{
                   value: "3:1 Healthy",
                   position: "right",
-                  fill: "#22c55e",
+                  fill: CHART_COLORS[3],
                   fontSize: 12,
                 }}
               />
               <ReferenceLine
                 y={1}
-                stroke="#ef4444"
+                stroke={CHART_COLORS[4]}
                 strokeDasharray="5 5"
                 label={{
                   value: "1:1 Break-even",
                   position: "right",
-                  fill: "#ef4444",
+                  fill: CHART_COLORS[4],
                   fontSize: 12,
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="LTV:CAC"
-                stroke="#8b5cf6"
+                stroke={CHART_COLORS[6]}
                 strokeWidth={2.5}
-                dot={{ r: 3, fill: "#8b5cf6" }}
+                dot={{ r: 3, fill: CHART_COLORS[6] }}
                 activeDot={{ r: 5 }}
               />
               {result.ltvCacRatio !== Infinity && (
@@ -454,14 +455,14 @@ export default function UnitEconomicsPage() {
                   x={`${monthlyChurnRate}%`}
                   y={parseFloat(result.ltvCacRatio.toFixed(2))}
                   r={7}
-                  fill="#f59e0b"
-                  stroke="#f59e0b"
+                  fill={CHART_COLORS[1]}
+                  stroke={CHART_COLORS[1]}
                 />
               )}
             </LineChart>
           </ResponsiveContainer>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            The orange dot shows your current position at {monthlyChurnRate}%
+            The highlighted dot shows your current position at {monthlyChurnRate}%
             monthly churn
           </p>
         </CardContent>

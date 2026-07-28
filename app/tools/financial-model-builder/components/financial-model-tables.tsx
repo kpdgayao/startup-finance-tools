@@ -259,7 +259,7 @@ export function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+    <div className="bg-card border border-border rounded-lg p-3">
       <p className="font-medium text-sm mb-2">{label}</p>
       {payload.map((entry, i) => (
         <div

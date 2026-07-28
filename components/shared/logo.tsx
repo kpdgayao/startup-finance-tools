@@ -12,7 +12,7 @@ export function Logo({ variant = "icon", className }: LogoProps) {
       className={cn(
         "grid shrink-0 place-items-center rounded-[1px] font-serif font-bold italic",
         "bg-foreground text-background",
-        "dark:bg-[var(--ochre)] dark:text-[#16150F]",
+        "dark:bg-ochre dark:text-background",
         variant === "icon" ? "h-[26px] w-[26px] text-base" : "h-8 w-8 text-lg",
         variant === "icon" ? className : undefined
       )}

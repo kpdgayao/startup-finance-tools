@@ -417,7 +417,7 @@ export default function SafeCalculatorPage() {
                         <text
                           x={x}
                           y={y}
-                          fill="#e5e7eb"
+                          fill="var(--foreground)"
                           textAnchor={x > cx ? "start" : "end"}
                           dominantBaseline="central"
                           fontSize={13}

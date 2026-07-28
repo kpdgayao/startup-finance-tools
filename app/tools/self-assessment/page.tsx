@@ -15,6 +15,7 @@ import {
   type QuizCategory,
 } from "@/lib/calculations/self-assessment";
 import { GraduationCap, CheckCircle2, XCircle, ArrowRight, RotateCcw, Trophy, BookOpen } from "lucide-react";
+import { CHART_COLORS } from "@/lib/constants";
 import {
   RadarChart,
   PolarGrid,
@@ -181,8 +182,8 @@ export default function SelfAssessmentPage() {
                 <Radar
                   name="Score"
                   dataKey="score"
-                  stroke="#3b82f6"
-                  fill="#3b82f6"
+                  stroke={CHART_COLORS[0]}
+                  fill={CHART_COLORS[0]}
                   fillOpacity={0.3}
                 />
               </RadarChart>

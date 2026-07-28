@@ -32,6 +32,7 @@ import { ExportPDFButton, summaryCard, section, table } from "@/components/share
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { Download, RotateCcw } from "lucide-react";
+import { CHART_COLORS } from "@/lib/constants";
 import {
   buildMsmeFinancialPlan,
   exportMsmePlanCSV,
@@ -85,7 +86,7 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+    <div className="bg-card border border-border rounded-lg p-3">
       <p className="font-medium text-sm mb-2">{label}</p>
       {payload.map((entry, i) => (
         <div key={i} className="flex items-center justify-between gap-4 text-sm">
@@ -466,8 +467,8 @@ function ScenarioCard({
       onClick={onClick}
       className={`text-left p-4 rounded-lg border transition-all ${
         active
-          ? "border-primary bg-primary/5 shadow-[0_0_15px_-3px] shadow-primary/30"
-          : "border-border/50 hover:border-border hover:shadow-[0_0_15px_-3px] hover:shadow-primary/15"
+          ? "border-primary bg-primary/5"
+          : "border-border/50 hover:border-border"
       }`}
     >
       <div className="flex items-center justify-between mb-1">
@@ -1304,9 +1305,9 @@ export default function MsmeFinancialPlanPage() {
                   <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={tickFormatter} />
                   <RechartsTooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="Revenue" fill="#3b82f6" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Bar dataKey="Gross Profit" fill="#22c55e" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Line type="monotone" dataKey="Net Income" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 5, fill: "#f59e0b" }} />
+                  <Bar dataKey="Revenue" fill={CHART_COLORS[0]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Gross Profit" fill={CHART_COLORS[3]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Line type="monotone" dataKey="Net Income" stroke={CHART_COLORS[1]} strokeWidth={2.5} dot={{ r: 5, fill: CHART_COLORS[1] }} />
                 </ComposedChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground text-center">
@@ -1323,10 +1324,10 @@ export default function MsmeFinancialPlanPage() {
                   <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={tickFormatter} />
                   <RechartsTooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="Cash" stackId="assets" fill="#3b82f6" opacity={0.85} />
-                  <Bar dataKey="AR" stackId="assets" fill="#22c55e" opacity={0.85} />
-                  <Bar dataKey="Inventory" stackId="assets" fill="#f59e0b" opacity={0.85} />
-                  <Bar dataKey="Net PP&E" stackId="assets" fill="#8b5cf6" opacity={0.85} radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="Cash" stackId="assets" fill={CHART_COLORS[0]} opacity={0.85} />
+                  <Bar dataKey="AR" stackId="assets" fill={CHART_COLORS[3]} opacity={0.85} />
+                  <Bar dataKey="Inventory" stackId="assets" fill={CHART_COLORS[1]} opacity={0.85} />
+                  <Bar dataKey="Net PP&E" stackId="assets" fill={CHART_COLORS[6]} opacity={0.85} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground text-center">
@@ -1343,14 +1344,14 @@ export default function MsmeFinancialPlanPage() {
                   <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={tickFormatter} />
                   <RechartsTooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="Operating" fill="#22c55e" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Bar dataKey="Investing" fill="#ef4444" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Bar dataKey="Financing" fill="#8b5cf6" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Bar dataKey="Net CF" fill="#3b82f6" radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Operating" fill={CHART_COLORS[3]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Investing" fill={CHART_COLORS[4]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Financing" fill={CHART_COLORS[6]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Net CF" fill={CHART_COLORS[0]} radius={[3, 3, 0, 0]} opacity={0.85} />
                 </BarChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground text-center">
-                Cash flow by activity: Operating (green), Investing (red), Financing (purple), and Net (blue).
+                Cash flow by activity: Operating, Investing, Financing, and Net (each series a distinct colour).
               </p>
             </TabsContent>
 
@@ -1363,13 +1364,13 @@ export default function MsmeFinancialPlanPage() {
                   <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={tickFormatter} />
                   <RechartsTooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="Net Income" fill="#22c55e" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Bar dataKey="Distributions" fill="#ef4444" radius={[3, 3, 0, 0]} opacity={0.85} />
-                  <Bar dataKey="Ending Capital" fill="#3b82f6" radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Net Income" fill={CHART_COLORS[3]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Distributions" fill={CHART_COLORS[4]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  <Bar dataKey="Ending Capital" fill={CHART_COLORS[0]} radius={[3, 3, 0, 0]} opacity={0.85} />
                 </BarChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground text-center">
-                Net income added (green) minus distributions (red) compounds into ending capital (blue).
+                Net income added minus distributions compounds into ending capital (each series a distinct colour).
               </p>
             </TabsContent>
           </Tabs>

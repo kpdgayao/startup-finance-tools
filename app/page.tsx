@@ -24,18 +24,7 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main id="main-content" className="flex-1">
-        <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-transparent">
-          {/* Subtle grid background with radial fade */}
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-              backgroundSize: "48px 48px",
-              maskImage: "radial-gradient(ellipse 60% 70% at 50% 40%, black 20%, transparent 100%)",
-              WebkitMaskImage: "radial-gradient(ellipse 60% 70% at 50% 40%, black 20%, transparent 100%)",
-            }}
-          />
+        <section className="relative overflow-hidden border-b">
           <div className="relative container mx-auto px-4 py-16 text-center">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               Startup Finance Toolkit
@@ -77,7 +66,7 @@ export default function HomePage() {
                   const Icon = iconMap[tool.icon as keyof typeof iconMap];
                   return (
                     <Link key={tool.id} href={tool.href}>
-                      <Card className="h-full hover:border-primary/50 hover:shadow-[0_0_15px_-3px] hover:shadow-primary/15 transition-all cursor-pointer">
+                      <Card className="h-full hover:border-primary/50 transition-all cursor-pointer">
                         <CardHeader>
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-md bg-primary/10">
