@@ -41,7 +41,7 @@ export function PercentageInput({
           min={min}
           max={max}
           step={step}
-          className={cn("pr-8", clamped && "border-red-500/50")}
+          className={cn("pr-8", clamped && "border-bad/50")}
           value={value || ""}
           onChange={(e) => {
             const raw = parseFloat(e.target.value);
@@ -64,7 +64,7 @@ export function PercentageInput({
           %
         </span>
       </div>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <p className="text-xs text-bad mt-1">{error}</p>}
     </div>
   );
 }

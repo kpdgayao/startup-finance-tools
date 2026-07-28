@@ -152,10 +152,10 @@ export function CashFlowCharts({
             </ResponsiveContainer>
             <div className="mt-3 flex items-center justify-center gap-6 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Positive net cash flow
+                <span className="w-2.5 h-2.5 rounded-full bg-good" /> Positive net cash flow
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Negative net cash flow
+                <span className="w-2.5 h-2.5 rounded-full bg-bad" /> Negative net cash flow
               </span>
             </div>
           </TabsContent>
@@ -188,11 +188,11 @@ export function CashFlowCharts({
             <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <span className="text-muted-foreground">Peak Balance</span>
-                <span className="font-mono font-semibold text-green-400">{formatPHP(peakBalance)}</span>
+                <span className="font-mono font-semibold text-good">{formatPHP(peakBalance)}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <span className="text-muted-foreground">Lowest Balance</span>
-                <span className={`font-mono font-semibold ${lowestBalance < 0 ? "text-red-400" : "text-foreground"}`}>
+                <span className={`font-mono font-semibold ${lowestBalance < 0 ? "text-bad" : "text-foreground"}`}>
                   {formatPHP(lowestBalance)}
                 </span>
               </div>

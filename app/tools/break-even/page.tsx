@@ -220,7 +220,7 @@ export default function BreakEvenPage() {
                 onChange={(e) => setCurrentVolume(Number(e.target.value))}
                 onBlur={() => markTouched("currentVolume")}
               />
-              {currentVolumeError && <p className="text-xs text-red-500 mt-1">{currentVolumeError}</p>}
+              {currentVolumeError && <p className="text-xs text-bad mt-1">{currentVolumeError}</p>}
             </div>
             <PercentageInput
               label="Target Profit Margin (optional)"

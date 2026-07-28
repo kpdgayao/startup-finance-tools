@@ -74,9 +74,9 @@ const BUSINESS_TYPES: {
 ];
 
 const PHASE_COLORS: Record<CompliancePhase, string> = {
-  registration: "bg-blue-500",
-  "post-registration": "bg-amber-500",
-  ongoing: "bg-green-500",
+  registration: "bg-chart-3",
+  "post-registration": "bg-warn",
+  ongoing: "bg-good",
 };
 
 function loadCompleted(businessType: BusinessType): Set<string> {
@@ -353,7 +353,7 @@ function ChecklistItem({
     <div
       className={`rounded-lg border p-3 transition-colors ${
         isCompleted
-          ? "border-green-500/30 bg-green-500/5"
+          ? "border-good/30 bg-good/5"
           : isLocked
             ? "border-border/50 bg-muted/30 opacity-60"
             : "border-border hover:border-primary/30"

@@ -181,7 +181,7 @@ function PLTable({ annual, distLabel }: { annual: AnnualRow[]; distLabel: string
           <tr className="border-b border-border/50 bg-muted/20">
             <td className="py-2.5 px-2 font-semibold">EBITDA</td>
             {annual.map((a) => (
-              <td key={a.year} className={`py-2.5 px-2 text-right font-mono font-semibold ${a.ebitda < 0 ? "text-red-400" : ""}`}>
+              <td key={a.year} className={`py-2.5 px-2 text-right font-mono font-semibold ${a.ebitda < 0 ? "text-bad" : ""}`}>
                 {formatPHP(a.ebitda)}
               </td>
             ))}
@@ -197,7 +197,7 @@ function PLTable({ annual, distLabel }: { annual: AnnualRow[]; distLabel: string
           <tr className="border-b border-border/50 bg-muted/20">
             <td className="py-2.5 px-2 font-semibold">EBIT (Operating Profit)</td>
             {annual.map((a) => (
-              <td key={a.year} className={`py-2.5 px-2 text-right font-mono font-semibold ${a.ebit < 0 ? "text-red-400" : ""}`}>
+              <td key={a.year} className={`py-2.5 px-2 text-right font-mono font-semibold ${a.ebit < 0 ? "text-bad" : ""}`}>
                 {formatPHP(a.ebit)}
               </td>
             ))}
@@ -213,7 +213,7 @@ function PLTable({ annual, distLabel }: { annual: AnnualRow[]; distLabel: string
           <tr className="border-b border-border/50">
             <td className="py-2.5 px-2">Pre-tax Income</td>
             {annual.map((a) => (
-              <td key={a.year} className={`py-2.5 px-2 text-right font-mono ${a.preTaxIncome < 0 ? "text-red-400" : ""}`}>
+              <td key={a.year} className={`py-2.5 px-2 text-right font-mono ${a.preTaxIncome < 0 ? "text-bad" : ""}`}>
                 {formatPHP(a.preTaxIncome)}
               </td>
             ))}
@@ -229,7 +229,7 @@ function PLTable({ annual, distLabel }: { annual: AnnualRow[]; distLabel: string
           <tr className="border-b border-border/50 bg-muted/20">
             <td className="py-2.5 px-2 font-semibold">Net Income</td>
             {annual.map((a) => (
-              <td key={a.year} className={`py-2.5 px-2 text-right font-mono font-semibold ${a.netIncome < 0 ? "text-red-400" : ""}`}>
+              <td key={a.year} className={`py-2.5 px-2 text-right font-mono font-semibold ${a.netIncome < 0 ? "text-bad" : ""}`}>
                 {formatPHP(a.netIncome)}
               </td>
             ))}
@@ -237,7 +237,7 @@ function PLTable({ annual, distLabel }: { annual: AnnualRow[]; distLabel: string
           <tr className="border-b border-border/50">
             <td className="py-2.5 px-2 text-muted-foreground italic">Net Margin %</td>
             {annual.map((a) => (
-              <td key={a.year} className={`py-2.5 px-2 text-right font-mono ${a.netMarginPercent < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+              <td key={a.year} className={`py-2.5 px-2 text-right font-mono ${a.netMarginPercent < 0 ? "text-bad" : "text-muted-foreground"}`}>
                 {a.netMarginPercent.toFixed(1)}%
               </td>
             ))}
@@ -326,7 +326,7 @@ function BSTable({
                   {annual.map((a) => (
                     <td
                       key={a.year}
-                      className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${a[row.key] < 0 ? "text-red-400" : ""}`}
+                      className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${a[row.key] < 0 ? "text-bad" : ""}`}
                     >
                       {formatPHP(a[row.key])}
                     </td>
@@ -376,7 +376,7 @@ function CFTable({ annual, distLabel }: { annual: AnnualRow[]; distLabel: string
                 return (
                   <td
                     key={a.year}
-                    className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${row.muted ? "text-muted-foreground" : ""} ${display < 0 ? "text-red-400" : ""}`}
+                    className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${row.muted ? "text-muted-foreground" : ""} ${display < 0 ? "text-bad" : ""}`}
                   >
                     {formatPHP(display)}
                   </td>
@@ -424,7 +424,7 @@ function SCETable({ sce, capitalLabel }: { sce: SCERow[]; capitalLabel: string }
           <tr className="border-b border-border/50">
             <td className="py-2.5 px-2">Add: Net Income</td>
             {sce.map((r) => (
-              <td key={r.year} className={`py-2.5 px-2 text-right font-mono ${r.netIncome < 0 ? "text-red-400" : ""}`}>
+              <td key={r.year} className={`py-2.5 px-2 text-right font-mono ${r.netIncome < 0 ? "text-bad" : ""}`}>
                 {formatPHP(r.netIncome)}
               </td>
             ))}
@@ -485,13 +485,13 @@ function ScenarioCard({
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-muted-foreground">Final yr net income</span>
-          <span className={`font-mono ${output.summary.finalYearNetIncome < 0 ? "text-red-400" : ""}`}>
+          <span className={`font-mono ${output.summary.finalYearNetIncome < 0 ? "text-bad" : ""}`}>
             {formatPHP(output.summary.finalYearNetIncome)}
           </span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-muted-foreground">Final yr cash</span>
-          <span className={`font-mono ${output.summary.finalYearCash < 0 ? "text-red-400" : ""}`}>
+          <span className={`font-mono ${output.summary.finalYearCash < 0 ? "text-bad" : ""}`}>
             {formatPHP(output.summary.finalYearCash)}
           </span>
         </div>

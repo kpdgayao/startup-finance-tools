@@ -150,7 +150,7 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
                     onChange={(e) => setExpectedUnits(parseInt(e.target.value) || 0)}
                     onBlur={() => markTouched("expectedUnits")}
                   />
-                  {expectedUnitsError && <p className="text-xs text-red-500 mt-1">{expectedUnitsError}</p>}
+                  {expectedUnitsError && <p className="text-xs text-bad mt-1">{expectedUnitsError}</p>}
                 </div>
                 <PercentageInput label="Target Margin %" value={marginPercent} onChange={setMarginPercent} max={500} onBlur={() => markTouched("marginPercent")} error={marginPercentError} />
               </div>

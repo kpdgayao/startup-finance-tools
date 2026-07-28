@@ -273,7 +273,7 @@ export default function MarketSizingPage() {
                     }}
                     onBlur={() => markTouched("totalCustomers")}
                   />
-                  {totalCustomersError && <p className="text-xs text-red-500 mt-1">{totalCustomersError}</p>}
+                  {totalCustomersError && <p className="text-xs text-bad mt-1">{totalCustomersError}</p>}
                 </div>
                 <PercentageInput
                   label="Target Segment (%)"
@@ -460,7 +460,7 @@ export default function MarketSizingPage() {
                     <td className="text-right py-2 px-3 font-medium">
                       <span
                         className={
-                          p.profit >= 0 ? "text-green-400" : "text-red-400"
+                          p.profit >= 0 ? "text-good" : "text-bad"
                         }
                       >
                         {formatPHP(p.profit)}

@@ -59,17 +59,17 @@ export default function ManagingCashFlowPage() {
       </p>
       <ul className="space-y-2 text-sm">
         <li>
-          <strong className="text-red-400">Red Zone (under 3 months):</strong>{" "}
+          <strong className="text-bad">Red Zone (under 3 months):</strong>{" "}
           Emergency. You should already be fundraising, cutting costs, or both.
           At this point, you&apos;re negotiating from weakness.
         </li>
         <li>
-          <strong className="text-yellow-400">Yellow Zone (3-6 months):</strong>{" "}
+          <strong className="text-warn">Yellow Zone (3-6 months):</strong>{" "}
           Caution. Start preparing for your next raise. Update your pitch deck,
           warm up investor relationships, and begin modeling scenarios.
         </li>
         <li>
-          <strong className="text-green-400">Green Zone (6+ months):</strong>{" "}
+          <strong className="text-good">Green Zone (6+ months):</strong>{" "}
           Healthy. You have time to execute, but don&apos;t get complacent.
           Monitor monthly and project forward.
         </li>

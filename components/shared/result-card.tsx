@@ -29,9 +29,9 @@ export function ResultCard({
     <Card
       className={cn(
         "border",
-        variant === "success" && "border-green-500/30 bg-green-500/5",
-        variant === "warning" && "border-yellow-500/30 bg-yellow-500/5",
-        variant === "danger" && "border-red-500/30 bg-red-500/5",
+        variant === "success" && "border-good/30 bg-good/5",
+        variant === "warning" && "border-warn/30 bg-warn/5",
+        variant === "danger" && "border-bad/30 bg-bad/5",
         className
       )}
     >
@@ -40,9 +40,9 @@ export function ResultCard({
         <p
           className={cn(
             "text-2xl font-bold mt-1 break-words",
-            variant === "success" && "text-green-400",
-            variant === "warning" && "text-yellow-400",
-            variant === "danger" && "text-red-400"
+            variant === "success" && "text-good",
+            variant === "warning" && "text-warn",
+            variant === "danger" && "text-bad"
           )}
           title={value}
         >
@@ -50,9 +50,9 @@ export function ResultCard({
             <Icon
               className={cn(
                 "inline-block h-5 w-5 mr-1.5 -mt-0.5",
-                variant === "success" && "text-green-400",
-                variant === "warning" && "text-yellow-400",
-                variant === "danger" && "text-red-400"
+                variant === "success" && "text-good",
+                variant === "warning" && "text-warn",
+                variant === "danger" && "text-bad"
               )}
             />
           )}

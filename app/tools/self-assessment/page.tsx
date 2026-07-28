@@ -28,10 +28,10 @@ import {
 type Phase = "intro" | "questions" | "results";
 
 const PROFILE_COLORS: Record<string, string> = {
-  Beginner: "text-red-400",
-  Intermediate: "text-yellow-400",
-  Advanced: "text-blue-400",
-  Expert: "text-green-400",
+  Beginner: "text-bad",
+  Intermediate: "text-warn",
+  Advanced: "text-chart-3",
+  Expert: "text-good",
 };
 
 export default function SelfAssessmentPage() {
@@ -305,7 +305,7 @@ export default function SelfAssessmentPage() {
                 </span>
                 {option}
                 {showExplanation && i === currentQuestion.correctIndex && (
-                  <CheckCircle2 className="ml-auto h-4 w-4 shrink-0 text-green-400" />
+                  <CheckCircle2 className="ml-auto h-4 w-4 shrink-0 text-good" />
                 )}
                 {showExplanation && i === selectedOption && !isCorrect && (
                   <XCircle className="ml-auto h-4 w-4 shrink-0" />

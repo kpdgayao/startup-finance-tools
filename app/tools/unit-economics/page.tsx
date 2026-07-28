@@ -205,7 +205,7 @@ export default function UnitEconomicsPage() {
                 onBlur={() => markTouched("newCustomersPerMonth")}
                 placeholder="0"
               />
-              {newCustomersPerMonthError && <p className="text-xs text-red-500 mt-1">{newCustomersPerMonthError}</p>}
+              {newCustomersPerMonthError && <p className="text-xs text-bad mt-1">{newCustomersPerMonthError}</p>}
             </div>
           </CardContent>
         </Card>
@@ -335,10 +335,10 @@ export default function UnitEconomicsPage() {
               <div
                 className={`h-4 w-4 rounded-full shrink-0 ${
                   healthVariant === "success"
-                    ? "bg-green-500"
+                    ? "bg-good"
                     : healthVariant === "warning"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
+                      ? "bg-warn"
+                      : "bg-bad"
                 }`}
               />
               <div>
@@ -361,10 +361,10 @@ export default function UnitEconomicsPage() {
               <div
                 className={`h-4 w-4 rounded-full shrink-0 ${
                   result.paybackMonths <= 12
-                    ? "bg-green-500"
+                    ? "bg-good"
                     : result.paybackMonths <= 18
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
+                      ? "bg-warn"
+                      : "bg-bad"
                 }`}
               />
               <div>

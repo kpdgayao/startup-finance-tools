@@ -51,7 +51,7 @@ export function PLTable({ annual }: { annual: AnnualRow[] }) {
               {annual.map((a) => (
                 <td
                   key={a.year}
-                  className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${a[row.key] < 0 ? "text-red-400" : ""}`}
+                  className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${a[row.key] < 0 ? "text-bad" : ""}`}
                 >
                   {formatPHP(a[row.key])}
                 </td>
@@ -78,7 +78,7 @@ export function PLTable({ annual }: { annual: AnnualRow[] }) {
             {annual.map((a) => (
               <td
                 key={a.year}
-                className={`py-2.5 px-2 text-right font-mono ${a.netMarginPercent < 0 ? "text-red-400" : "text-muted-foreground"}`}
+                className={`py-2.5 px-2 text-right font-mono ${a.netMarginPercent < 0 ? "text-bad" : "text-muted-foreground"}`}
               >
                 {a.netMarginPercent.toFixed(1)}%
               </td>
@@ -177,7 +177,7 @@ export function BSTable({
                   {annual.map((a) => (
                     <td
                       key={a.year}
-                      className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${a[row.key] < 0 ? "text-red-400" : ""}`}
+                      className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${a[row.key] < 0 ? "text-bad" : ""}`}
                     >
                       {formatPHP(a[row.key])}
                     </td>
@@ -234,7 +234,7 @@ export function CFTable({ annual }: { annual: AnnualRow[] }) {
                 return (
                   <td
                     key={a.year}
-                    className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${val < 0 ? "text-red-400" : ""}`}
+                    className={`py-2.5 px-2 text-right font-mono ${row.bold ? "font-semibold" : ""} ${val < 0 ? "text-bad" : ""}`}
                   >
                     {formatPHP(val)}
                   </td>

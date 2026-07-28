@@ -82,14 +82,14 @@ export function CurrencyInput({
           id={id}
           type="text"
           inputMode="numeric"
-          className={cn("pl-7", clamped && "border-red-500/50")}
+          className={cn("pl-7", clamped && "border-bad/50")}
           value={focused ? displayValue : value ? formatNumber(value) : ""}
           onChange={handleChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
           placeholder={placeholder}
         />
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        {error && <p className="text-xs text-bad mt-1">{error}</p>}
       </div>
     </div>
   );

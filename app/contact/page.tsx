@@ -103,10 +103,10 @@ export default function ContactPage() {
           </p>
         </div>
 
-        <Card className="border-green-500/30 bg-green-500/5">
+        <Card className="border-good/30 bg-good/5">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center gap-3 py-8">
-              <CheckCircle2 className="h-12 w-12 text-green-500" />
+              <CheckCircle2 className="h-12 w-12 text-good" />
               <h2 className="text-xl font-semibold">Message Sent</h2>
               <p className="text-muted-foreground max-w-md">
                 Thanks for reaching out! Kevin will get back to you at{" "}

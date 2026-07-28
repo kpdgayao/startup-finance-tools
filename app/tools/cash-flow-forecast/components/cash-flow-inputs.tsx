@@ -77,7 +77,7 @@ export function CashFlowInputs({
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">days</span>
               </div>
-              {errors.paymentTerms && <p className="text-xs text-red-500 mt-1">{errors.paymentTerms}</p>}
+              {errors.paymentTerms && <p className="text-xs text-bad mt-1">{errors.paymentTerms}</p>}
             </div>
             <div className="space-y-2">
               <Label>
@@ -95,7 +95,7 @@ export function CashFlowInputs({
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">days</span>
               </div>
-              {errors.payableTerms && <p className="text-xs text-red-500 mt-1">{errors.payableTerms}</p>}
+              {errors.payableTerms && <p className="text-xs text-bad mt-1">{errors.payableTerms}</p>}
             </div>
           </div>
         </CardContent>
