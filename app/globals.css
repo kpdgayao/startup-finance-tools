@@ -110,6 +110,11 @@
   --sidebar-accent-foreground: #1A1815;
   --sidebar-border: #D9D1C0;
   --sidebar-ring: #B98548;
+
+  /* Ink that sits on a lifted-ochre fill (dark logo tile, dark ochre button
+     label). Deliberately NOT --background: it shares that hex today but means
+     something different, and must not follow if --background is ever changed. */
+  --on-ochre: #16150F;
 }
 
 .dark {
@@ -160,6 +165,11 @@
   --sidebar-accent-foreground: #EFE9DB;
   --sidebar-border: #33301F;
   --sidebar-ring: #D9A45F;
+
+  /* Ink that sits on a lifted-ochre fill (dark logo tile, dark ochre button
+     label). Deliberately NOT --background: it shares that hex today but means
+     something different, and must not follow if --background is ever changed. */
+  --on-ochre: #16150F;
 }
 
 @layer base {
