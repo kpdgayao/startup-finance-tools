@@ -107,13 +107,15 @@ Adds a working light/dark toggle. **The site must look identical to today in dar
 - Consumes: nothing (first task).
 - Produces: `<ThemeProvider>` (default export absent — named export `ThemeProvider`, props `{ children: React.ReactNode }`) and `<ThemeToggle />` (named export, no props). The `.dark` class on `<html>` becomes runtime-controlled, which every later task depends on for verifying both themes.
 
-- [ ] **Step 1: Create the branch**
+- [ ] **Step 1: Confirm you are on the right branch**
+
+The branch already exists and is checked out — it was created from `design/editorial-redesign-phase-1` so that the spec and this plan travel with it. **Do not re-branch from master**; that would discard the plan file you are reading.
 
 ```bash
-git checkout master
-git pull
-git checkout -b feat/editorial-redesign-phase-1
+git branch --show-current
 ```
+
+Expected: `feat/editorial-redesign-phase-1`. If it is anything else, stop and report BLOCKED.
 
 - [ ] **Step 2: Install `next-themes`**
 
@@ -1357,9 +1359,12 @@ function walk(dir: string, exts: string[]): string[] {
 }
 
 function sourceFiles(exts: string[]): string[] {
+  // lib/ is included: CHART_COLORS and STATUS_COLORS live there, and it is
+  // exactly where a future phase would be tempted to reintroduce a literal.
   return [
     ...walk(join(ROOT, "app"), exts),
     ...walk(join(ROOT, "components"), exts),
+    ...walk(join(ROOT, "lib"), exts),
   ];
 }
 
