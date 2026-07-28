@@ -44,7 +44,7 @@ looked at.
 | Sequencing | **B — mechanism first, then aesthetics** | Isolates the only functionally risky work (theme toggle) from the large visual diff |
 | Theme default | Follow the spec: `prefers-color-scheme` on first visit | Per README. Note this changes the site's out-of-box appearance |
 | 106 hardcoded hexes | **In Phase 1** | Tailwind blue on `#F6F2EA` paper is the most visible way this redesign could ship broken |
-| `export-pdf-button.tsx` `PRINT_CSS` (27 hexes) | **Deferred** | Theme-independent; invisible on-screen. Own ticket later |
+| `export-pdf-button.tsx` `PRINT_CSS` (30 hexes) | **Deferred** | Theme-independent; invisible on-screen. Own ticket later |
 | Newsletter email gradient | **Deferred** | Email template, not a page. Would drag email-client testing into a visual phase |
 
 ### Out of scope
@@ -333,15 +333,17 @@ variance" in `financial-model-results` — same hex, different tokens. Map by ro
 | `#e5e7eb` | 2 | Divider | `--border` |
 | `#1d4ed8`, `#f97316` | 2 | Incidental | nearest series token |
 
-Distribution by file: `msme-financial-plan` (14), `cash-flow-charts` (13),
-`financial-model-results` (10), `burn-rate` (10), `unit-economics` (8), `market-sizing` (6),
-`logo` (5), `self-assessment` (2), `safe-calculator` (1), `pre-post-money` (1).
+Distribution by file (occurrences, not lines): `cash-flow-charts` (18),
+`msme-financial-plan` (15), `financial-model-results` (10), `burn-rate` (10),
+`unit-economics` (8), `market-sizing` (6), `logo` (5), `self-assessment` (2),
+`safe-calculator` (1), `pre-post-money` (1) — **76 in scope**, plus 30 in
+`export-pdf-button.tsx` which are excluded.
 
 `RUNWAY_ZONES` already exists in `lib/constants.ts` as a numeric threshold constant with no
 colours attached. The semantic trio (`good` / `warn` / `bad`) belongs beside it rather than
 scattered as `var(--good)` strings through six files.
 
-**Excluded:** the 27 hexes in `components/shared/export-pdf-button.tsx`.
+**Excluded:** the 30 hexes in `components/shared/export-pdf-button.tsx`.
 
 ---
 
@@ -383,7 +385,7 @@ covers it.
 
 | Item | Where it goes |
 |---|---|
-| `export-pdf-button.tsx` `PRINT_CSS` — 27 hexes, `#2563eb` header rule | Own ticket. Exported PDFs stay blue-branded until then |
+| `export-pdf-button.tsx` `PRINT_CSS` — 30 hexes, `#2563eb` header rule | Own ticket. Exported PDFs stay blue-branded until then |
 | Newsletter welcome-email gradient | Own ticket, with email-client testing |
 | Headings using `CardTitle` / `<p>` that the `h1–h4` rule misses | Phases 2–4, as each page is rebuilt |
 | `Callout` vs `MarginNote` overlap — both are ruled asides with tonal variants | Phase 3, when `MarginNote` is designed |
