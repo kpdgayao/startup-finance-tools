@@ -208,5 +208,19 @@ export const RUNWAY_ZONES = {
   YELLOW: 6,
 } as const;
 
+// Semantic status colours for charts and inline indicators.
+//
+// These intentionally share values with chart slots 4/8/5 but are named
+// separately: a chart *series slot* and a *status* are different concepts
+// even when they render identically. Use STATUS_COLORS when the colour
+// means "healthy" or "critical"; use CHART_COLORS when it just means
+// "the second line".
+export const STATUS_COLORS = {
+  good: "var(--good)",
+  warn: "var(--warn)",
+  bad: "var(--bad)",
+  neutral: "var(--muted-foreground)",
+} as const;
+
 export const DEFAULT_DISCOUNT_RATE = 15;
 export const DEFAULT_PROJECTION_YEARS = 5;

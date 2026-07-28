@@ -17,6 +17,7 @@ import { LearnLink } from "@/components/shared/learn-link";
 import { ExportPDFButton, summaryCard, section, table } from "@/components/shared/export-pdf-button";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
+import { CHART_COLORS, STATUS_COLORS } from "@/lib/constants";
 import {
   calculateBurnRate,
   projectCashBalance,
@@ -232,18 +233,6 @@ export default function BurnRatePage() {
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="currentPathGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.1} />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="adjustedPathGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
-                  <stop offset="50%" stopColor="#22c55e" stopOpacity={0.1} />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
               <YAxis
@@ -260,19 +249,21 @@ export default function BurnRatePage() {
               <Area
                 type="monotone"
                 dataKey="Current Path"
-                stroke="#3b82f6"
+                stroke={CHART_COLORS[0]}
                 strokeWidth={2.5}
-                fill="url(#currentPathGradient)"
-                dot={{ r: 2, fill: "#3b82f6" }}
+                fill={CHART_COLORS[0]}
+                fillOpacity={0.12}
+                dot={{ r: 2, fill: CHART_COLORS[0] }}
               />
               {(expenseCut > 0 || revenueIncrease > 0) && (
                 <Area
                   type="monotone"
                   dataKey="Adjusted Path"
-                  stroke="#22c55e"
+                  stroke={STATUS_COLORS.good}
                   strokeWidth={2.5}
-                  fill="url(#adjustedPathGradient)"
-                  dot={{ r: 2, fill: "#22c55e" }}
+                  fill={STATUS_COLORS.good}
+                  fillOpacity={0.12}
+                  dot={{ r: 2, fill: STATUS_COLORS.good }}
                 />
               )}
             </AreaChart>

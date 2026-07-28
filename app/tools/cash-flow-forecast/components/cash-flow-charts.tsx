@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPHP } from "@/lib/utils";
+import { CHART_COLORS, STATUS_COLORS } from "@/lib/constants";
 import {
   ComposedChart,
   Bar,
@@ -115,9 +116,9 @@ export function CashFlowCharts({
                 />
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="bottom" height={36} />
-                <Bar dataKey="Cash Inflow" fill="#22c55e" radius={[3, 3, 0, 0]} opacity={0.85} />
-                <Bar dataKey="Cash Outflow" fill="#ef4444" radius={[3, 3, 0, 0]} opacity={0.85} />
-                <Line type="monotone" dataKey="Cash Balance" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3b82f6" }} />
+                <Bar dataKey="Cash Inflow" fill={CHART_COLORS[3]} radius={[3, 3, 0, 0]} opacity={0.85} />
+                <Bar dataKey="Cash Outflow" fill={STATUS_COLORS.bad} radius={[3, 3, 0, 0]} opacity={0.85} />
+                <Line type="monotone" dataKey="Cash Balance" stroke={CHART_COLORS[0]} strokeWidth={2.5} dot={{ r: 3, fill: CHART_COLORS[0] }} />
               </ComposedChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted-foreground text-center mt-2">
@@ -142,7 +143,7 @@ export function CashFlowCharts({
                   {netFlowChartData.map((entry, index) => (
                     <Cell
                       key={index}
-                      fill={entry.isPositive ? "#22c55e" : "#ef4444"}
+                      fill={entry.isPositive ? STATUS_COLORS.good : STATUS_COLORS.bad}
                       opacity={0.85}
                     />
                   ))}
@@ -163,13 +164,6 @@ export function CashFlowCharts({
           <TabsContent value="balance">
             <ResponsiveContainer width="100%" height={400}>
               <AreaChart data={balanceChartData}>
-                <defs>
-                  <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.1} />
-                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
                 <YAxis
@@ -182,11 +176,12 @@ export function CashFlowCharts({
                 <Area
                   type="monotone"
                   dataKey="Balance"
-                  stroke="#3b82f6"
+                  stroke={CHART_COLORS[0]}
                   strokeWidth={2.5}
-                  fill="url(#balanceGradient)"
-                  dot={{ r: 4, fill: "#3b82f6", strokeWidth: 2, stroke: "#1d4ed8" }}
-                  activeDot={{ r: 6, fill: "#3b82f6", strokeWidth: 2, stroke: "#1d4ed8" }}
+                  fill={CHART_COLORS[0]}
+                  fillOpacity={0.12}
+                  dot={{ r: 4, fill: CHART_COLORS[0], strokeWidth: 2, stroke: CHART_COLORS[5] }}
+                  activeDot={{ r: 6, fill: CHART_COLORS[0], strokeWidth: 2, stroke: CHART_COLORS[5] }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -217,9 +212,9 @@ export function CashFlowCharts({
                 />
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="bottom" height={36} />
-                <Bar dataKey="Fixed Costs" stackId="costs" fill="#ef4444" opacity={0.7} radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Variable Costs" stackId="costs" fill="#f97316" opacity={0.7} radius={[3, 3, 0, 0]} />
-                <Line type="monotone" dataKey="Revenue (Accrual)" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3, fill: "#22c55e" }} />
+                <Bar dataKey="Fixed Costs" stackId="costs" fill={STATUS_COLORS.bad} opacity={0.7} radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Variable Costs" stackId="costs" fill={CHART_COLORS[7]} opacity={0.7} radius={[3, 3, 0, 0]} />
+                <Line type="monotone" dataKey="Revenue (Accrual)" stroke={CHART_COLORS[3]} strokeWidth={2.5} dot={{ r: 3, fill: CHART_COLORS[3] }} />
               </ComposedChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted-foreground text-center mt-2">
