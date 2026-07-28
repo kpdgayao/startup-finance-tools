@@ -1330,6 +1330,101 @@ are deferred by the spec."
 
 ---
 
+### Task 7b: Tailwind palette utility classes
+
+**Added during execution.** The spec and the original plan accounted for 106 hex literals and completely missed a larger surface: **135 Tailwind palette utility-class occurrences across 23 files** — `text-red-400`, `bg-green-500/10`, `border-purple-500/30`, `text-blue-400/70`. These are not hex literals, so no grep in this plan, no entry in the Task 6/7 mapping table, and no guard in Task 8 catches them. `text-blue-400` resolves to `#60a5fa`, which sits on `#F6F2EA` paper exactly as badly as the `#3b82f6` the plan did account for.
+
+**Files (23), heaviest first:**
+- Modify: `app/tools/cash-flow-forecast/components/cash-flow-projection-table.tsx` (32)
+- Modify: `components/shared/ai-insights-panel.tsx` (15)
+- Modify: `app/tools/cash-flow-forecast/components/cash-flow-summary-cards.tsx` (14)
+- Modify: `components/shared/result-card.tsx` (12)
+- Modify: `app/tools/msme-financial-plan/page.tsx` (10)
+- Modify: `app/tools/unit-economics/page.tsx` (7)
+- Modify: `app/tools/self-assessment/page.tsx` (5), `app/tools/compliance-checklist/page.tsx` (5)
+- Modify: `app/tools/financial-model-builder/components/financial-model-tables.tsx` (4), `app/tools/cash-flow-forecast/components/cash-flow-charts.tsx` (4)
+- Modify: `components/shared/callout.tsx` (3), `app/tools/market-sizing/page.tsx` (3), `app/learn/managing-cash-flow/page.tsx` (3), `app/contact/page.tsx` (3)
+- Modify: `components/shared/percentage-input.tsx`, `newsletter-section.tsx`, `email-capture-dialog.tsx`, `currency-input.tsx`, `app/tools/fundraising-guide/page.tsx`, `app/tools/cash-flow-forecast/components/cash-flow-inputs.tsx` (2 each)
+- Modify: `app/tools/safe-calculator/page.tsx`, `app/tools/pricing-calculator/page.tsx`, `app/tools/break-even/page.tsx` (1 each)
+
+**Interfaces:**
+- Consumes: the `@theme inline` mappings Task 2 added — `--color-good`, `--color-warn`, `--color-bad`, `--color-ochre`, `--color-chart-N`. These already generate real Tailwind utilities.
+- Produces: nothing new.
+
+- [ ] **Step 1: Confirm the utilities exist**
+
+Task 2 registered these in `@theme inline`, which means `text-good`, `bg-good/5`, `border-bad/30` and friends are already valid Tailwind classes. Verify before relying on it:
+
+```bash
+grep -n "color-good\|color-warn\|color-bad\|color-ochre" app/globals.css
+```
+
+Expected: all four present. Opacity modifiers work on them — Tailwind v4 applies `color-mix()` and does not require a hex literal.
+
+- [ ] **Step 2: Apply the semantic mapping**
+
+The meaning of these colours is consistent across the codebase — verified by reading `result-card.tsx:32-45`, where `variant === "success"` drives green, `"warning"` yellow, `"danger"` red.
+
+| Current | Meaning | → |
+|---|---|---|
+| `green-400`, `green-500` | Success, healthy, positive variance | `good` |
+| `red-400`, `red-500` | Danger, critical, negative variance | `bad` |
+| `yellow-400`, `yellow-500`, `amber-500` | Caution | `warn` |
+| `purple-300`, `purple-400`, `purple-500` | AI insights panel branding | `ochre` |
+| `blue-400`, `blue-500` | Informational tint | `chart-3` (teal) |
+
+Preserve the utility prefix and any opacity modifier exactly: `border-green-500/30` → `border-good/30`, `bg-purple-500/5` → `bg-ochre/5`, `text-blue-400/70` → `text-chart-3/70`.
+
+**The purple → ochre mapping is a deliberate design improvement, not a mechanical substitution.** The AI insights panel was branded violet, which was arbitrary. Ochre is the design system's accent, so the panel now uses the brand colour it should have had.
+
+**`ai-insights-panel.tsx:73` needs care** — it is one enormous `className` string with roughly a dozen `[&_selector]:` arbitrary variants carrying purple. Every one must be converted. Read it in full before editing rather than pattern-matching, and re-read it after.
+
+- [ ] **Step 3: Verify none remain**
+
+```bash
+grep -rnE "\b(bg|text|border|fill|stroke|ring|from|to|via)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b" --include=*.tsx app components
+```
+
+Expected: no output.
+
+Note this pattern deliberately excludes the neutral ramps (`slate`, `gray`, `zinc`, `neutral`, `stone`) — those are a separate concern and are not in scope for this task.
+
+- [ ] **Step 4: Verify build and tests**
+
+```bash
+pnpm build && pnpm test
+```
+
+Expected: build succeeds at 35 routes; tests remain at 320.
+
+- [ ] **Step 5: Manual verification**
+
+```bash
+pnpm dev
+```
+
+In **both** themes:
+- `/tools/burn-rate` — the runway `ResultCard` shows olive when healthy, brick when critical, rust when caution. Not Tailwind green/red/yellow.
+- `/tools/cash-flow-forecast` — the projection table's positive and negative cells read correctly; the summary cards match.
+- Any tool page, click **Explain** — the AI insights panel is ochre-framed, not violet.
+- `/tools/compliance-checklist` and `/tools/self-assessment` — status indicators still legible.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app components
+git commit -m "refactor(colour): map Tailwind palette utilities onto design tokens
+
+135 utility-class occurrences across 23 files that the hex-literal sweep
+could not see. text-blue-400 renders #60a5fa on warm paper exactly as
+badly as the #3b82f6 the plan did account for.
+
+Maps green/red/yellow onto good/bad/warn, and the AI panel's arbitrary
+violet onto the ochre accent it should have had."
+```
+
+---
+
 ### Task 8: Colour-discipline guards and the full sweep
 
 Locks the result so later phases cannot silently reintroduce Tailwind blue.
@@ -1410,6 +1505,21 @@ describe("colour discipline", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("has no Tailwind palette utility classes outside the neutral ramps", () => {
+    // The hex guard above cannot see these: `text-blue-400` is a class name,
+    // not a literal, but it resolves to #60a5fa and lands on warm paper just
+    // as badly. Neutral ramps (slate/gray/zinc/neutral/stone) are out of scope.
+    const PALETTE =
+      /\b(bg|text|border|fill|stroke|ring|from|to|via)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g;
+    const offenders: string[] = [];
+    for (const file of sourceFiles([".tsx"])) {
+      const rel = relative(ROOT, file).replace(/\\/g, "/");
+      const matches = readFileSync(file, "utf8").match(PALETTE);
+      if (matches) offenders.push(`${rel}: ${[...new Set(matches)].join(", ")}`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("has no drop shadows in components", () => {
     const offenders: string[] = [];
     for (const file of sourceFiles([".tsx"])) {
@@ -1429,7 +1539,7 @@ describe("colour discipline", () => {
 pnpm test -- design-tokens
 ```
 
-Expected: PASS, 6 tests. If any fail, the failure message names the exact file and literal — go fix it in place, then re-run. Do not add to an allowlist to make a test pass.
+Expected: PASS, 7 tests. If any fail, the failure message names the exact file and literal — go fix it in place, then re-run. Do not add to an allowlist to make a test pass.
 
 - [ ] **Step 3: Run the full suite**
 
@@ -1437,7 +1547,7 @@ Expected: PASS, 6 tests. If any fail, the failure message names the exact file a
 pnpm test
 ```
 
-Expected: baseline **+6**. No failures.
+Expected: 324 passing (320 + 4 new guards). No failures.
 
 - [ ] **Step 4: Verify the build one final time**
 
