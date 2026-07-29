@@ -200,7 +200,7 @@ export default function PrePostMoneyPage() {
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         return (
-                          <text x={x} y={y} fill="#e5e7eb" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={13} fontWeight={600}>
+                          <text x={x} y={y} fill="var(--foreground)" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={13} fontWeight={600}>
                             {`${value.toFixed(1)}%`}
                           </text>
                         );

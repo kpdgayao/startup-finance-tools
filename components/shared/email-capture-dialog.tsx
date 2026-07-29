@@ -76,7 +76,7 @@ export function EmailCaptureDialog({
 
         {success ? (
           <div className="flex flex-col items-center gap-2 py-4">
-            <CheckCircle2 className="h-10 w-10 text-green-500" />
+            <CheckCircle2 className="h-10 w-10 text-good" />
             <p className="text-sm font-medium">You&apos;re subscribed!</p>
           </div>
         ) : (
@@ -90,7 +90,7 @@ export function EmailCaptureDialog({
               disabled={loading}
             />
             {error && (
-              <p className="text-sm text-red-400">{error}</p>
+              <p className="text-sm text-bad">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (

@@ -6,6 +6,7 @@ import { ResultCard } from "@/components/shared/result-card";
 import { formatPHP } from "@/lib/utils";
 import type { AnnualRow, BalanceSheetSeed, FinancialModelSummary } from "@/lib/calculations/financial-model";
 import { PLTable, BSTable, CFTable, CustomTooltip } from "./financial-model-tables";
+import { CHART_COLORS } from "@/lib/constants";
 import {
   ComposedChart,
   Bar,
@@ -131,22 +132,22 @@ export function FinancialModelResults({
                   <Legend />
                   <Bar
                     dataKey="Revenue"
-                    fill="#3b82f6"
+                    fill={CHART_COLORS[0]}
                     radius={[3, 3, 0, 0]}
                     opacity={0.85}
                   />
                   <Bar
                     dataKey="Gross Profit"
-                    fill="#22c55e"
+                    fill={CHART_COLORS[3]}
                     radius={[3, 3, 0, 0]}
                     opacity={0.85}
                   />
                   <Line
                     type="monotone"
                     dataKey="Net Income"
-                    stroke="#f59e0b"
+                    stroke={CHART_COLORS[1]}
                     strokeWidth={2.5}
-                    dot={{ r: 5, fill: "#f59e0b" }}
+                    dot={{ r: 5, fill: CHART_COLORS[1] }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -179,19 +180,19 @@ export function FinancialModelResults({
                   <Bar
                     dataKey="Cash"
                     stackId="assets"
-                    fill="#3b82f6"
+                    fill={CHART_COLORS[0]}
                     opacity={0.85}
                   />
                   <Bar
                     dataKey="Accounts Receivable"
                     stackId="assets"
-                    fill="#22c55e"
+                    fill={CHART_COLORS[3]}
                     opacity={0.85}
                   />
                   <Bar
                     dataKey="Net PP&E"
                     stackId="assets"
-                    fill="#8b5cf6"
+                    fill={CHART_COLORS[6]}
                     opacity={0.85}
                     radius={[3, 3, 0, 0]}
                   />
@@ -224,19 +225,19 @@ export function FinancialModelResults({
                   <Legend />
                   <Bar
                     dataKey="Operating CF"
-                    fill="#22c55e"
+                    fill={CHART_COLORS[3]}
                     radius={[3, 3, 0, 0]}
                     opacity={0.85}
                   />
                   <Bar
                     dataKey="CapEx"
-                    fill="#ef4444"
+                    fill={CHART_COLORS[4]}
                     radius={[3, 3, 0, 0]}
                     opacity={0.85}
                   />
                   <Bar
                     dataKey="Net CF"
-                    fill="#3b82f6"
+                    fill={CHART_COLORS[0]}
                     radius={[3, 3, 0, 0]}
                     opacity={0.85}
                   />

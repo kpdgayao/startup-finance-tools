@@ -270,7 +270,7 @@ export default function SafeCalculatorPage() {
                   }
                   onBlur={() => markTouched("termMonths")}
                 />
-                {termMonthsError && <p className="text-xs text-red-500 mt-1">{termMonthsError}</p>}
+                {termMonthsError && <p className="text-xs text-bad mt-1">{termMonthsError}</p>}
               </div>
             </div>
           )}
@@ -417,7 +417,7 @@ export default function SafeCalculatorPage() {
                         <text
                           x={x}
                           y={y}
-                          fill="#e5e7eb"
+                          fill="var(--foreground)"
                           textAnchor={x > cx ? "start" : "end"}
                           dominantBaseline="central"
                           fontSize={13}

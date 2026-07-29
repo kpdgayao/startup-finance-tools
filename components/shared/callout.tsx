@@ -4,20 +4,20 @@ import { Lightbulb, Calculator, GraduationCap } from "lucide-react";
 const variants = {
   tip: {
     icon: Lightbulb,
-    borderColor: "border-l-blue-500",
-    bgColor: "bg-blue-500/5",
+    borderColor: "border-l-chart-3",
+    bgColor: "bg-chart-3/5",
     label: "Tip",
   },
   formula: {
     icon: Calculator,
-    borderColor: "border-l-amber-500",
-    bgColor: "bg-amber-500/5",
+    borderColor: "border-l-warn",
+    bgColor: "bg-warn/5",
     label: "Formula",
   },
   insight: {
     icon: GraduationCap,
-    borderColor: "border-l-purple-500",
-    bgColor: "bg-purple-500/5",
+    borderColor: "border-l-ochre",
+    bgColor: "bg-ochre/5",
     label: "Kevin's Insight",
   },
 };

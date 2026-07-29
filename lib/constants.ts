@@ -184,22 +184,42 @@ export const SCORECARD_FACTORS = [
   { id: "other", label: "Other Factors", defaultWeight: 5 },
 ] as const;
 
+// CSS custom properties rather than literals, so charts follow the theme
+// toggle with zero JS. Recharts passes these straight to SVG fill/stroke,
+// where var() resolves normally — the same mechanism shadcn's chart uses.
+//
+// Must stay at 10 entries: pre-post-money, valuation-calculator and
+// safe-calculator index this directly without a modulo.
 export const CHART_COLORS = [
-  "#3b82f6", // blue
-  "#22c55e", // green
-  "#f59e0b", // amber
-  "#8b5cf6", // violet
-  "#ef4444", // red
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#84cc16", // lime
-  "#ec4899", // pink
-  "#14b8a6", // teal
+  "var(--chart-1)", // ink / bone — the primary series
+  "var(--chart-2)", // ochre
+  "var(--chart-3)", // teal
+  "var(--chart-4)", // olive
+  "var(--chart-5)", // brick
+  "var(--chart-6)", // slate
+  "var(--chart-7)", // plum
+  "var(--chart-8)", // rust
+  "var(--chart-9)", // sage
+  "var(--chart-10)", // ochre-deep
 ];
 
 export const RUNWAY_ZONES = {
   RED: 3,
   YELLOW: 6,
+} as const;
+
+// Semantic status colours for charts and inline indicators.
+//
+// These intentionally share values with chart slots 4/8/5 but are named
+// separately: a chart *series slot* and a *status* are different concepts
+// even when they render identically. Use STATUS_COLORS when the colour
+// means "healthy" or "critical"; use CHART_COLORS when it just means
+// "the second line".
+export const STATUS_COLORS = {
+  good: "var(--good)",
+  warn: "var(--warn)",
+  bad: "var(--bad)",
+  neutral: "var(--muted-foreground)",
 } as const;
 
 export const DEFAULT_DISCOUNT_RATE = 15;

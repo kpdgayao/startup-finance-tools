@@ -26,11 +26,11 @@ export function CashFlowSummaryCards({
     <>
       {/* Working Capital Info — explains DSO > DPO impact */}
       {hasWorkingCapitalImpact && (
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
+        <Card className="border-warn/30 bg-warn/5">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-warn mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-medium text-yellow-400">Working Capital Tied Up</p>
+              <p className="font-medium text-warn">Working Capital Tied Up</p>
               <p className="text-muted-foreground mt-1">
                 With DSO={paymentTerms} days and DPO={payableTerms} days, you have{" "}
                 <span className="font-mono font-medium text-foreground">{formatPHP(stats.workingCapitalImpact)}</span>{" "}
@@ -65,8 +65,8 @@ export function CashFlowSummaryCards({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <TrendingUp className="h-5 w-5 text-green-400" />
+            <div className="p-2 rounded-lg bg-good/10">
+              <TrendingUp className="h-5 w-5 text-good" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Best Month</p>
@@ -76,8 +76,8 @@ export function CashFlowSummaryCards({
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-500/10">
-              <TrendingDown className="h-5 w-5 text-red-400" />
+            <div className="p-2 rounded-lg bg-bad/10">
+              <TrendingDown className="h-5 w-5 text-bad" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Worst Month</p>
@@ -87,8 +87,8 @@ export function CashFlowSummaryCards({
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <ArrowUpDown className="h-5 w-5 text-blue-400" />
+            <div className="p-2 rounded-lg bg-chart-3/10">
+              <ArrowUpDown className="h-5 w-5 text-chart-3" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Avg Monthly Net Flow</p>
@@ -98,15 +98,15 @@ export function CashFlowSummaryCards({
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <RotateCcw className="h-5 w-5 text-purple-400" />
+            <div className="p-2 rounded-lg bg-ochre/10">
+              <RotateCcw className="h-5 w-5 text-ochre" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">
                 Cash Conversion Cycle
                 <InfoTooltip content="CCC = DSO - DPO. Negative CCC means you collect from customers before paying suppliers (ideal). Positive CCC means you need working capital to bridge the gap." />
               </p>
-              <p className={`font-semibold ${stats.cashConversionCycle < 0 ? "text-green-400" : stats.cashConversionCycle > 0 ? "text-yellow-400" : ""}`}>
+              <p className={`font-semibold ${stats.cashConversionCycle < 0 ? "text-good" : stats.cashConversionCycle > 0 ? "text-warn" : ""}`}>
                 {stats.cashConversionCycle} days {stats.cashConversionCycle < 0 ? "(favorable)" : stats.cashConversionCycle > 0 ? "(needs working capital)" : "(neutral)"}
               </p>
             </div>

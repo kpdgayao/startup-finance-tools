@@ -40,7 +40,7 @@ export function NewsletterSection() {
   if (success) {
     return (
       <div className="flex items-center justify-center gap-2 py-4">
-        <CheckCircle2 className="h-5 w-5 text-green-500" />
+        <CheckCircle2 className="h-5 w-5 text-good" />
         <p className="text-sm font-medium">You&apos;re subscribed!</p>
       </div>
     );
@@ -79,7 +79,7 @@ export function NewsletterSection() {
           </Button>
         </form>
         {error && (
-          <p className="text-sm text-red-400 mt-2">{error}</p>
+          <p className="text-sm text-bad mt-2">{error}</p>
         )}
         <p className="text-xs text-muted-foreground mt-2">
           No spam. Unsubscribe anytime.

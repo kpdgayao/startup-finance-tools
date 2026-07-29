@@ -21,6 +21,7 @@ import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { RotateCcw } from "lucide-react";
 import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
+import { CHART_COLORS } from "@/lib/constants";
 import {
   calculateTopDown,
   calculateBottomUp,
@@ -119,9 +120,9 @@ export default function MarketSizingPage() {
   ), [marketSize.som, safeYear1Share, safeYear2Share, safeYear3Share, safeGrossMarginPct, safeOpexPct]);
 
   const funnelData = useMemo(() => [
-    { name: "TAM", value: marketSize.tam, fill: "#3b82f6" },
-    { name: "SAM", value: marketSize.sam, fill: "#8b5cf6" },
-    { name: "SOM", value: marketSize.som, fill: "#22c55e" },
+    { name: "TAM", value: marketSize.tam, fill: CHART_COLORS[0] },
+    { name: "SAM", value: marketSize.sam, fill: CHART_COLORS[6] },
+    { name: "SOM", value: marketSize.som, fill: CHART_COLORS[3] },
   ], [marketSize]);
 
   const revenueChartData = useMemo(() => projections.map((p) => ({
@@ -261,7 +262,7 @@ export default function MarketSizingPage() {
                   </label>
                   <input
                     type="text"
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     value={totalCustomers.toLocaleString("en-PH")}
                     onChange={(e) => {
                       const val = parseInt(
@@ -272,7 +273,7 @@ export default function MarketSizingPage() {
                     }}
                     onBlur={() => markTouched("totalCustomers")}
                   />
-                  {totalCustomersError && <p className="text-xs text-red-500 mt-1">{totalCustomersError}</p>}
+                  {totalCustomersError && <p className="text-xs text-bad mt-1">{totalCustomersError}</p>}
                 </div>
                 <PercentageInput
                   label="Target Segment (%)"
@@ -459,7 +460,7 @@ export default function MarketSizingPage() {
                     <td className="text-right py-2 px-3 font-medium">
                       <span
                         className={
-                          p.profit >= 0 ? "text-green-400" : "text-red-400"
+                          p.profit >= 0 ? "text-good" : "text-bad"
                         }
                       >
                         {formatPHP(p.profit)}
@@ -497,13 +498,13 @@ export default function MarketSizingPage() {
                 labelStyle={{ color: "var(--foreground)" }}
                 formatter={(value) => formatPHP(Number(value))}
               />
-              <Bar dataKey="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Revenue" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
               <Bar
                 dataKey="Gross Margin"
-                fill="#8b5cf6"
+                fill={CHART_COLORS[6]}
                 radius={[4, 4, 0, 0]}
               />
-              <Bar dataKey="Profit" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Profit" fill={CHART_COLORS[3]} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

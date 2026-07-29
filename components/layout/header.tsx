@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/logo";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -41,6 +42,7 @@ export function Header() {
               </Link>
             );
           })}
+          <ThemeToggle />
         </nav>
       </div>
     </header>

@@ -54,11 +54,11 @@ export const STAGE_LABELS: Record<FundraisingStage, string> = {
 };
 
 export const STAGE_COLORS: Record<FundraisingStage, string> = {
-  research: "bg-blue-500",
-  "proof-of-concept": "bg-amber-500",
-  fundraising: "bg-green-500",
-  operations: "bg-purple-500",
-  scaling: "bg-red-500",
+  research: "bg-chart-3",
+  "proof-of-concept": "bg-warn",
+  fundraising: "bg-good",
+  operations: "bg-ochre",
+  scaling: "bg-bad",
 };
 
 const STAGE_DATA: Record<FundraisingStage, StageInfo> = {
