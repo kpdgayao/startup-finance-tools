@@ -33,6 +33,7 @@
   --color-rule-strong: var(--rule-strong);
   --color-good: var(--good);
   --color-warn: var(--warn);
+  --color-warn-deep: var(--warn-deep);
   --color-bad: var(--bad);
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -89,6 +90,11 @@
   --link-hover: #8E6230;
   --good: #4A6B3F;
   --warn: #B05A2C;
+  /* Darkened --warn for text sitting directly on a bg-warn/15 tint (e.g. the
+     compliance-checklist BIR badge) — mirrors --ochre-deep's job of giving
+     an on-light-tint accent colour that clears 4.5:1 at 10px, which the
+     base --warn cannot once composited under its own translucent fill. */
+  --warn-deep: #964D25;
   --bad: #94342C;
 
   --chart-1: #1A1815;
@@ -144,6 +150,11 @@
   --link-hover: #D9A45F;
   --good: #8FB77C;
   --warn: #D9925F;
+  /* Unused by the current BIR-badge fix (dark keeps text-warn, which already
+     clears 4.5:1 against its own bg-warn/15 tint) — defined for token
+     completeness/future reuse, brightened in the same direction --ochre-deep
+     is brightened relative to --ochre in dark mode. */
+  --warn-deep: #FFAC70;
   --bad: #D98878;
 
   --chart-1: #EFE9DB;
