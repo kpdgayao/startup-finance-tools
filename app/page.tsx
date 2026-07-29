@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuietHero } from "@/components/home/quiet-hero";
+import { FactStrip } from "@/components/home/fact-strip";
 import { TOOLS, TOOL_GROUPS } from "@/lib/constants";
 import { iconMap } from "@/lib/icon-map";
 
@@ -24,8 +25,9 @@ export default function HomePage() {
       <Header />
       <main id="main-content" className="flex-1">
         <QuietHero />
+        <FactStrip />
 
-        <section className="container mx-auto px-4 pb-16 space-y-10">
+        <section className="container mx-auto px-4 py-14 space-y-10">
           {TOOL_GROUPS.map((group) => (
             <div key={group.label}>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
