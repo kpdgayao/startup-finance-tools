@@ -8,17 +8,9 @@ import "./globals.css";
 const sourceSerif = Source_Serif_4({
   variable: "--font-source-serif-4",
   subsets: ["latin"],
+  style: ["normal"],
   axes: ["opsz"],
   display: "swap",
-});
-
-const sourceSerifItalic = Source_Serif_4({
-  variable: "--font-source-serif-4-italic",
-  subsets: ["latin"],
-  style: ["italic"],
-  axes: ["opsz"],
-  display: "swap",
-  preload: false,
 });
 
 const inter = Inter({
@@ -69,7 +61,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${sourceSerif.variable} ${sourceSerifItalic.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="antialiased">
         <a

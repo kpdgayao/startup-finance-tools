@@ -1,5 +1,40 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * "SF" monogram glyph outlines, extracted directly from the Source Serif 4
+ * Italic variable font (wght 700, opsz 16 — matched to the 16-18px it's
+ * rendered at) using fontTools. Baked as vector paths so the mark no longer
+ * needs the italic webfont loaded (that face cost ~130KB and was pulled in
+ * at VeryHigh fetch priority on every page just to draw these two glyphs).
+ * See .superpowers/sdd/2026-07-29-editorial-redesign-phase-1/font-perf-report.md.
+ */
+const MONOGRAM_VIEWBOX = "0 0 1110.78 692.55";
+const MONOGRAM_PATHS = [
+  {
+    transform: "matrix(1,0,0,-1,-12.11,674.83)",
+    d: "M12.11 29.43 31.25 183.06H114.27L127.51 21.02L66.72 75.63Q95.24 61.63 132.06 53.16Q168.87 44.68 203 44.68Q240.4 44.68 266.83 56.2Q293.27 67.71 307.19 88.74Q321.12 109.78 321.12 138.52Q321.12 158.89 313.74 177.65Q306.36 196.4 286.37 217.35Q266.37 238.29 228.48 264.18Q178.71 299.04 147.3 331.92Q115.89 364.81 101.12 399.55Q86.36 434.3 86.36 473.83Q86.36 536.61 118.75 581.53Q151.14 626.44 207.09 650.64Q263.04 674.83 333.34 674.83Q368.17 674.83 401.87 669.21Q435.57 663.59 465.39 653.06Q495.21 642.53 517.24 627.68L499.25 483.39H415.38L403.75 633.98L462.26 577.94Q435.41 596.04 408.34 604.23Q381.27 612.42 348.55 612.42Q312.2 612.42 285.14 600.88Q258.08 589.33 243.45 568.72Q228.81 548.11 228.81 520.85Q228.81 499.96 238.02 481.14Q247.23 462.31 268.8 442.7Q290.37 423.09 326.04 398.52Q375.52 364.63 407.54 332.51Q439.57 300.39 454.81 265.88Q470.05 231.37 470.05 189.36Q470.05 123.91 435.61 77.62Q401.16 31.33 342.17 6.8Q283.17 -17.72 208.2 -17.72Q169.9 -17.72 133.37 -11.79Q96.84 -5.86 65.76 4.88Q34.68 15.62 12.11 29.43Z",
+  },
+  {
+    transform: "matrix(1,0,0,-1,499.89,674.83)",
+    d: "M-12.42 0 -0.7 59.56 135.13 69.56H189.6L330.67 59.56L319.14 0ZM65.94 0 132.13 353.32Q146.37 428.98 159.79 505.21Q173.22 581.45 186.13 657.11H344.97L278.78 304.46Q264.54 228.32 250.88 151.99Q237.21 75.66 224.3 0ZM95.01 597.36 106.54 657.11H252.77L244.01 587.36H228.29ZM208.41 306.45 215.85 366.77H419.79L412.55 306.45ZM264.99 596.42 272.61 657.11H610.89L584.13 484.36H506.36L501.3 648.93L559.84 596.42ZM382.95 223.16 383.23 324.36 387.04 349.51 424.38 445.49H484.41L442.99 223.16Z",
+  },
+];
+
+function Monogram({ variant }: { variant: "icon" | "full" }) {
+  return (
+    <svg
+      viewBox={MONOGRAM_VIEWBOX}
+      fill="currentColor"
+      aria-hidden="true"
+      className={variant === "icon" ? "h-4 w-[25.66px]" : "h-[19.7px] w-[31.6px]"}
+    >
+      {MONOGRAM_PATHS.map((p) => (
+        <path key={p.transform} d={p.d} transform={p.transform} />
+      ))}
+    </svg>
+  );
+}
+
 interface LogoProps {
   variant?: "icon" | "full";
   className?: string;
@@ -10,14 +45,14 @@ export function Logo({ variant = "icon", className }: LogoProps) {
     <span
       aria-hidden="true"
       className={cn(
-        "grid shrink-0 place-items-center rounded-[1px] font-serif-italic font-bold italic",
+        "grid shrink-0 place-items-center rounded-[1px] font-bold",
         "bg-foreground text-background",
         "dark:bg-ochre dark:text-[var(--on-ochre)]",
-        variant === "icon" ? "h-[26px] w-[26px] text-base" : "h-8 w-8 text-lg",
+        variant === "icon" ? "h-[26px] w-[26px]" : "h-8 w-8",
         variant === "icon" ? className : undefined
       )}
     >
-      SF
+      <Monogram variant={variant} />
     </span>
   );
 
