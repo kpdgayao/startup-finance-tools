@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { TOOLS } from "@/lib/constants";
+import { QUIZ_QUESTIONS } from "@/lib/calculations/self-assessment";
 
 // Vitest runs from the repo root, which IS the `app/` directory.
 // Do not use __dirname — this file is ESM and it is undefined there.
@@ -55,5 +57,30 @@ describe("homepage facts", () => {
         `(once in the hero byline, once in the footer credit). Found ` +
         `${total}: ${counts.join(", ")}`
     ).toBeLessThanOrEqual(2);
+  });
+
+  it("has the tool count the hero copy claims", () => {
+    // The hero eyebrow spells the number as a word ("Sixteen tools · free
+    // · nothing leaves your browser") and cannot interpolate it. If a tool
+    // is added or removed, this must fail loudly rather than let the page
+    // state something untrue.
+    expect(
+      TOOLS.length,
+      "TOOLS.length changed. Update the word in the eyebrow copy in " +
+        "components/home/quiet-hero.tsx. The secondary CTA and FactStrip " +
+        "cell 1 derive the number and need no edit."
+    ).toBe(16);
+  });
+
+  it("has the question count the primary CTA claims", () => {
+    // The CTA interpolates this, so it cannot drift — but the *claim* that
+    // 25 questions is a reasonable ask is a copy decision. A jump to 60
+    // should prompt a rewrite, not silently ship "Start with the
+    // 60-question assessment".
+    expect(
+      QUIZ_QUESTIONS.length,
+      "QUIZ_QUESTIONS.length changed. Re-read the primary CTA copy in " +
+        "components/home/quiet-hero.tsx before updating this number."
+    ).toBe(25);
   });
 });

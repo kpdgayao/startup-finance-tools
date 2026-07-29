@@ -1,0 +1,55 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TOOLS } from "@/lib/constants";
+import { QUIZ_QUESTIONS } from "@/lib/calculations/self-assessment";
+
+export function QuietHero() {
+  return (
+    <section className="container mx-auto px-4 pt-12 pb-[38px]">
+      <p className="eyebrow">
+        Sixteen tools · free · nothing leaves your browser
+      </p>
+
+      {/* tracking is set here on purpose: the base layer gives h1-h4
+          -0.015em, the hero wants -0.02em. text-wrap: balance is inherited
+          from the base layer and left alone — it helps an 18ch headline. */}
+      <h1 className="mt-[14px] max-w-[18ch] text-[clamp(34px,6vw,52px)] leading-[1.04] tracking-[-0.02em]">
+        Run the{" "}
+        <em className="italic text-ochre-deep dark:text-ochre">numbers</em> on
+        your startup — properly.
+      </h1>
+
+      <p className="mt-[18px] max-w-[52ch] text-[17px] leading-[1.55] text-ink-2">
+        Valuation, cap tables, SAFEs, burn rate, break-even, unit economics,
+        PH&nbsp;compliance, MSME planning. Peso-native, built for how funding
+        actually works in the&nbsp;Philippines.
+      </p>
+
+      <div className="mt-[26px] flex flex-wrap gap-[10px]">
+        <Button asChild size="lg" variant="ochre">
+          <Link href="/tools/self-assessment">
+            Start with the {QUIZ_QUESTIONS.length}-question assessment
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+        <Button asChild size="lg" variant="outline">
+          <Link href="/tools">Browse all {TOOLS.length} tools</Link>
+        </Button>
+      </div>
+
+      {/* The base layer paints links inside a <p> with --link (teal). The
+          design wants the name in --ink-2, so the colour is set explicitly;
+          the class beats the :where() rule, which has zero specificity. The
+          underline from that rule is kept deliberately — it is the only
+          affordance marking this as a link. */}
+      <p className="mt-[34px] max-w-[60ch] border-t pt-[14px] text-[13px] leading-[1.6] text-muted-foreground">
+        Built by{" "}
+        <Link href="/about" className="text-ink-2 hover:text-ochre-deep">
+          Kevin Gayao
+        </Link>{" "}
+        — CPA, MBA, CEO of IOL Inc.
+      </p>
+    </section>
+  );
+}
