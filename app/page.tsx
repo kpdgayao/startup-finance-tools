@@ -3,19 +3,19 @@ import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { QuietHero } from "@/components/home/quiet-hero";
+import { FactStrip } from "@/components/home/fact-strip";
 import { TOOLS, TOOL_GROUPS } from "@/lib/constants";
 import { iconMap } from "@/lib/icon-map";
-import { ArrowRight } from "lucide-react";
 
 
 
 export const metadata: Metadata = {
   title: { absolute: "Startup Finance Toolkit | IOL Inc." },
-  description: "Interactive financial tools for Filipino startup founders. Valuation calculators, equity simulators, burn rate analysis, and more.",
+  description: "Valuation, cap tables, SAFEs, burn rate, break-even, unit economics, PH compliance and MSME planning. Peso-native tools for Filipino startup founders, free and client-side.",
   openGraph: {
     title: "Startup Finance Toolkit | IOL Inc.",
-    description: "Interactive financial tools for Filipino startup founders.",
+    description: "Peso-native financial tools for Filipino startup founders. Free, no signup.",
   },
 };
 
@@ -24,36 +24,10 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main id="main-content" className="flex-1">
-        <section className="relative overflow-hidden border-b">
-          <div className="relative container mx-auto px-4 py-16 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Startup Finance Toolkit
-            </h1>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Interactive financial tools for Filipino startup founders. Calculate
-              valuations, simulate equity rounds, forecast cash flow, and make
-              data-driven decisions.
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Based on the startup finance curriculum by Kevin (CPA, MBA) of IOL Inc.
-            </p>
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <Button asChild size="lg">
-                <Link href="/tools/self-assessment">
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/tools">
-                  Browse All Tools
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
+        <QuietHero />
+        <FactStrip />
 
-        <section className="container mx-auto px-4 pb-16 space-y-10">
+        <section className="container mx-auto px-4 py-14 space-y-10">
           {TOOL_GROUPS.map((group) => (
             <div key={group.label}>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">

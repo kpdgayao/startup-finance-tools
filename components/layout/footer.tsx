@@ -12,7 +12,7 @@ export function Footer() {
       <Separator />
       <div className="py-6 container mx-auto px-4 text-center text-sm text-muted-foreground">
         <p>
-          Built by{" "}
+          Startup Finance Toolkit — by Kevin Gayao for{" "}
           <a
             href="https://www.iol.ph"
             target="_blank"
@@ -20,8 +20,7 @@ export function Footer() {
             className="font-medium text-foreground hover:text-primary transition-colors underline underline-offset-4"
           >
             IOL Inc.
-          </a>{" "}
-          — Based on startup finance teachings by Kevin (CPA, MBA)
+          </a>
         </p>
         <p className="mt-1">
           Designed for Filipino startup founders. All calculations run
@@ -33,17 +32,17 @@ export function Footer() {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
-            aria-label="Kevin's LinkedIn"
+            aria-label="LinkedIn profile"
           >
             <Linkedin className="h-4 w-4" />
-            <span className="text-xs">Kevin Philip D. Gayao</span>
+            <span className="text-xs">LinkedIn</span>
           </a>
           <span className="text-border">|</span>
           <Link
             href="/contact"
             className="text-xs text-muted-foreground hover:text-primary transition-colors"
           >
-            Contact Kevin
+            Contact
           </Link>
         </div>
       </div>

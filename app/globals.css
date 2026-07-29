@@ -30,6 +30,7 @@
   --color-chart-10: var(--chart-10);
   --color-ochre: var(--ochre);
   --color-ochre-deep: var(--ochre-deep);
+  --color-ink-2: var(--ink-2);
   --color-rule-strong: var(--rule-strong);
   --color-good: var(--good);
   --color-warn: var(--warn);
@@ -83,6 +84,12 @@
   --ring: #B98548;
 
   /* Brand tokens — shadcn has no slot for an accent *colour*, links, or status */
+  /* The mid-tone between --foreground (#1A1815) and --muted-foreground
+     (#6B6356), which phase 1 did not ship. Secondary body text: the hero
+     deck and the byline's name link. Name kept from the design handoff even
+     though the dark value is a bone tone rather than ink — --ochre-deep
+     inverts the same way, and matching the design docs beats being literal. */
+  --ink-2: #2E2A24;
   --ochre: #B98548;
   --ochre-deep: #8E6230;
   --rule-strong: #B6AB95;
@@ -143,6 +150,7 @@
   --input: #33301F;
   --ring: #D9A45F;
 
+  --ink-2: #CFC7B5;
   --ochre: #D9A45F;
   --ochre-deep: #F0C88B;
   --rule-strong: #4A4530;
