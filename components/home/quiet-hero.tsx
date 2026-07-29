@@ -7,8 +7,15 @@ import { QUIZ_QUESTIONS } from "@/lib/calculations/self-assessment";
 export function QuietHero() {
   return (
     <section className="container mx-auto px-4 pt-12 pb-[38px]">
+      {/* "calculations stay in your browser" rather than the mock's "nothing
+          leaves your browser": every calculator runs client-side, but the
+          optional AI Explain panel POSTs the inputs to /api/ai/explain, and
+          the newsletter form in the footer POSTs an email. The stronger claim
+          is disprovable from this very page, which is the opposite of the
+          point. homepage-facts.test.ts pins the call sites that make the
+          narrower claim true. */}
       <p className="eyebrow">
-        Sixteen tools · free · nothing leaves your browser
+        Sixteen tools · free · calculations stay in your browser
       </p>
 
       {/* tracking is set here on purpose: the base layer gives h1-h4

@@ -12,10 +12,10 @@ import { iconMap } from "@/lib/icon-map";
 
 export const metadata: Metadata = {
   title: { absolute: "Startup Finance Toolkit | IOL Inc." },
-  description: "Interactive financial tools for Filipino startup founders. Valuation calculators, equity simulators, burn rate analysis, and more.",
+  description: "Valuation, cap tables, SAFEs, burn rate, break-even, unit economics, PH compliance and MSME planning. Peso-native tools for Filipino startup founders, free and client-side.",
   openGraph: {
     title: "Startup Finance Toolkit | IOL Inc.",
-    description: "Interactive financial tools for Filipino startup founders.",
+    description: "Peso-native financial tools for Filipino startup founders. Free, no signup.",
   },
 };
 

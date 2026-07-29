@@ -7,17 +7,24 @@ import { cn } from "@/lib/utils";
 // count is the grid below, the peso is every figure in every calculator,
 // the year is what /tools/compliance-checklist prints as "As of", and the
 // zero is verifiable in devtools. No biographical claims — that is the rule.
+//
+// Cell 4 says *calculations*, not "data". Every calculator computes in the
+// browser, but the optional AI Explain panel POSTs its inputs and the
+// newsletter form POSTs an email, so the unqualified claim would be
+// disproved by the page carrying it. homepage-facts.test.ts pins the set of
+// files allowed to call fetch(), so a new one breaks the test that licenses
+// this cell rather than quietly making it false.
 const FACTS: { numeral: ReactNode; label: string }[] = [
   { numeral: String(TOOLS.length), label: "Tools, no signup" },
   {
-    numeral: <em className="not-italic text-ochre-deep">₱</em>,
+    numeral: <span className="text-ochre-deep">₱</span>,
     label: "Peso-native throughout",
   },
   {
     numeral: DATA_LAST_UPDATED.slice(0, 4),
     label: "SEC / DTI / BIR fees current",
   },
-  { numeral: "0", label: "Data sent to a server" },
+  { numeral: "0", label: "Calculations sent to a server" },
 ];
 
 export function FactStrip() {
@@ -33,12 +40,12 @@ export function FactStrip() {
             className={cn(
               "flex flex-col-reverse px-6 py-5",
               // 2x2 below 820px: cells 2 and 4 take the vertical rule,
-              // cells 3 and 4 take a horizontal one.
+              // cells 3 and 4 take a horizontal one — reset at 820px, where
+              // the strip becomes a single row with no interior horizontals.
               i % 2 === 1 && "border-l",
-              i >= 2 && "border-t",
-              // 1x4 at 820px and up: no horizontal rules inside the strip,
-              // vertical rules between every pair.
-              "min-[820px]:border-t-0",
+              i >= 2 && "border-t min-[820px]:border-t-0",
+              // 1x4 at 820px and up: a vertical rule between every pair,
+              // none to the left of cell 1.
               i > 0 && "min-[820px]:border-l"
             )}
           >
