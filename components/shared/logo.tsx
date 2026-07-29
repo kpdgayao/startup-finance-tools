@@ -10,7 +10,7 @@ export function Logo({ variant = "icon", className }: LogoProps) {
     <span
       aria-hidden="true"
       className={cn(
-        "grid shrink-0 place-items-center rounded-[1px] font-serif font-bold italic",
+        "grid shrink-0 place-items-center rounded-[1px] font-serif-italic font-bold italic",
         "bg-foreground text-background",
         "dark:bg-ochre dark:text-[var(--on-ochre)]",
         variant === "icon" ? "h-[26px] w-[26px] text-base" : "h-8 w-8 text-lg",
