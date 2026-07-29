@@ -396,18 +396,18 @@ export default function StartupCostsPage() {
             <BarChart data={chartData} layout="vertical">
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
+                stroke="var(--border)"
               />
               <XAxis
                 type="number"
-                stroke="hsl(var(--muted-foreground))"
+                stroke="var(--muted-foreground)"
                 tickFormatter={(value) => formatPHP(Number(value))}
               />
               <YAxis
                 type="category"
                 dataKey="category"
                 width={120}
-                stroke="hsl(var(--muted-foreground))"
+                stroke="var(--muted-foreground)"
                 tick={{ fontSize: 12 }}
               />
               <RechartsTooltip

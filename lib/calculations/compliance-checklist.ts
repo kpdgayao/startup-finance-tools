@@ -42,11 +42,11 @@ export const PHASE_LABELS: Record<CompliancePhase, string> = {
 };
 
 export const AGENCY_COLORS: Record<Agency, string> = {
-  DTI: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  SEC: "bg-green-500/20 text-green-400 border-green-500/30",
-  BIR: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  LGU: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  OTHER: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+  DTI: "bg-chart-3/15 text-chart-3 border-chart-3/30",
+  SEC: "bg-good/15 text-good border-good/30",
+  BIR: "bg-warn/15 text-warn border-warn/30",
+  LGU: "bg-ochre/15 text-ochre border-ochre/30",
+  OTHER: "bg-muted text-muted-foreground border-border",
 };
 
 const ALL_TYPES: BusinessType[] = ["sole-proprietorship", "partnership", "corporation"];

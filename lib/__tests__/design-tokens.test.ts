@@ -135,7 +135,9 @@ describe("colour discipline", () => {
     for (const file of sourceFiles([".tsx", ".ts", ".css", ".svg"])) {
       const rel = relative(ROOT, file).replace(/\\/g, "/");
       if (GRADIENT_ALLOWLIST.includes(rel)) continue;
-      if (/gradient/i.test(readFileSync(file, "utf8"))) offenders.push(rel);
+      const content = readFileSync(file, "utf8");
+      if (/gradient/i.test(content) || /\bbg-(linear|radial|conic)(-|\b)/.test(content))
+        offenders.push(rel);
     }
     expect(offenders).toEqual([]);
   });
@@ -145,12 +147,30 @@ describe("colour discipline", () => {
     // not a literal, but it resolves to #60a5fa and lands on warm paper just
     // as badly. Neutral ramps (slate/gray/zinc/neutral/stone) are out of scope.
     const PALETTE =
-      /\b(bg|text|border|fill|stroke|ring|from|to|via|decoration|outline|accent|caret|placeholder|divide)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g;
+      /\b(bg|text|border|border-[trbl]|border-[xy]|fill|stroke|ring|ring-offset|from|to|via|decoration|outline|accent|caret|placeholder|divide)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g;
     const offenders: string[] = [];
-    for (const file of sourceFiles([".tsx"])) {
+    for (const file of sourceFiles([".tsx", ".ts"])) {
       const rel = relative(ROOT, file).replace(/\\/g, "/");
       const matches = readFileSync(file, "utf8").match(PALETTE);
       if (matches) offenders.push(`${rel}: ${[...new Set(matches)].join(", ")}`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("has no CSS colour functions wrapping a var() reference", () => {
+    // hsl(var(--x)) / oklch(var(--x)) / rgb(var(--x)) are all invalid CSS —
+    // the token itself is already a full colour (hex or oklch literal), not
+    // the bare h/s/l or r/g/b components these functions expect. The
+    // declaration silently gets dropped by the browser, and Recharts (which
+    // consumes these as inline `stroke`/`fill` props, not Tailwind classes)
+    // falls back to its own built-in grey/black — invisible against a dark
+    // card and untouched by the theme toggle either way.
+    const WRAPPED_VAR = /(hsl|oklch|rgb)a?\(\s*var\(/g;
+    const offenders: string[] = [];
+    for (const file of sourceFiles([".tsx", ".ts"])) {
+      const rel = relative(ROOT, file).replace(/\\/g, "/");
+      const matches = readFileSync(file, "utf8").match(WRAPPED_VAR);
+      if (matches) offenders.push(`${rel}: ${matches.join(", ")}`);
     }
     expect(offenders).toEqual([]);
   });

@@ -32,7 +32,7 @@ export function AiInsightsPanel({
           variant="outline"
           onClick={onExplain}
           disabled={disabled}
-          className="border-ochre/30 text-ochre hover:bg-ochre/10 hover:text-ochre disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border-ochre/30 text-ochre hover:bg-ochre/10 hover:text-ochre-deep disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="h-4 w-4 mr-2" />
           Explain My Results

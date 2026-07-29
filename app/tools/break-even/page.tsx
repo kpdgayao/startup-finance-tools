@@ -292,14 +292,14 @@ export default function BreakEvenPage() {
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
                 <ComposedChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis
                     dataKey="units"
-                    label={{ value: "Units Sold", position: "insideBottom", offset: -5, fill: "hsl(var(--muted-foreground))" }}
-                    stroke="hsl(var(--muted-foreground))"
+                    label={{ value: "Units Sold", position: "insideBottom", offset: -5, fill: "var(--muted-foreground)" }}
+                    stroke="var(--muted-foreground)"
                   />
                   <YAxis
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground)"
                     tickFormatter={(value) => formatPHP(Number(value))}
                   />
                   <RechartsTooltip
