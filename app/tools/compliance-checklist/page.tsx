@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
 import { ResultCard } from "@/components/shared/result-card";
+import { MarginNote } from "@/components/shared/margin-note";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
 import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
@@ -198,38 +199,41 @@ export default function ComplianceChecklistPage() {
         </div>
       </div>
 
-      {/* Result Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <ResultCard
-          label="Progress"
-          value={`${summary.completedItems}/${summary.totalItems}`}
-          sublabel={`${summary.progressPercent}% complete`}
-          variant={progressVariant}
-        />
-        <ResultCard
-          label="Estimated Total Cost"
-          value={
-            summary.costMax === summary.costMin
-              ? formatPHP(summary.costMin)
-              : `${formatPHP(summary.costMin)} – ${formatPHP(summary.costMax)}`
-          }
-          sublabel={`${formatPHP(summary.completedCostMax)} spent so far`}
-        />
-        <ResultCard
-          label="Estimated Remaining Days"
-          value={`${summary.remainingDays} days`}
-          sublabel="For registration steps"
-        />
-        <ResultCard
-          label="Next Steps Ready"
-          value={`${summary.nextSteps.length}`}
-          sublabel={
-            summary.nextSteps.length > 0
-              ? summary.nextSteps[0].title
-              : "All done!"
-          }
-          variant={summary.nextSteps.length > 0 ? "default" : "success"}
-        />
+      {/* Result Cards + margin note */}
+      <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px]">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <ResultCard
+            label="Progress"
+            value={`${summary.completedItems}/${summary.totalItems}`}
+            sublabel={`${summary.progressPercent}% complete`}
+            variant={progressVariant}
+          />
+          <ResultCard
+            label="Estimated Total Cost"
+            value={
+              summary.costMax === summary.costMin
+                ? formatPHP(summary.costMin)
+                : `${formatPHP(summary.costMin)} – ${formatPHP(summary.costMax)}`
+            }
+            sublabel={`${formatPHP(summary.completedCostMax)} spent so far`}
+          />
+          <ResultCard
+            label="Estimated Remaining Days"
+            value={`${summary.remainingDays} days`}
+            sublabel="For registration steps"
+          />
+          <ResultCard
+            label="Next Steps Ready"
+            value={`${summary.nextSteps.length}`}
+            sublabel={
+              summary.nextSteps.length > 0
+                ? summary.nextSteps[0].title
+                : "All done!"
+            }
+            variant={summary.nextSteps.length > 0 ? "default" : "success"}
+          />
+        </div>
+        <MarginNote toolId="compliance-checklist" noteIndex={0} />
       </div>
 
       {/* Phase Progress Bar */}

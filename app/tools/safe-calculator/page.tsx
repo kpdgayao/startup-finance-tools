@@ -20,6 +20,7 @@ import {
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
+import { MarginNote } from "@/components/shared/margin-note";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
@@ -306,24 +307,27 @@ export default function SafeCalculatorPage() {
 
       {result && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <ResultCard
-              label="Conversion Method"
-              value={result.conversionMethod === "cap" ? "Cap" : "Discount"}
-            />
-            <ResultCard
-              label="Effective Price/Share"
-              value={formatPHP(result.effectivePrice)}
-            />
-            <ResultCard
-              label="Shares Issued"
-              value={Math.round(result.sharesIssued).toLocaleString()}
-            />
-            <ResultCard
-              label="SAFE Holder Ownership"
-              value={formatPercent(result.ownershipPercent)}
-              variant="success"
-            />
+          <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px]">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <ResultCard
+                label="Conversion Method"
+                value={result.conversionMethod === "cap" ? "Cap" : "Discount"}
+              />
+              <ResultCard
+                label="Effective Price/Share"
+                value={formatPHP(result.effectivePrice)}
+              />
+              <ResultCard
+                label="Shares Issued"
+                value={Math.round(result.sharesIssued).toLocaleString()}
+              />
+              <ResultCard
+                label="SAFE Holder Ownership"
+                value={formatPercent(result.ownershipPercent)}
+                variant="success"
+              />
+            </div>
+            <MarginNote toolId="safe-calculator" noteIndex={0} />
           </div>
 
           {result.scenarios.length > 0 && (

@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { ResultCard } from "@/components/shared/result-card";
+import { MarginNote } from "@/components/shared/margin-note";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
@@ -198,31 +199,34 @@ export default function BurnRatePage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ResultCard label="Gross Burn" value={formatPHP(burnResult.grossBurn)} sublabel="Total monthly expenses" />
-        <ResultCard
-          label="Net Burn"
-          value={formatPHP(burnResult.netBurn)}
-          sublabel={burnResult.netBurn < 0 ? "Net surplus (revenue > expenses)" : "Expenses minus revenue"}
-          variant={burnResult.netBurn < 0 ? "success" : burnResult.netBurn === 0 ? "warning" : "default"}
-        />
-        <ResultCard
-          label="Runway"
-          value={burnResult.runway === Infinity ? "Sustainable" : `${burnResult.runway.toFixed(1)} months`}
-          variant={zone === "red" ? "danger" : zone === "yellow" ? "warning" : "success"}
-          sublabel={
-            zone === "red"
-              ? "Critical — less than 3 months"
-              : zone === "yellow"
-                ? "Caution — 3 to 6 months"
-                : "Healthy — 6+ months"
-          }
-        />
-        <ResultCard
-          label="Monthly Cash Flow"
-          value={formatPHP(monthlyRevenue - monthlyExpenses)}
-          variant={monthlyRevenue >= monthlyExpenses ? "success" : "danger"}
-        />
+      <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <ResultCard label="Gross Burn" value={formatPHP(burnResult.grossBurn)} sublabel="Total monthly expenses" />
+          <ResultCard
+            label="Net Burn"
+            value={formatPHP(burnResult.netBurn)}
+            sublabel={burnResult.netBurn < 0 ? "Net surplus (revenue > expenses)" : "Expenses minus revenue"}
+            variant={burnResult.netBurn < 0 ? "success" : burnResult.netBurn === 0 ? "warning" : "default"}
+          />
+          <ResultCard
+            label="Runway"
+            value={burnResult.runway === Infinity ? "Sustainable" : `${burnResult.runway.toFixed(1)} months`}
+            variant={zone === "red" ? "danger" : zone === "yellow" ? "warning" : "success"}
+            sublabel={
+              zone === "red"
+                ? "Critical — less than 3 months"
+                : zone === "yellow"
+                  ? "Caution — 3 to 6 months"
+                  : "Healthy — 6+ months"
+            }
+          />
+          <ResultCard
+            label="Monthly Cash Flow"
+            value={formatPHP(monthlyRevenue - monthlyExpenses)}
+            variant={monthlyRevenue >= monthlyExpenses ? "success" : "danger"}
+          />
+        </div>
+        <MarginNote toolId="burn-rate" noteIndex={0} />
       </div>
 
       <Card>

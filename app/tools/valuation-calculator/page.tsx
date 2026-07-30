@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
+import { MarginNote } from "@/components/shared/margin-note";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
@@ -206,10 +207,13 @@ export default function ValuationCalculatorPage() {
           <CardDescription>Comparison across all 5 methods</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <ResultCard label="Suggested Range" value={`${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`} variant="success" />
-            <ResultCard label="Average Valuation" value={formatPHP(summary.average)} />
-            <ResultCard label="Methods Used" value={String([summary.dcf, summary.berkus, summary.scorecard, summary.vcMethod, summary.revenueMultiple].filter((v) => v !== null && v > 0).length)} sublabel="DCF, Berkus, Scorecard, VC, Rev Multiple" />
+          <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px] mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <ResultCard label="Suggested Range" value={`${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`} variant="success" />
+              <ResultCard label="Average Valuation" value={formatPHP(summary.average)} />
+              <ResultCard label="Methods Used" value={String([summary.dcf, summary.berkus, summary.scorecard, summary.vcMethod, summary.revenueMultiple].filter((v) => v !== null && v > 0).length)} sublabel="DCF, Berkus, Scorecard, VC, Rev Multiple" />
+            </div>
+            <MarginNote toolId="valuation-calculator" noteIndex={0} />
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={comparisonData}>
