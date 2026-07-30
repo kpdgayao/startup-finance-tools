@@ -9,6 +9,7 @@ import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { formatPHP, formatPercent } from "@/lib/utils";
+import { MarginNote } from "@/components/shared/margin-note";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
@@ -323,37 +324,40 @@ export default function EquitySimulatorPage() {
         </Card>
       )}
 
-      {/* Cap Table Detail */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Final Cap Table</CardTitle>
-          <CardDescription>Current ownership after all rounds.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 px-3">Stakeholder</th>
-                  <th className="text-left py-2 px-3">Type</th>
-                  <th className="text-right py-2 px-3">Ownership %</th>
-                  <th className="text-left py-2 px-3">Round Added</th>
-                </tr>
-              </thead>
-              <tbody>
-                {latestRound.entries.map((entry, i) => (
-                  <tr key={i} className="border-b border-border/50">
-                    <td className="py-2 px-3 font-medium">{entry.stakeholder}</td>
-                    <td className="py-2 px-3 capitalize text-muted-foreground">{entry.type}</td>
-                    <td className="py-2 px-3 text-right font-mono">{formatPercent(entry.percentage)}</td>
-                    <td className="py-2 px-3 text-muted-foreground">{entry.roundAdded}</td>
+      {/* Cap Table Detail + margin note */}
+      <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Final Cap Table</CardTitle>
+            <CardDescription>Current ownership after all rounds.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-3">Stakeholder</th>
+                    <th className="text-left py-2 px-3">Type</th>
+                    <th className="text-right py-2 px-3">Ownership %</th>
+                    <th className="text-left py-2 px-3">Round Added</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody>
+                  {latestRound.entries.map((entry, i) => (
+                    <tr key={i} className="border-b border-border/50">
+                      <td className="py-2 px-3 font-medium">{entry.stakeholder}</td>
+                      <td className="py-2 px-3 capitalize text-muted-foreground">{entry.type}</td>
+                      <td className="py-2 px-3 text-right font-mono">{formatPercent(entry.percentage)}</td>
+                      <td className="py-2 px-3 text-muted-foreground">{entry.roundAdded}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+        <MarginNote toolId="equity-simulator" noteIndex={0} />
+      </div>
 
       {/* Vesting Explainer */}
       <Card>

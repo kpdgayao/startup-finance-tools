@@ -31,11 +31,20 @@
   --color-ochre: var(--ochre);
   --color-ochre-deep: var(--ochre-deep);
   --color-ink-2: var(--ink-2);
+  /* The hairline rule. Aliases --border so `border-rule` reads as the design
+     vocabulary ("rule") while resolving to the same colour the base layer's
+     `* { @apply border-border }` already paints. Without this alias
+     `border-rule` is simply not a utility and Tailwind emits nothing. */
+  --color-rule: var(--border);
   --color-rule-strong: var(--rule-strong);
+  --color-link: var(--link);
   --color-good: var(--good);
   --color-warn: var(--warn);
   --color-warn-deep: var(--warn-deep);
   --color-bad: var(--bad);
+  --color-good-on-ink: var(--good-on-ink);
+  --color-warn-on-ink: var(--warn-on-ink);
+  --color-bad-on-ink: var(--bad-on-ink);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -104,6 +113,16 @@
   --warn-deep: #964D25;
   --bad: #94342C;
 
+  /* Semantic colour lifted for text sitting on a dark slab. ResultCard's fill
+     is dark in BOTH themes (--primary ink in light, --muted in dark), so these
+     do not flip — the light-theme values below are deliberately the same
+     hexes .dark uses for --good/--warn/--bad. The base --good (#4A6B3F) and
+     --bad (#94342C) are tuned for paper and only reach 2.9:1 and 2.4:1 on the
+     ink slab, under the 3:1 floor even for large text; these clear 6.5:1. */
+  --good-on-ink: #8FB77C;
+  --warn-on-ink: #D9925F;
+  --bad-on-ink: #D98878;
+
   --chart-1: #1A1815;
   --chart-2: #B98548;
   --chart-3: #2C5C5C;
@@ -164,6 +183,13 @@
      is brightened relative to --ochre in dark mode. */
   --warn-deep: #FFAC70;
   --bad: #D98878;
+
+  /* Same values as :root by design — see the note there. Restated rather than
+     inherited so the pair reads as a deliberate non-flip, matching how
+     --on-ochre is duplicated across both blocks. */
+  --good-on-ink: #8FB77C;
+  --warn-on-ink: #D9925F;
+  --bad-on-ink: #D98878;
 
   --chart-1: #EFE9DB;
   --chart-2: #D9A45F;

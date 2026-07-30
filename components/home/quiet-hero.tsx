@@ -53,9 +53,9 @@ export function QuietHero() {
       <p className="mt-[34px] max-w-[60ch] border-t pt-[14px] text-[13px] leading-[1.6] text-muted-foreground">
         Built by{" "}
         <Link href="/about" className="text-ink-2 hover:text-ochre-deep">
-          Kevin Gayao
-        </Link>{" "}
-        — CPA, MBA, CEO of IOL Inc.
+          Kevin Philip Gayao
+        </Link>
+        , derived from over a decade of fundraising experience and teaching.
       </p>
     </section>
   );

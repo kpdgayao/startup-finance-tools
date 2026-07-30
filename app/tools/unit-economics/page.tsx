@@ -11,6 +11,7 @@ import {
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
+import { MarginNote } from "@/components/shared/margin-note";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
@@ -244,37 +245,42 @@ export default function UnitEconomicsPage() {
         </Card>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ResultCard
-          label="CAC"
-          value={formatPHP(result.cac)}
-          sublabel="Customer Acquisition Cost"
-        />
-        <ResultCard
-          label="LTV"
-          value={result.ltv === Infinity ? "∞" : formatPHP(result.ltv)}
-          sublabel="Lifetime Value"
-        />
-        <ResultCard
-          label="LTV:CAC Ratio"
-          value={
-            result.ltvCacRatio === Infinity
-              ? "∞"
-              : `${result.ltvCacRatio.toFixed(1)}x`
-          }
-          sublabel={healthLabel}
-          variant={healthVariant}
-        />
-        <ResultCard
-          label="Payback Period"
-          value={
-            result.paybackMonths === Infinity
-              ? "N/A"
-              : `${result.paybackMonths.toFixed(1)} months`
-          }
-          sublabel="Time to recover CAC"
-        />
+      {/* Key Metrics + margin note */}
+      <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px]">
+        {/* 2-up, not 4-up: the note takes a 230px column, leaving these cards
+            ~107px each at 4-up — too narrow for the 32px serif numeral. */}
+        <div className="grid grid-cols-2 gap-4">
+          <ResultCard
+            label="CAC"
+            value={formatPHP(result.cac)}
+            sublabel="Customer Acquisition Cost"
+          />
+          <ResultCard
+            label="LTV"
+            value={result.ltv === Infinity ? "∞" : formatPHP(result.ltv)}
+            sublabel="Lifetime Value"
+          />
+          <ResultCard
+            label="LTV:CAC Ratio"
+            value={
+              result.ltvCacRatio === Infinity
+                ? "∞"
+                : `${result.ltvCacRatio.toFixed(1)}x`
+            }
+            sublabel={healthLabel}
+            variant={healthVariant}
+          />
+          <ResultCard
+            label="Payback Period"
+            value={
+              result.paybackMonths === Infinity
+                ? "N/A"
+                : `${result.paybackMonths.toFixed(1)} months`
+            }
+            sublabel="Time to recover CAC"
+          />
+        </div>
+        <MarginNote toolId="unit-economics" noteIndex={0} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
