@@ -28,10 +28,14 @@ export default function AboutPage() {
           <aside className="bg-muted border-rule p-[48px] min-[920px]:border-r min-[920px]:min-h-screen flex flex-col gap-5">
             <Image
               src="/about-portrait.jpg"
-              alt="Portrait"
+              alt={`${NAME} — ${ROLE_LINE}`}
               width={400}
               height={400}
-              loading="lazy"
+              // Top of the left rail: this is the LCP element on /about, so it
+              // must not be lazy. `sizes` keeps the mobile srcset honest — the
+              // rail is full-width below 920px, a ~40vw column above it.
+              priority
+              sizes="(min-width: 920px) 40vw, 100vw"
               className="w-full aspect-square border border-rule object-cover"
             />
             <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">

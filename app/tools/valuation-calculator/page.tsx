@@ -208,7 +208,9 @@ export default function ValuationCalculatorPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px] mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* 2-up, not 3-up: the note takes a 230px column, and "Suggested
+                Range" holds two formatted amounts — it needs the extra width. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ResultCard label="Suggested Range" value={`${formatPHP(summary.range.min)} — ${formatPHP(summary.range.max)}`} variant="success" />
               <ResultCard label="Average Valuation" value={formatPHP(summary.average)} />
               <ResultCard label="Methods Used" value={String([summary.dcf, summary.berkus, summary.scorecard, summary.vcMethod, summary.revenueMultiple].filter((v) => v !== null && v > 0).length)} sublabel="DCF, Berkus, Scorecard, VC, Rev Multiple" />

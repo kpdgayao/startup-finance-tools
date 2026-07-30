@@ -200,7 +200,9 @@ export default function BurnRatePage() {
       </Card>
 
       <div className="grid grid-cols-1 min-[760px]:grid-cols-[1fr_230px] gap-[30px]">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* 2-up, not 4-up: the note takes a 230px column, leaving these cards
+            ~107px each at 4-up — too narrow for the 32px serif numeral. */}
+        <div className="grid grid-cols-2 gap-4">
           <ResultCard label="Gross Burn" value={formatPHP(burnResult.grossBurn)} sublabel="Total monthly expenses" />
           <ResultCard
             label="Net Burn"
