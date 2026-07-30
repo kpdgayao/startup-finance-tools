@@ -11,7 +11,7 @@ export function Footer() {
       <EcosystemStrip />
       <Separator />
       <div className="py-6 container mx-auto px-4 text-center text-sm text-muted-foreground">
-        <p>
+        <p className="font-serif">
           Startup Finance Toolkit — by Kevin Gayao for{" "}
           <a
             href="https://www.iol.ph"
@@ -35,12 +35,12 @@ export function Footer() {
             aria-label="LinkedIn profile"
           >
             <Linkedin className="h-4 w-4" />
-            <span className="text-xs">LinkedIn</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em]">LinkedIn</span>
           </a>
           <span className="text-border">|</span>
           <Link
             href="/contact"
-            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary transition-colors"
           >
             Contact
           </Link>
