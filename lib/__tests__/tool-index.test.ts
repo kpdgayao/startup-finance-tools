@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { TOOLS, TOOL_GROUPS } from "@/lib/constants";
 import { FEATURED_TOOL_META } from "@/lib/tool-meta";
+
+// Vitest runs from the repo root, which IS the `app/` directory.
+// Do not use __dirname — this file is ESM and it is undefined there.
+const ROOT = process.cwd();
 
 describe("tool group data", () => {
   it("gives every group a non-empty subtitle", () => {
@@ -44,5 +50,20 @@ describe("featured tool metadata", () => {
     for (const id of TOOL_GROUPS[0].tools) {
       expect(FEATURED_TOOL_META[id], `no featured meta for "${id}"`).toBeTruthy();
     }
+  });
+});
+
+describe("tool card", () => {
+  it("carries no shadow and no tinted icon tile", () => {
+    const src = readFileSync(join(ROOT, "components/tools/tool-card.tsx"), "utf8");
+
+    // The editorial system has no shadows; elevation is surface steps and
+    // hairlines. design-tokens.test.ts sweeps this globally — asserting it
+    // here documents that the card was written to the rule, not caught by it.
+    expect(src).not.toMatch(/\bshadow-/);
+
+    // The old card wrapped the Lucide icon in `p-2 rounded-md bg-primary/10`.
+    // The redesign drops the tile entirely.
+    expect(src).not.toMatch(/bg-primary\/10/);
   });
 });
