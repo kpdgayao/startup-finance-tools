@@ -88,3 +88,17 @@ describe("index page copy", () => {
     }
   });
 });
+
+describe("tool sidebar", () => {
+  it("uses the shared eyebrow utility in both the desktop and mobile nav", () => {
+    const src = readFileSync(join(ROOT, "components/layout/tool-sidebar.tsx"), "utf8");
+
+    // Two group headers: one in the desktop <nav>, one in MobileToolNav.
+    // They drifted apart before; this pins them together.
+    const eyebrows = src.match(/\beyebrow\b/g) ?? [];
+    expect(eyebrows.length, "both navs should use the eyebrow utility").toBe(2);
+
+    // The old ad-hoc label style, replaced by `eyebrow`.
+    expect(src).not.toMatch(/text-xs font-semibold text-muted-foreground uppercase/);
+  });
+});
