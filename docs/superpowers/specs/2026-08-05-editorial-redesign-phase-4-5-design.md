@@ -101,7 +101,13 @@ interface ToolCardProps {
 | Ordinal | absolute `top-3.5 right-5`, 11px mono, `--rule-strong`, `0.08em` |
 | Name | 20px serif 600, line-height 1.2, `--foreground` |
 | Description | 13px sans, `--muted-foreground`, line-height 1.5 |
-| Hover | border → 1.5px `--ochre`. **No shadow** — a guard test fails the build on any `shadow-*` |
+| Hover | border stays 1px, colour → `--ochre`. **No shadow** — a guard test fails the build on any `shadow-*` |
+
+The handoff asks for the hover border to *thicken* to 1.5px. Rejected: a 1px→1.5px border
+change reflows the card's content by half a pixel on every hover, and the workarounds
+(`outline`, inset ring) either fight the 4px radius or are a `shadow-*` in disguise, which
+the guard test kills. Colour-only hover is also already the site-wide card pattern. The
+0.5px is not worth the shift.
 
 `variant="featured"`: name → 28px serif, padding → `28px 30px`, and `meta` renders at the
 foot as 10px mono, `0.12em`, uppercase, `--muted-foreground`, above a 1px `--rule` top border.
