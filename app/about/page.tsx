@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/footer";
 import { GrantTimeline } from "@/components/about/grant-timeline";
 import { OrganizationWall } from "@/components/about/organization-wall";
 import { NAME, ROLE_LINE, ABOUT_BIO, PULL_QUOTE } from "@/lib/kevin";
+import { TOOLS } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "About",
@@ -87,7 +88,30 @@ export default function AboutPage() {
                 </a>
               </Button>
             </div>
+            {/* The rebuild dropped the "What's Included" and "Learn Startup
+                Finance" sections, leaving /contact as this page's only internal
+                link. Nothing was orphaned — the header reaches both hubs from
+                every page — but a reader who lands here had no path onward and
+                the tools lost their topical anchor text. One quiet line, not a
+                restored directory: /about is about the person. */}
             <p className="font-serif text-[13px] text-muted-foreground border-t border-rule pt-4">
+              The reasoning above is built into{" "}
+              <Link
+                href="/tools"
+                className="text-link hover:text-ochre-deep underline underline-offset-[3px]"
+              >
+                {TOOLS.length} calculators
+              </Link>
+              , and written out at length in the{" "}
+              <Link
+                href="/learn"
+                className="text-link hover:text-ochre-deep underline underline-offset-[3px]"
+              >
+                learn modules
+              </Link>
+              .
+            </p>
+            <p className="font-serif text-[13px] text-muted-foreground">
               The broader practice — speaking, seminars, and cooperative
               education — lives at{" "}
               <a

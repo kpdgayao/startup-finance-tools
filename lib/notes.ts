@@ -1,3 +1,23 @@
+// Margin-note content, mined from the author's presentation decks.
+// CONTENT IS FINAL — do not paraphrase, trim, or invent note bodies. A note
+// that is wrong is worse than a note that is missing.
+//
+// THE RESERVE: each tool carries 2–3 notes, but every tool page renders
+// `noteIndex={0}` and nothing else. Indices 1+ are a deliberate reserve, not
+// dead content and not an unfinished feature. The handoff mock and spec §3.1
+// place exactly one note beside the result block, and "Quiet Authority" is
+// built on restraint — a second aside per page works against it. The
+// `>= 2 notes per tool` floor in `lib/__tests__/margin-notes.test.ts` exists to
+// keep the pool stocked, NOT because two are expected to render. If you ever do
+// want a second note on a page, pass `noteIndex={1}` — the component already
+// supports it and returns null when the index runs past the array.
+//
+// `tone` has no visual effect anywhere, on purpose. Phase 3's spec (line 100)
+// allowed a tone tag before the body but kept the plain "Note" label because
+// that is what the handoff mock shows, reserving tone labels for an explicit
+// client request. It is an authoring taxonomy: it tells you what KIND of note
+// you are writing, and keeps the mix honest (a rule, a warning, a PH-specific
+// fact) rather than three variations on the same thought.
 export type NoteTone = "rule" | "watch" | "ph";
 
 export interface MarginNoteData {
