@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TOOLS, TOOL_GROUPS } from "@/lib/constants";
+import { FEATURED_TOOL_META } from "@/lib/tool-meta";
 
 describe("tool group data", () => {
   it("gives every group a non-empty subtitle", () => {
@@ -27,5 +28,21 @@ describe("tool group data", () => {
 
     const unknown = [...counts.keys()].filter((id) => !TOOLS.some((t) => t.id === id));
     expect(unknown, "ids listed in a group with no matching TOOLS entry").toEqual([]);
+  });
+});
+
+describe("featured tool metadata", () => {
+  // Verified against the live data on 2026-08-05. If a question or a
+  // checklist item is added, this test fails and the card copy updates in
+  // the same commit — which is the entire point of deriving it.
+  it("derives its numbers from the tool data", () => {
+    expect(FEATURED_TOOL_META["self-assessment"]).toBe("25 questions · 6 categories");
+    expect(FEATURED_TOOL_META["fundraising-guide"]).toBe("42 steps · 5 stages");
+  });
+
+  it("covers every tool in the featured group", () => {
+    for (const id of TOOL_GROUPS[0].tools) {
+      expect(FEATURED_TOOL_META[id], `no featured meta for "${id}"`).toBeTruthy();
+    }
   });
 });
