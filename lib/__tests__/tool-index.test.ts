@@ -102,3 +102,14 @@ describe("tool sidebar", () => {
     expect(src).not.toMatch(/text-xs font-semibold text-muted-foreground uppercase/);
   });
 });
+
+describe("outbound cross-links", () => {
+  it("tags the kevin.iol.ph link so the sister site can attribute referrals", () => {
+    const src = readFileSync(join(ROOT, "app/about/page.tsx"), "utf8");
+    expect(src).toContain(
+      "https://kevin.iol.ph/?utm_source=startupfinance.tools&utm_medium=referral&utm_campaign=about"
+    );
+    // The visible text stays clean — the query string is href-only.
+    expect(src).toMatch(/>\s*kevin\.iol\.ph\s*</);
+  });
+});
