@@ -67,3 +67,24 @@ describe("tool card", () => {
     expect(src).not.toMatch(/bg-primary\/10/);
   });
 });
+
+describe("index page copy", () => {
+  // The "15 interactive financial tools" bug: a literal that silently went
+  // wrong when the 16th tool shipped, including in indexed metadata.
+  it("never states a literal tool count", () => {
+    for (const rel of ["app/page.tsx", "app/tools/page.tsx"]) {
+      const src = readFileSync(join(ROOT, rel), "utf8");
+      const literals =
+        src.match(/\b\d{1,3}\s+(interactive\s+)?(financial\s+)?(tools|calculators)\b/gi) ?? [];
+      expect(literals, `${rel} states a literal tool count — use TOOLS.length`).toEqual([]);
+    }
+  });
+
+  it("renders the shared index rather than inline cards", () => {
+    for (const rel of ["app/page.tsx", "app/tools/page.tsx"]) {
+      const src = readFileSync(join(ROOT, rel), "utf8");
+      expect(src, `${rel} should render <ToolIndex>`).toMatch(/<ToolIndex/);
+      expect(src, `${rel} still has inline shadcn card markup`).not.toMatch(/<CardHeader/);
+    }
+  });
+});
