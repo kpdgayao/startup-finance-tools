@@ -114,11 +114,31 @@ export const TOOLS = [
 ] as const;
 
 export const TOOL_GROUPS = [
-  { label: "Start Here", tools: ["self-assessment", "fundraising-guide"] },
-  { label: "Valuation & Fundraising", tools: ["valuation-calculator", "equity-simulator", "pre-post-money", "safe-calculator"] },
-  { label: "Revenue & Growth", tools: ["break-even", "pricing-calculator", "market-sizing", "unit-economics"] },
-  { label: "Cash & Operations", tools: ["startup-costs", "burn-rate", "cash-flow-forecast", "financial-model-builder", "compliance-checklist"] },
-  { label: "MSME Toolkit", tools: ["msme-financial-plan"] },
+  {
+    label: "Start Here",
+    subtitle: "Two ways to find out where you actually stand.",
+    tools: ["self-assessment", "fundraising-guide"],
+  },
+  {
+    label: "Valuation & Fundraising",
+    subtitle: "What a round costs you, before you sign.",
+    tools: ["valuation-calculator", "equity-simulator", "pre-post-money", "safe-calculator"],
+  },
+  {
+    label: "Revenue & Growth",
+    subtitle: "Whether the unit works before you scale it.",
+    tools: ["break-even", "pricing-calculator", "market-sizing", "unit-economics"],
+  },
+  {
+    label: "Cash & Operations",
+    subtitle: "How long the money lasts, and what the government wants from you.",
+    tools: ["startup-costs", "burn-rate", "cash-flow-forecast", "financial-model-builder", "compliance-checklist"],
+  },
+  {
+    label: "MSME Toolkit",
+    subtitle: "Five-year planning for cooperatives and small enterprises.",
+    tools: ["msme-financial-plan"],
+  },
 ] as const;
 
 export const LEARN_MODULES = [
