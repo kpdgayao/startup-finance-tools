@@ -21,7 +21,14 @@ export function Header() {
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <Logo variant="icon" />
-          <span>Startup Finance Toolkit</span>
+          {/* sr-only below sm, not hidden: the icon Logo is aria-hidden, so this
+              span is the home link's only accessible name. At 375px the full
+              wordmark wrapped to three lines, spilled out of the h-14, and
+              collided with the nav — which then overflowed the viewport by 12px
+              and gave every page a horizontal scrollbar. */}
+          <span className="sr-only sm:not-sr-only whitespace-nowrap">
+            Startup Finance Toolkit
+          </span>
         </Link>
         <nav aria-label="Main navigation" className="flex items-center gap-4">
           {NAV_LINKS.map((link) => {
