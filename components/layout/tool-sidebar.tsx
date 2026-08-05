@@ -19,10 +19,13 @@ export function ToolSidebar() {
       <nav className="w-64 shrink-0 border-r border-border/50 hidden lg:block">
         <div className="p-4 space-y-4">
           {TOOL_GROUPS.map((group) => (
-            <div key={group.label}>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-3">
-                {group.label}
-              </p>
+            <div key={group.label} className="border-t border-rule pt-4 first:border-t-0 first:pt-0">
+              <div className="mb-1.5 flex items-baseline justify-between px-3">
+                <p className="eyebrow">{group.label}</p>
+                <span className="font-mono text-[10px] text-rule-strong tabular">
+                  {group.tools.length}
+                </span>
+              </div>
               <div className="space-y-0.5">
                 {group.tools.map((toolId) => {
                   const tool = TOOLS.find((t) => t.id === toolId);
@@ -35,10 +38,12 @@ export function ToolSidebar() {
                       key={tool.id}
                       href={tool.href}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                        // The left rule is always present, transparent when
+                        // inactive, so switching it does not shift the row.
+                        "flex items-center gap-3 rounded-md border-l-[1.5px] px-3 py-2 text-sm transition-colors",
                         isActive
-                          ? "bg-accent text-accent-foreground font-medium"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                          ? "border-ochre bg-accent font-medium text-accent-foreground"
+                          : "border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
@@ -104,10 +109,13 @@ function MobileToolNav({
       {isOpen && (
         <div className="border-t border-border/50 pb-2">
           {TOOL_GROUPS.map((group) => (
-            <div key={group.label}>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pt-3 pb-1">
-                {group.label}
-              </p>
+            <div key={group.label} className="border-t border-rule first:border-t-0">
+              <div className="flex items-baseline justify-between px-4 pt-3 pb-1">
+                <p className="eyebrow">{group.label}</p>
+                <span className="font-mono text-[10px] text-rule-strong tabular">
+                  {group.tools.length}
+                </span>
+              </div>
               {group.tools.map((toolId) => {
                 const tool = TOOLS.find((t) => t.id === toolId);
                 if (!tool) return null;
@@ -120,10 +128,10 @@ function MobileToolNav({
                     href={tool.href}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
+                      "flex items-center gap-3 border-l-[1.5px] px-4 py-2.5 text-sm transition-colors",
                       isActive
-                        ? "bg-accent text-accent-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                        ? "border-ochre bg-accent font-medium text-accent-foreground"
+                        : "border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />

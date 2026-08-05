@@ -19,6 +19,9 @@ const HOMEPAGE_FILES = [
   "components/layout/footer.tsx",
   "components/shared/newsletter-section.tsx",
   "components/shared/ecosystem-strip.tsx",
+  "components/tools/tool-index.tsx",
+  "components/tools/tool-card.tsx",
+  "components/tools/tool-chapter.tsx",
 ];
 
 // Everything under components/home/ renders on the homepage and counts.

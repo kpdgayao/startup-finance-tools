@@ -115,7 +115,7 @@ export default function AboutPage() {
               The broader practice — speaking, seminars, and cooperative
               education — lives at{" "}
               <a
-                href="https://kevin.iol.ph"
+                href="https://kevin.iol.ph/?utm_source=startupfinance.tools&utm_medium=referral&utm_campaign=about"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-link hover:text-ochre-deep underline underline-offset-[3px]"
