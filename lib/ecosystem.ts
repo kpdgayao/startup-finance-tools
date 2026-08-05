@@ -1,4 +1,4 @@
-import { Building2, Wallet, BarChart3 } from "lucide-react";
+import { Building2, Wallet, BarChart3, Store } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface EcosystemPlatform {
@@ -27,6 +27,13 @@ export const ECOSYSTEM_PLATFORMS: EcosystemPlatform[] = [
     icon: Building2,
   },
   {
+    id: "zigmafy",
+    name: "Zigmafy",
+    url: "https://zigmafy.com",
+    description: "AI-native POS & retail management for SMEs",
+    icon: Store,
+  },
+  {
     id: "moneyglow",
     name: "MoneyGlow",
     url: "https://moneyglow.app",
@@ -40,7 +47,10 @@ export type EcosystemToolId =
   | "financial-model-builder"
   | "compliance-checklist"
   | "fundraising-guide"
-  | "msme-financial-plan";
+  | "msme-financial-plan"
+  | "break-even"
+  | "startup-costs"
+  | "pricing-calculator";
 
 export interface EcosystemBannerConfig {
   platformId: string;
@@ -72,6 +82,21 @@ export const ECOSYSTEM_BANNERS: Record<EcosystemToolId, EcosystemBannerConfig> =
     platformId: "talinohr",
     message:
       "Salaries are a major line in your plan. TalinoHR automates Philippine payroll, SSS, PhilHealth & Pag-IBIG so you stay compliant as you grow.",
+  },
+  "break-even": {
+    platformId: "zigmafy",
+    message:
+      "Break-even is only as good as your unit costs and volume. Zigmafy's AI-native POS tracks both per product, so the numbers come from actual sales instead of estimates.",
+  },
+  "startup-costs": {
+    platformId: "zigmafy",
+    message:
+      "Opening a retail or F&B storefront? Zigmafy is an AI-native POS covering inventory, sales and promotions — budget it in from day one.",
+  },
+  "pricing-calculator": {
+    platformId: "zigmafy",
+    message:
+      "Pricing works best with real margin data. Zigmafy tracks cost, price and promo performance per product so you can see which prices actually sell.",
   },
 };
 

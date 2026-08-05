@@ -15,6 +15,7 @@ import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { RelatedTools } from "@/components/shared/related-tools";
+import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
 import {
   calculateCostPlus,
   calculatePenetrationPrice,
@@ -370,6 +371,8 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
         }
         onDismiss={ai.reset}
       />
+
+      <EcosystemBanner toolId="pricing-calculator" />
 
       <RelatedTools currentToolId="pricing-calculator" />
     </div>

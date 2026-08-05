@@ -8,7 +8,7 @@ export function EcosystemStrip() {
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center mb-4">
           Built by IOL
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {ECOSYSTEM_PLATFORMS.map((platform) => {
             const Icon = platform.icon;
 
