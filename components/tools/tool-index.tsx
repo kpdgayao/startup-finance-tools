@@ -34,17 +34,27 @@ export function ToolIndex({ featured = false }: ToolIndexProps) {
   return (
     <div className="space-y-14">
       {featured && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {resolve(featuredGroup).map((tool, i) => (
-            <ToolCard
-              key={tool.id}
-              tool={tool}
-              ordinal={`00.${String(i + 1).padStart(2, "0")}`}
-              variant="featured"
-              meta={FEATURED_TOOL_META[tool.id]}
-            />
-          ))}
-        </div>
+        <section aria-labelledby="featured-tools">
+          {/* The design deliberately shows no visible heading here — the
+              featured row sits directly under FactStrip. But without one the
+              two cards are <h3>s hanging off the hero's <h1>, which skips a
+              level and leaves the row unnamed in the outline. sr-only keeps
+              the approved visual design and a correct document outline. */}
+          <h2 id="featured-tools" className="sr-only">
+            {featuredGroup.label}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {resolve(featuredGroup).map((tool, i) => (
+              <ToolCard
+                key={tool.id}
+                tool={tool}
+                ordinal={`00.${String(i + 1).padStart(2, "0")}`}
+                variant="featured"
+                meta={FEATURED_TOOL_META[tool.id]}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       {chapters.map((group, i) => (

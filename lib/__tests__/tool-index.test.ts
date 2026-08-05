@@ -101,6 +101,12 @@ describe("tool sidebar", () => {
     // The old ad-hoc label style, replaced by `eyebrow`.
     expect(src).not.toMatch(/text-xs font-semibold text-muted-foreground uppercase/);
   });
+
+  it("keeps the desktop and mobile group dividers in step", () => {
+    const src = readFileSync(join(ROOT, "components/layout/tool-sidebar.tsx"), "utf8");
+    const dividers = src.match(/border-t border-rule[^"]*first:border-t-0/g) ?? [];
+    expect(dividers.length, "both navs should divide groups the same way").toBe(2);
+  });
 });
 
 describe("outbound cross-links", () => {
@@ -111,5 +117,17 @@ describe("outbound cross-links", () => {
     );
     // The visible text stays clean — the query string is href-only.
     expect(src).toMatch(/>\s*kevin\.iol\.ph\s*</);
+  });
+});
+
+describe("heading structure", () => {
+  // The featured row has no visible heading by design, so nothing about the
+  // rendered page reveals that its cards are <h3>s under the hero's <h1>.
+  // There is no jsdom here to assert an outline — this pins the sr-only
+  // heading at the source level instead.
+  it("gives the featured row an accessible heading", () => {
+    const src = readFileSync(join(ROOT, "components/tools/tool-index.tsx"), "utf8");
+    expect(src, "featured row needs an sr-only <h2>").toMatch(/<h2[^>]*sr-only/s);
+    expect(src).toMatch(/aria-labelledby="featured-tools"/);
   });
 });

@@ -109,7 +109,7 @@ function MobileToolNav({
       {isOpen && (
         <div className="border-t border-border/50 pb-2">
           {TOOL_GROUPS.map((group) => (
-            <div key={group.label}>
+            <div key={group.label} className="border-t border-rule first:border-t-0">
               <div className="flex items-baseline justify-between px-4 pt-3 pb-1">
                 <p className="eyebrow">{group.label}</p>
                 <span className="font-mono text-[10px] text-rule-strong tabular">

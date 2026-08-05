@@ -15,7 +15,10 @@ export function ToolChapter({ group, tools, ordinal }: ToolChapterProps) {
   return (
     <section aria-labelledby={headingId}>
       <h2 id={headingId} className="flex items-baseline gap-2.5">
-        <span className="font-mono text-[11px] tracking-[0.08em] text-ochre-deep tabular">
+        <span
+          aria-hidden="true"
+          className="font-mono text-[11px] tracking-[0.08em] text-ochre-deep tabular"
+        >
           {ordinal} —
         </span>
         <span className="font-serif text-2xl font-semibold tracking-tight text-foreground">
