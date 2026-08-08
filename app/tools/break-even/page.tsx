@@ -120,7 +120,6 @@ export default function BreakEvenPage() {
           </Button>
           <ExportPDFButton
             filename="Break-Even Analysis"
-            enableEmailCapture
             buildPrintContent={() => {
               const parts: string[] = [];
 

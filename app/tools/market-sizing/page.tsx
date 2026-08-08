@@ -147,7 +147,6 @@ export default function MarketSizingPage() {
           </Button>
           <ExportPDFButton
             filename="Market Sizing"
-            enableEmailCapture
             buildPrintContent={() => {
               const parts: string[] = [];
 

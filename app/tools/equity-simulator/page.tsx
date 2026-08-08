@@ -108,7 +108,6 @@ export default function EquitySimulatorPage() {
           </Button>
           <ExportPDFButton
             filename="Equity & Cap Table"
-            enableEmailCapture
             buildPrintContent={() => {
               return [
                 // Founders

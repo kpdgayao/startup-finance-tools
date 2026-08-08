@@ -16,16 +16,6 @@ const SELF = "lib/__tests__/design-tokens.test.ts";
 // 2026-07-29-editorial-redesign-phase-1-design.md §7.
 const HEX_ALLOWLIST = [
   "components/shared/export-pdf-button.tsx",
-  // Both routes below build raw HTML email strings (Mailjet HTMLPart), not
-  // app pages. They are never in the route sweep and CSS custom properties
-  // are not reliably resolved by mail clients (Outlook's Word engine does
-  // not support var() at all), so literal hex is the only correct choice —
-  // the same "theme-independent, invisible on-screen" rationale the spec
-  // already applies to export-pdf-button.tsx's PRINT_CSS. The task-8 brief
-  // enumerated only two allowlist entries; these two were found during the
-  // sweep and are documented as a deviation in task-8-report.md.
-  "app/api/newsletter/subscribe/route.ts",
-  "app/api/contact/route.ts",
   // Three brand SVGs — the browser-tab favicon and the two logo marks used
   // for social/OG scraping. Both consumers render outside the app's CSS
   // cascade (a scraper fetches the raw file; the tab icon is not a themed
@@ -39,7 +29,7 @@ const HEX_ALLOWLIST = [
   "public/logo-full.svg",
 ];
 
-const GRADIENT_ALLOWLIST = ["app/api/newsletter/subscribe/route.ts"];
+const GRADIENT_ALLOWLIST: string[] = [];
 
 // Matches 8-digit (#rrggbbaa), 6-digit (#rrggbb), and 3-or-4-digit
 // shorthand (#rgb, #rgba) hex colours. Alternatives are ordered

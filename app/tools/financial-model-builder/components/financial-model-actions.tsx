@@ -65,7 +65,6 @@ export function FinancialModelActions({
         </Button>
         <ExportPDFButton
           filename="Financial Model"
-          enableEmailCapture
           buildPrintContent={() => {
             const parts: string[] = [];
 

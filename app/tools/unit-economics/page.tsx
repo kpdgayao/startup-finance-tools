@@ -124,7 +124,6 @@ export default function UnitEconomicsPage() {
           </Button>
           <ExportPDFButton
             filename="Unit Economics"
-            enableEmailCapture
             buildPrintContent={() => {
               const parts: string[] = [];
 
