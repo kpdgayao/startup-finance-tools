@@ -115,7 +115,6 @@ export default function BurnRatePage() {
           </Button>
           <ExportPDFButton
             filename="Burn Rate & Runway"
-            enableEmailCapture
             buildPrintContent={() => {
               const runwayText = burnResult.runway === Infinity ? "Sustainable" : `${burnResult.runway.toFixed(1)} months`;
               const runwayVariant = zone === "red" ? "danger" as const : zone === "yellow" ? "warning" as const : "success" as const;

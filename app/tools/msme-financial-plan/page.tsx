@@ -925,7 +925,7 @@ export default function MsmeFinancialPlanPage() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <ExportPDFButton filename="MSME Financial Plan" enableEmailCapture buildPrintContent={buildPdfContent} />
+          <ExportPDFButton filename="MSME Financial Plan" buildPrintContent={buildPdfContent} />
         </div>
       </div>
 

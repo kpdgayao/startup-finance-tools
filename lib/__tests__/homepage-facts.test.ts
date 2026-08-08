@@ -17,7 +17,7 @@ const HOMEPAGE_FILES = [
   "app/page.tsx",
   "components/layout/header.tsx",
   "components/layout/footer.tsx",
-  "components/shared/newsletter-section.tsx",
+  "components/shared/contact-strip.tsx",
   "components/shared/ecosystem-strip.tsx",
   "components/tools/tool-index.tsx",
   "components/tools/tool-card.tsx",
@@ -156,9 +156,6 @@ describe("homepage facts", () => {
     // none of which is a calculation:
     //
     //   lib/ai/use-ai-explain.ts        opt-in AI Explain, POSTs tool inputs
-    //   components/shared/newsletter-*  opt-in email signup
-    //   components/shared/email-capture-dialog.tsx  opt-in PDF-export gate
-    //   app/contact/page.tsx            the contact form
     //
     // A new fetch() anywhere else fails this test, which is the point: the
     // next feature that phones home has to re-read the homepage copy rather
@@ -166,9 +163,6 @@ describe("homepage facts", () => {
     // — it runs on the server by definition and sends nothing from the
     // visitor's browser.
     const ALLOWED = [
-      "app/contact/page.tsx",
-      "components/shared/email-capture-dialog.tsx",
-      "components/shared/newsletter-section.tsx",
       "lib/ai/use-ai-explain.ts",
     ];
 

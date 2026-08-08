@@ -130,7 +130,6 @@ export default function SafeCalculatorPage() {
           </Button>
           <ExportPDFButton
             filename="SAFE & Convertible Note Analysis"
-            enableEmailCapture
             buildPrintContent={() => {
               const parts: string[] = [];
 

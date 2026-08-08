@@ -9,11 +9,11 @@ import { cn } from "@/lib/utils";
 // zero is verifiable in devtools. No biographical claims — that is the rule.
 //
 // Cell 4 says *calculations*, not "data". Every calculator computes in the
-// browser, but the optional AI Explain panel POSTs its inputs and the
-// newsletter form POSTs an email, so the unqualified claim would be
-// disproved by the page carrying it. homepage-facts.test.ts pins the set of
-// files allowed to call fetch(), so a new one breaks the test that licenses
-// this cell rather than quietly making it false.
+// browser, but the optional AI Explain panel POSTs its inputs to
+// /api/ai/explain, so the unqualified claim would be disproved by the page
+// carrying it. homepage-facts.test.ts pins the set of files allowed to call
+// fetch(), so a new one breaks the test that licenses this cell rather than
+// quietly making it false.
 const FACTS: { numeral: ReactNode; label: string }[] = [
   { numeral: String(TOOLS.length), label: "Tools, no signup" },
   {

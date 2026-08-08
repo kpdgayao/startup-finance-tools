@@ -137,7 +137,6 @@ export default function ValuationCalculatorPage() {
           </Button>
           <ExportPDFButton
             filename="Valuation Calculator"
-            enableEmailCapture
             buildPrintContent={() => {
               const methodRows = [
                 ["Discounted Cash Flow (DCF)", formatPHP(dcfValue)],

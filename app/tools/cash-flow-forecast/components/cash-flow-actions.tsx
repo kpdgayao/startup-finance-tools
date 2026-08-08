@@ -49,7 +49,6 @@ export function CashFlowActions({
         </Button>
         <ExportPDFButton
           filename="Cash Flow Forecast"
-          enableEmailCapture
           buildPrintContent={() => {
             const parts: string[] = [];
 
