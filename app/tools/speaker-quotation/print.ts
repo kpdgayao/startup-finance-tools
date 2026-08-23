@@ -1,0 +1,178 @@
+import { section, summaryCard, table } from "@/components/shared/export-pdf-button";
+import { formatPHP, formatPercent } from "@/lib/utils";
+import { BASE_DAY_RATE, EWT_RATE, HOME_BASE } from "@/lib/speaking/rate-card";
+import type { Quotation, QuotationInput } from "@/lib/speaking/quotation";
+
+/**
+ * Escape text before it reaches the print document.
+ *
+ * The shared print helpers interpolate their arguments into HTML unescaped.
+ * Every other tool feeds them formatted numbers, so it has never mattered —
+ * this one carries free text the organiser typed (event title, organisation,
+ * venue), which would otherwise be able to inject markup into the quote they
+ * then forward as a PDF.
+ */
+function esc(value: string | undefined): string {
+  if (!value) return "";
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Builds the printable quotation. Mirrors the on-screen breakdown exactly. */
+export function buildQuotationPrint(quote: Quotation, input: QuotationInput): string {
+  const parts: string[] = [];
+
+  parts.push(
+    section(
+      "Engagement",
+      table(
+        ["Detail", "Value"],
+        [
+          ["Quotation reference", esc(quote.reference)],
+          ["Event", esc(input.eventTitle) || "—"],
+          ["Organisation", esc(input.organizationName) || "—"],
+          ["Venue", esc(input.venue) || "—"],
+          [
+            "Dates",
+            quote.dates.map((d) => `${esc(d.weekday)}, ${esc(d.date)}`).join("<br>"),
+          ],
+          ["Participants", input.audienceSize.toLocaleString("en-PH")],
+          [
+            "Engagement days",
+            `${quote.dayEquivalents} delivery${
+              quote.daysCommitted > quote.dayEquivalents
+                ? `, ${Number((quote.daysCommitted - quote.dayEquivalents).toFixed(3))} travel`
+                : ""
+            } (standard day rate ${formatPHP(BASE_DAY_RATE)})`,
+          ],
+        ]
+      )
+    )
+  );
+
+  parts.push(
+    section(
+      "Summary",
+      `<div class="summary-grid">
+        ${summaryCard("Professional fee", formatPHP(quote.professionalFee))}
+        ${summaryCard("Effective day rate", formatPHP(quote.effectiveDayRate), {
+          sublabel: `Across ${quote.daysCommitted} day(s) committed, standard ${formatPHP(
+            BASE_DAY_RATE
+          )}`,
+        })}
+        ${summaryCard("Billed logistics", formatPHP(quote.reimbursablesBilled), {
+          sublabel:
+            quote.reimbursablesCovered > 0
+              ? `${formatPHP(quote.reimbursablesCovered)} arranged by the organiser`
+              : undefined,
+        })}
+        ${summaryCard("Total", formatPHP(quote.total), { variant: "highlight" })}
+      </div>`
+    )
+  );
+
+  parts.push(
+    section(
+      "How the fee was built",
+      table(
+        ["Line", "Effect", "Running total"],
+        quote.lines.map((line) => [
+          `<strong>${esc(line.label)}</strong>${
+            line.factor !== undefined && line.factor !== 1
+              ? ` (×${line.factor.toFixed(2)})`
+              : ""
+          }<br><span class="muted">${esc(line.detail)}</span>`,
+          line.amount === 0 ? "no change" : formatPHP(line.amount),
+          formatPHP(line.runningTotal),
+        ])
+      ) +
+        `<p class="note">Professional fee: ${formatPHP(quote.professionalFee)}</p>`
+    )
+  );
+
+  if (quote.reimbursables.length > 0) {
+    parts.push(
+      section(
+        "Travel and logistics",
+        table(
+          ["Item", "Estimate", "Billed"],
+          quote.reimbursables.map((item) => [
+            `<strong>${esc(item.label)}</strong><br><span class="muted">${esc(
+              item.detail
+            )}</span>`,
+            formatPHP(item.amount),
+            item.billed ? formatPHP(item.amount) : formatPHP(0),
+          ])
+        ) +
+          `<p class="note">Estimated from ${esc(
+            HOME_BASE
+          )}. Items the organiser arranges directly are shown at zero; billed items are charged at actual cost with receipts.</p>`
+      )
+    );
+  }
+
+  const terms: string[] = [];
+  terms.push(
+    `<strong>Total payable</strong> ${formatPHP(quote.total)} — ${formatPHP(
+      quote.professionalFee
+    )} professional fee${
+      quote.reimbursablesBilled > 0
+        ? ` plus ${formatPHP(quote.reimbursablesBilled)} in reimbursable logistics`
+        : ", with travel and accommodation arranged by the organiser"
+    }.`
+  );
+  if (quote.projectedGate > 0) {
+    terms.push(
+      `<strong>Share of projected gate</strong> ${formatPercent(
+        quote.gateShare,
+        1
+      )} of ${formatPHP(quote.projectedGate)} in expected ticket revenue.`
+    );
+  }
+  if (quote.withholding.applies) {
+    terms.push(
+      `<strong>Withholding tax</strong> professional fees paid to an individual are subject to creditable withholding of ${formatPercent(
+        EWT_RATE * 100,
+        0
+      )} — ${formatPHP(quote.withholding.amount)} here, leaving ${formatPHP(
+        quote.withholding.net
+      )} net. The rate is 5% where a sworn declaration of gross receipts under P3M is on file. Remittance is the organiser's obligation and is not deducted from the total above.`
+    );
+  }
+  terms.push(
+    "<strong>Payment</strong> 50% on confirmation, 50% within 15 days of the engagement."
+  );
+  terms.push(
+    "<strong>Cancellation</strong> inside 14 days, 50% of the professional fee; inside 7 days, 100%. Non-refundable travel already booked is billed at cost either way."
+  );
+  terms.push(
+    `<strong>Validity</strong> this quotation holds until ${esc(quote.validUntil)}. The ${
+      quote.dates.length === 1 ? "date is" : "dates are"
+    } held provisionally until ${esc(quote.holdUntil)}.`
+  );
+
+  parts.push(
+    section(
+      "Terms",
+      terms.map((t) => `<p style="margin-bottom:6px">${t}</p>`).join("") +
+        `<p class="note">An estimate generated from a published rate card, not a contract. Availability is confirmed on booking.</p>`
+    )
+  );
+
+  if (quote.flags.length > 0) {
+    parts.push(
+      section(
+        "Notes",
+        `<ul style="padding-left:18px">${quote.flags
+          .map((flag) => `<li style="margin-bottom:4px">${esc(flag)}</li>`)
+          .join("")}</ul>`
+      )
+    );
+  }
+
+  return parts.join("");
+}

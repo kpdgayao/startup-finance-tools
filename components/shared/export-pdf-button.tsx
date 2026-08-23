@@ -117,6 +117,14 @@ const PRINT_CSS = `
     margin-top: 0.5rem;
   }
 
+  /* Secondary text inside a table cell — a line of explanation under a label.
+     Lives here rather than as an inline style on the call site because this
+     file is the one place design-tokens.test.ts allows literal hex; a colour
+     written inline in a tool's print builder fails that sweep, correctly. */
+  .muted {
+    color: #6b7280;
+  }
+
   .print-footer {
     margin-top: 2rem;
     padding-top: 0.75rem;

@@ -14,7 +14,7 @@ export function QuietHero() {
           opposite of the point. homepage-facts.test.ts pins the call sites
           that make the narrower claim true. */}
       <p className="eyebrow">
-        Sixteen tools · free · calculations stay in your browser
+        Seventeen tools · free · calculations stay in your browser
       </p>
 
       {/* tracking is set here on purpose: the base layer gives h1-h4

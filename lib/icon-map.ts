@@ -16,6 +16,7 @@ import {
   Scale,
   Landmark,
   LineChart,
+  Mic,
 } from "lucide-react";
 
 export const iconMap: Record<string, LucideIcon> = {
@@ -35,4 +36,5 @@ export const iconMap: Record<string, LucideIcon> = {
   Scale,
   Landmark,
   LineChart,
+  Mic,
 };

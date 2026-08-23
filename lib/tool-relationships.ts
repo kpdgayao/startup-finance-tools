@@ -87,6 +87,11 @@ export const TOOL_RELATIONSHIPS: Record<ToolId, RelatedTool[]> = {
     { toolId: "financial-model-builder", reason: "Compare with the startup-flavored 3-year model" },
     { toolId: "compliance-checklist", reason: "Make sure your registration and BIR setup is complete" },
   ],
+  "speaker-quotation": [
+    { toolId: "pricing-calculator", reason: "The same value-based reasoning, applied to your own product" },
+    { toolId: "unit-economics", reason: "Work out what a day of your time actually has to earn" },
+    { toolId: "compliance-checklist", reason: "Withholding tax and receipts, if you invoice as a professional" },
+  ],
 };
 
 export function getRelatedTools(toolId: ToolId): RelatedTool[] {

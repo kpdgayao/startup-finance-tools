@@ -111,6 +111,13 @@ export const TOOLS = [
     href: "/tools/msme-financial-plan",
     icon: "LineChart",
   },
+  {
+    id: "speaker-quotation",
+    name: "Speaker Quotation",
+    description: "Generate a costed speaking-engagement quotation with the rate card shown line by line",
+    href: "/tools/speaker-quotation",
+    icon: "Mic",
+  },
 ] as const;
 
 export const TOOL_GROUPS = [
@@ -138,6 +145,11 @@ export const TOOL_GROUPS = [
     label: "MSME Toolkit",
     subtitle: "Five-year planning for cooperatives and small enterprises.",
     tools: ["msme-financial-plan"],
+  },
+  {
+    label: "Booking a Speaker",
+    subtitle: "For organisers costing a workshop, keynote or training day.",
+    tools: ["speaker-quotation"],
   },
 ] as const;
 
