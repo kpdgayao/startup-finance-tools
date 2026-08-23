@@ -1,6 +1,8 @@
 import { section, summaryCard, table } from "@/components/shared/export-pdf-button";
 import { formatPHP, formatPercent } from "@/lib/utils";
 import { HOME_BASE } from "@/lib/speaking/rate-card";
+import { formatEngagementDate } from "@/lib/speaking/availability";
+import { NAME } from "@/lib/kevin";
 import type { Quotation, QuotationInput } from "@/lib/speaking/quotation";
 
 /**
@@ -33,12 +35,30 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
         ["Detail", "Value"],
         [
           ["Quotation reference", esc(quote.reference)],
+          // A forwarded PDF lands on a desk that has never seen this page. It
+          // has to name its own supplier, or finance cannot match it to
+          // anything: the previous version identified the client but never the
+          // party being paid.
+          [
+            "Quotation from",
+            // Credentials without the second company name. ROLE_LINE ends in
+            // "CEO, IOL Inc.", and an accounts-payable clerk reading that
+            // above "Invoiced by 1Punch Inc." has two firms and no way to tell
+            // which one to pay.
+            `${esc(NAME)}, CPA · MBA${
+              quote.invoicing.entity
+                ? `<br>Invoice and official receipt issued by ${esc(quote.invoicing.entity)}`
+                : "<br>Billed personally, not through a firm"
+            }`,
+          ],
+          ["Prepared for", esc(input.organizationName) || "—"],
           ["Event", esc(input.eventTitle) || "—"],
-          ["Organisation", esc(input.organizationName) || "—"],
           ["Venue", esc(input.venue) || "—"],
           [
             "Dates",
-            quote.dates.map((d) => `${esc(d.weekday)}, ${esc(d.date)}`).join("<br>"),
+            quote.dates
+              .map((d) => esc(formatEngagementDate(d.date, { weekday: true })))
+              .join("<br>"),
           ],
           ["Participants", input.audienceSize.toLocaleString("en-PH")],
           [
@@ -60,10 +80,8 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
       "Summary",
       `<div class="summary-grid">
         ${summaryCard("Professional fee", formatPHP(quote.professionalFee))}
-        ${summaryCard("Effective day rate", formatPHP(quote.effectiveDayRate), {
-          sublabel: `Across ${quote.daysCommitted} day(s) committed, topic rate ${formatPHP(
-            quote.dayRate
-          )}`,
+        ${summaryCard("Cost per day", formatPHP(quote.effectiveDayRate), {
+          sublabel: `Across ${quote.daysCommitted} day(s) of delivery and travel`,
         })}
         ${summaryCard("Billed logistics", formatPHP(quote.reimbursablesBilled), {
           sublabel:
@@ -102,9 +120,9 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
         table(
           ["Item", "Estimate", "Billed"],
           quote.reimbursables.map((item) => [
-            `<strong>${esc(item.label)}</strong><br><span class="muted">${esc(
-              item.detail
-            )}</span>`,
+            `<strong>${esc(item.label)}</strong>${
+              item.detail ? `<br><span class="muted">${esc(item.detail)}</span>` : ""
+            }`,
             formatPHP(item.amount),
             item.billed ? formatPHP(item.amount) : formatPHP(0),
           ])
@@ -169,9 +187,11 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
     "<strong>Cancellation</strong> inside 14 days, 50% of the professional fee; inside 7 days, 100%. Non-refundable travel already booked is billed at cost either way."
   );
   terms.push(
-    `<strong>Validity</strong> this quotation holds until ${esc(quote.validUntil)}. The ${
+    `<strong>Validity</strong> this quotation holds until ${esc(
+      formatEngagementDate(quote.validUntil)
+    )}. The ${
       quote.dates.length === 1 ? "date is" : "dates are"
-    } held provisionally until ${esc(quote.holdUntil)}.`
+    } held provisionally until ${esc(formatEngagementDate(quote.holdUntil))}.`
   );
 
   parts.push(

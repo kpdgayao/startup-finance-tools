@@ -41,7 +41,12 @@ import {
 } from "@/lib/speaking/rate-card";
 import { QUESTIONS } from "@/lib/speaking/questions";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
-import { addDays, isValidISODate, toISODate } from "@/lib/speaking/availability";
+import {
+  addDays,
+  formatEngagementDate,
+  isValidISODate,
+  toISODate,
+} from "@/lib/speaking/availability";
 import {
   useAvailability,
   useIntakeDraft,
@@ -220,14 +225,14 @@ export default function SpeakerQuotationPage() {
       input.eventTitle ? `Event: ${input.eventTitle}` : null,
       input.organizationName ? `Organisation: ${input.organizationName}` : null,
       input.venue ? `Venue: ${input.venue}` : null,
-      `Dates: ${quote.dates.map((d) => `${d.weekday}, ${d.date}`).join("; ")}`,
+      `Dates: ${quote.dates.map((d) => formatEngagementDate(d.date, { weekday: true })).join("; ")}`,
       `Format: ${format.label}${input.sessions > 1 ? ` × ${input.sessions}` : ""}`,
       `Participants: ${input.audienceSize}`,
       "",
       `Professional fee: ${formatPHP(quote.professionalFee)}`,
       `Billed logistics: ${formatPHP(quote.reimbursablesBilled)}`,
       `Total: ${formatPHP(quote.total)}`,
-      `Quote valid until ${quote.validUntil}.`,
+      `Quote valid until ${formatEngagementDate(quote.validUntil)}.`,
       "",
       "Generated from the published rate card at startupfinance.tools/tools/speaker-quotation.",
       "",
@@ -561,9 +566,9 @@ export default function SpeakerQuotationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Who is asking</CardTitle>
+          <CardTitle>About your organisation</CardTitle>
           <CardDescription>
-            This decides which rate applies, and whether the event is funding itself.
+            This decides which rate applies to you, and whether the event is funding itself.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -746,7 +751,7 @@ export default function SpeakerQuotationPage() {
       {quote && (
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
         <p className="text-sm text-muted-foreground">
-          Quote {quote.reference} · valid until {quote.validUntil}
+          Quote {quote.reference} · valid until {formatEngagementDate(quote.validUntil)}
         </p>
         <div className="flex flex-wrap gap-2">
           <ExportPDFButton
@@ -765,6 +770,7 @@ export default function SpeakerQuotationPage() {
 
       {quote && (
       <AiInsightsPanel
+        label="What does this quote mean?"
         explanation={ai.explanation}
         isLoading={ai.isLoading}
         error={ai.error}

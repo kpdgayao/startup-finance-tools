@@ -73,6 +73,21 @@ export function daysBetween(fromISO: string, toISO: string): number {
   return Math.round((to - from) / 86_400_000);
 }
 
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 const WEEKDAY_NAMES = [
   "Sunday",
   "Monday",
@@ -85,6 +100,22 @@ const WEEKDAY_NAMES = [
 
 export function weekdayName(iso: string): string {
   return WEEKDAY_NAMES[parseISODate(iso).getDay()];
+}
+
+/**
+ * A date as a person reads it: "7 October 2026", or with the weekday when the
+ * day of the week matters to the reader.
+ *
+ * Hand-rolled rather than `Intl.DateTimeFormat` on purpose. This page is
+ * statically prerendered and then hydrated, and Intl output can differ between
+ * the build machine's ICU data and the visitor's browser — a mismatch React
+ * reports as a hydration error on what is only a date label.
+ */
+export function formatEngagementDate(iso: string, options?: { weekday?: boolean }): string {
+  if (!isValidISODate(iso)) return iso;
+  const date = parseISODate(iso);
+  const body = `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+  return options?.weekday ? `${WEEKDAY_NAMES[date.getDay()]}, ${body}` : body;
 }
 
 export function isWeekend(iso: string): boolean {

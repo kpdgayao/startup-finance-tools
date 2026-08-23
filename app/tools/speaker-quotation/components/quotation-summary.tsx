@@ -4,6 +4,7 @@ import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResultCard } from "@/components/shared/result-card";
 import { cn, formatPHP, formatPercent } from "@/lib/utils";
+import { formatEngagementDate } from "@/lib/speaking/availability";
 import { HOME_BASE } from "@/lib/speaking/rate-card";
 import type { Quotation } from "@/lib/speaking/quotation";
 
@@ -17,10 +18,11 @@ interface QuotationSummaryProps {
 }
 
 export function QuotationSummary({ quote }: QuotationSummaryProps) {
-  // Judged against the rate the TOPIC set, not a shared anchor: a routine
-  // engagement clearing ₱15,000/day is on target, and comparing it to the
-  // research-tier rate would flag it as underpaid.
-  const feeVariant = quote.effectiveDayRate >= quote.dayRate ? "success" : "warning";
+  // No success/warning variant on the day-rate card. It compared the quote
+  // against the speaker's own target, which is not the organiser's business and
+  // put a warning triangle on their quotation whenever an engagement came in
+  // under it — reading, to the person about to pay, as though something were
+  // wrong with the number they had been handed.
 
   return (
     <div className="space-y-6">
@@ -33,12 +35,11 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
           } · ${quote.topicTier.toLowerCase()}`}
         />
         <ResultCard
-          label="Effective day rate"
+          label="Cost per day"
           value={formatPHP(quote.effectiveDayRate)}
           sublabel={`Across ${quote.daysCommitted} ${
             quote.daysCommitted === 1 ? "day" : "days"
-          } committed · topic rate ${formatPHP(quote.dayRate)}`}
-          variant={feeVariant}
+          } of delivery and travel`}
         />
         <ResultCard
           label="Billed logistics"
@@ -175,16 +176,24 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                     <tr key={item.id} className="border-b border-rule/60 align-top">
                       <td className="py-2.5 pr-2 sm:pr-3">
                         <p className="font-medium">{item.label}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+                        {item.detail && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+                        )}
                       </td>
+                      {/* Not struck through: a strikethrough beside a price
+                          reads as a discount being given, when the point is the
+                          opposite — this is a cost the organiser is absorbing
+                          directly, shown so they can budget for it. */}
                       <td className="py-2.5 pl-3 text-right whitespace-nowrap tabular">
                         {item.billed ? (
                           formatPHP(item.amount)
                         ) : (
-                          <span className="text-muted-foreground">
-                            <span className="line-through">{formatPHP(item.amount)}</span>{" "}
+                          <>
                             {formatPHP(0)}
-                          </span>
+                            <span className="block text-xs font-normal text-muted-foreground">
+                              you arrange, about {formatPHP(item.amount)}
+                            </span>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -274,8 +283,9 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
           </p>
           <p>
             <span className="text-foreground">Validity</span> this quote holds until{" "}
-            {quote.validUntil}, and the {quote.dates.length === 1 ? "date is" : "dates are"} held
-            provisionally until {quote.holdUntil}.
+            {formatEngagementDate(quote.validUntil)}, and the{" "}
+            {quote.dates.length === 1 ? "date is" : "dates are"} held provisionally until{" "}
+            {formatEngagementDate(quote.holdUntil)}.
           </p>
           <p className="text-xs">
             An estimate generated from a published rate card, not a contract. Availability is

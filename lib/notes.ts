@@ -106,18 +106,24 @@ export const NOTES: Record<string, MarginNoteData[]> = {
       body: "Keep personal and business accounts separate from day one. Mixing them is the most common startup accounting mistake I see — it turns tax filing into a forensic exercise and undermines your books when an investor asks for due diligence.",
     },
   ],
+  // ORGANISER-FACING. Unlike every other tool here, this page is read by
+  // someone receiving a quote, not by the person preparing one. Notes written
+  // as advice to a speaker read, on this page, as coaching aimed at the
+  // reader's own wallet — the earlier draft told them that preparation "is the
+  // part organisers never see", which is precisely the wrong sentence to put
+  // in front of an organiser. These explain the reasoning from their side.
   "speaker-quotation": [
     {
       tone: "rule",
-      body: "Price the preparation, not the stage time. A 90-minute talk that already exists costs a day. A two-day workshop on a title nobody has taught before is a week of writing before anyone walks into the room — and that week is the part organisers never see, so it is the part you have to put in writing.",
+      body: "The number on a quotation is mostly preparation. A session that has been taught many times is close to pure delivery, which is why it is the cheapest line on this rate card. One that has to be researched first costs days before a single slide exists — days that never appear on your programme, but which decide what the day costs.",
     },
     {
       tone: "watch",
-      body: "If the event sells seats, ask what a seat costs and how many they expect to fill. An event grossing \u20b1280,000 at the door and offering \u20b110,000 for two days of teaching is not short of money — it has simply never been asked to show the arithmetic.",
+      body: "If your event sells seats, say so on the form. It raises the fee rather than lowering it, and that is the point: an event that grosses several hundred thousand pesos at the door is buying a share of the programme's earning power, not an hour of somebody's time. Quoting it openly is faster than discovering the mismatch after you have printed the tickets.",
     },
     {
       tone: "ph",
-      body: "Quote transport and accommodation as line items even when the organiser is covering them. A Philippine organiser with a hotel partner pays a fraction of the walk-in rate, and seeing the number they are absorbing is what stops \"can you just shoulder it and we reimburse\" — which in practice means carrying the cost for 30 days waiting on a liquidation.",
+      body: "Arranging travel and a hotel yourself is almost always cheaper than reimbursing them. An organiser with a corporate rate pays a fraction of the walk-in price, and nobody carries the cost for a month waiting on a liquidation. The estimate stays visible on the quote either way, so you can budget for it before you commit.",
     },
   ],
 };

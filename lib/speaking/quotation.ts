@@ -427,7 +427,12 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     push({
       id: "travel-days",
       kind: "travel",
-      label: `${region.travelDays} travel ${region.travelDays === 1 ? "day" : "days"}`,
+      label:
+        region.travelDays === 1
+          ? "One travel day"
+          : region.travelDays < 1
+            ? "Part of a travel day"
+            : `${region.travelDays} travel days`,
       detail: `Getting to ${region.label} and back from Baguio is time that cannot be sold to anyone else — billed at ${
         TRAVEL_DAY_FACTOR * 100
       }% of the ₱${dayRate.toLocaleString("en-PH")} day rate`,
@@ -508,9 +513,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     reimbursables.push({
       id: "transport",
       label: `Round-trip transport, Baguio ↔ ${region.label}`,
-      detail: raw.travelCovered
-        ? "Booked and paid for directly by the organiser"
-        : "Estimate — billed at actual cost with receipts",
+      detail: raw.travelCovered ? "" : "Estimate — billed at actual cost with receipts",
       amount: region.transport,
       billed: !raw.travelCovered,
     });
@@ -521,7 +524,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
       id: "accommodation",
       label: `Accommodation, ${nights} ${nights === 1 ? "night" : "nights"}`,
       detail: raw.accommodationCovered
-        ? "Booked and paid for directly by the organiser"
+        ? `Budgeted at about ₱${region.nightly.toLocaleString("en-PH")} a night`
         : `Estimate at ₱${region.nightly.toLocaleString("en-PH")}/night — billed at actual cost with receipts`,
       amount: region.nightly * nights,
       billed: !raw.accommodationCovered,
@@ -534,7 +537,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
       id: "per-diem",
       label: `Ground transfers and meals, ${perDiemDays} ${perDiemDays === 1 ? "day" : "days"}`,
       detail: raw.travelCovered
-        ? "Arranged by the organiser"
+        ? `Budgeted at about ₱${region.perDiem.toLocaleString("en-PH")} a day`
         : `Estimate at ₱${region.perDiem.toLocaleString("en-PH")}/day`,
       amount: region.perDiem * perDiemDays,
       billed: !raw.travelCovered,
@@ -590,12 +593,12 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   }
   if (!raw.travelCovered || !raw.accommodationCovered) {
     flags.push(
-      "Travel or accommodation is not covered by the organiser, so it appears as a billed reimbursable. Booking it directly is usually cheaper for you than reimbursing it."
+      "Travel or accommodation is not being arranged by you, so it appears on the quote as a billed reimbursable at actual cost. Booking it directly is usually cheaper than reimbursing it, and it keeps the invoice simpler."
     );
   }
   if (daysOfNotice < 14 && daysOfNotice >= 0) {
     flags.push(
-      `Only ${daysOfNotice} ${daysOfNotice === 1 ? "day" : "days"} of notice — confirm availability before circulating this quote.`
+      `Only ${daysOfNotice} ${daysOfNotice === 1 ? "day" : "days"} of notice. Confirm the date is still open before you circulate this quote internally.`
     );
   }
   // Corporates, agencies and schools cannot release payment without one, so
@@ -605,7 +608,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   // snacks does not need a formal invoice and should not be nagged for one.
   if (!raw.invoiceRequired && !organizer.mission) {
     flags.push(
-      `No formal invoice was requested, but a ${organizer.label.toLowerCase()} almost always needs one to release payment. Say so now and it is issued by ${INVOICING_ENTITY.name}; the fee does not change.`
+      `No formal invoice was requested. Organisations of this kind almost always need one before finance can release payment — say so on the form and it is issued by ${INVOICING_ENTITY.name}, at no change to the fee.`
     );
   }
   if (sessions > 1) {
