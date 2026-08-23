@@ -970,3 +970,15 @@ describe("tax figures are exact", () => {
     }
   });
 });
+
+describe("expected paid seats keeps zero as its default", () => {
+  // 0 is a sentinel meaning "use the participant count", so an integer field
+  // that refills a cleared box with its previous value would make the default
+  // impossible to get back to.
+  it("falls back to the audience size when left at zero", () => {
+    const quote = buildQuotation(
+      input({ ticketed: true, participantFee: 1_000, audienceSize: 60, expectedPaidAttendees: 0 })
+    );
+    expect(quote.projectedGate).toBe(60_000);
+  });
+});

@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1083,12 +1084,11 @@ export default function MsmeFinancialPlanPage() {
               <InfoTooltip content="Average days before customers pay you after a sale. 30 = paid within a month. Higher = cash tied up in receivables." />
             </Label>
             <div className="relative">
-              <Input
-                type="number"
+              <IntegerInput
                 min={0}
                 max={180}
                 value={daysToCollect}
-                onChange={(e) => setDaysToCollect(parseInt(e.target.value) || 0)}
+                onChange={setDaysToCollect}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">days</span>
             </div>
@@ -1099,12 +1099,11 @@ export default function MsmeFinancialPlanPage() {
               <InfoTooltip content="Average days before you pay suppliers. Higher days = you keep more cash on hand longer." />
             </Label>
             <div className="relative">
-              <Input
-                type="number"
+              <IntegerInput
                 min={0}
                 max={180}
                 value={daysToPay}
-                onChange={(e) => setDaysToPay(parseInt(e.target.value) || 0)}
+                onChange={setDaysToPay}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">days</span>
             </div>
@@ -1115,12 +1114,11 @@ export default function MsmeFinancialPlanPage() {
               <InfoTooltip content="Average days inventory sits before being sold. 0 if you don't hold inventory (services)." />
             </Label>
             <div className="relative">
-              <Input
-                type="number"
+              <IntegerInput
                 min={0}
                 max={365}
                 value={inventoryDays}
-                onChange={(e) => setInventoryDays(parseInt(e.target.value) || 0)}
+                onChange={setInventoryDays}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">days</span>
             </div>
@@ -1150,12 +1148,11 @@ export default function MsmeFinancialPlanPage() {
               Useful Life (years)
               <InfoTooltip content="How many years assets are depreciated over. Equipment typically 5-10 years, leasehold improvements 3-5 years." />
             </Label>
-            <Input
-              type="number"
+            <IntegerInput
               min={1}
               max={30}
               value={usefulLifeYears}
-              onChange={(e) => setUsefulLifeYears(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={setUsefulLifeYears}
             />
           </div>
         </CardContent>
@@ -1185,12 +1182,11 @@ export default function MsmeFinancialPlanPage() {
             />
             <div className="space-y-2">
               <Label>Term (years)</Label>
-              <Input
-                type="number"
+              <IntegerInput
                 min={1}
                 max={30}
                 value={loanTermYears}
-                onChange={(e) => setLoanTermYears(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={setLoanTermYears}
               />
             </div>
             <div className="space-y-2">
@@ -1198,12 +1194,11 @@ export default function MsmeFinancialPlanPage() {
                 Grace Period (years)
                 <InfoTooltip content="Years before principal payments begin. Interest accrues during grace. Common in government MSME and agricultural loan programs." />
               </Label>
-              <Input
-                type="number"
+              <IntegerInput
                 min={0}
                 max={5}
                 value={loanGracePeriodYears}
-                onChange={(e) => setLoanGracePeriodYears(Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={setLoanGracePeriodYears}
               />
             </div>
           </CardContent>

@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
@@ -67,12 +68,11 @@ export function CashFlowInputs({
                 <InfoTooltip content="Days Sales Outstanding — average days to collect payment from customers. DSO=0 means immediate collection. DSO=30 means ~1 month delay. DSO=60 means ~2 month delay." />
               </Label>
               <div className="relative">
-                <Input
-                  type="number"
+                <IntegerInput
                   min={0}
                   max={120}
                   value={paymentTerms}
-                  onChange={(e) => setPaymentTerms(parseInt(e.target.value) || 0)}
+                  onChange={setPaymentTerms}
                   onBlur={() => onBlur?.("paymentTerms")}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">days</span>
@@ -85,12 +85,11 @@ export function CashFlowInputs({
                 <InfoTooltip content="Days Payable Outstanding — average days before you pay your suppliers. DPO=0 means you pay immediately. DPO=30 means you hold cash ~1 month before paying." />
               </Label>
               <div className="relative">
-                <Input
-                  type="number"
+                <IntegerInput
                   min={0}
                   max={120}
                   value={payableTerms}
-                  onChange={(e) => setPayableTerms(parseInt(e.target.value) || 0)}
+                  onChange={setPayableTerms}
                   onBlur={() => onBlur?.("payableTerms")}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">days</span>

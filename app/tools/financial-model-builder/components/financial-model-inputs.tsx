@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
@@ -130,13 +130,12 @@ export function FinancialModelInputs({
                 <InfoTooltip content="Average days to collect payment from customers. DSO=30 means ~1 month delay." />
               </Label>
               <div className="relative">
-                <Input
-                  type="number"
-                  min={0}
-                  max={120}
-                  value={dso}
-                  onChange={(e) => setDso(parseInt(e.target.value) || 0)}
-                />
+                <IntegerInput
+                min={0}
+                max={120}
+                value={dso}
+                onChange={setDso}
+              />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                   days
                 </span>
@@ -148,13 +147,12 @@ export function FinancialModelInputs({
                 <InfoTooltip content="Average days before you pay suppliers. Higher DPO preserves cash." />
               </Label>
               <div className="relative">
-                <Input
-                  type="number"
-                  min={0}
-                  max={120}
-                  value={dpo}
-                  onChange={(e) => setDpo(parseInt(e.target.value) || 0)}
-                />
+                <IntegerInput
+                min={0}
+                max={120}
+                value={dpo}
+                onChange={setDpo}
+              />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                   days
                 </span>
@@ -176,16 +174,11 @@ export function FinancialModelInputs({
                 Depreciation (years)
                 <InfoTooltip content="Useful life of assets for straight-line depreciation." />
               </Label>
-              <Input
-                type="number"
+              <IntegerInput
                 min={1}
                 max={30}
                 value={depreciationYears}
-                onChange={(e) =>
-                  setDepreciationYears(
-                    Math.max(1, parseInt(e.target.value) || 1)
-                  )
-                }
+                onChange={setDepreciationYears}
               />
             </div>
           </div>

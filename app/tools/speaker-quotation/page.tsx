@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { CurrencyInput } from "@/components/shared/currency-input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { MarginNote } from "@/components/shared/margin-note";
 import { RelatedTools } from "@/components/shared/related-tools";
@@ -442,22 +443,13 @@ export default function SpeakerQuotationPage() {
             }`}
             active={input.sessions > 1}
           >
-            <Input
+            <IntegerInput
               id={QUESTIONS.sessions.id}
-              type="number"
               min={1}
               max={30}
-              step={1}
               value={input.sessions}
-              onChange={(e) => {
-                // Floored, not just clamped: a number input accepts "2.5",
-                // which the engine silently priced as 2 while the chip read
-                // "2.5 engagement days" and the availability request was
-                // rejected as a non-integer.
-                set(
-                  "sessions",
-                  Math.max(1, Math.min(30, Math.floor(Number(e.target.value) || 1)))
-                );
+              onChange={(v) => {
+                set("sessions", v);
                 // The session count decides how many dates the engagement
                 // spans, so an existing check no longer covers it. Leaving it
                 // on screen showed a one-date "Open" beside a three-date quote.
@@ -749,15 +741,12 @@ export default function SpeakerQuotationPage() {
               </RateFactorField>
 
               <RateFactorField question={QUESTIONS.expectedPaidAttendees}>
-                <Input
+                <IntegerInput
                   id={QUESTIONS.expectedPaidAttendees.id}
-                  type="number"
                   min={0}
                   max={100000}
                   value={input.expectedPaidAttendees}
-                  onChange={(e) =>
-                    set("expectedPaidAttendees", Math.max(0, Number(e.target.value) || 0))
-                  }
+                  onChange={(v) => set("expectedPaidAttendees", v)}
                   placeholder={String(input.audienceSize)}
                 />
               </RateFactorField>
@@ -775,13 +764,12 @@ export default function SpeakerQuotationPage() {
               impact={factorImpact(audienceBand.factor)}
               active={audienceBand.factor !== 1}
             >
-              <Input
+              <IntegerInput
                 id={QUESTIONS.audienceSize.id}
-                type="number"
                 min={1}
                 max={100000}
                 value={input.audienceSize}
-                onChange={(e) => set("audienceSize", Math.max(1, Number(e.target.value) || 1))}
+                onChange={(v) => set("audienceSize", v)}
               />
             </RateFactorField>
             {!isTeamBuilding && (

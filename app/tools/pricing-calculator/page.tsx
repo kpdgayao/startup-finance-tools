@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/shared/currency-input";
@@ -144,11 +144,10 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
                 <CurrencyInput label="Variable Cost per Unit" value={variableCost} onChange={setVariableCost} onBlur={() => markTouched("variableCost")} error={variableCostError} />
                 <div className="space-y-2">
                   <Label>Expected Units / Clients</Label>
-                  <Input
-                    type="number"
+                  <IntegerInput
                     min={1}
-                    value={expectedUnits || ""}
-                    onChange={(e) => setExpectedUnits(parseInt(e.target.value) || 0)}
+                    value={expectedUnits}
+                    onChange={setExpectedUnits}
                     onBlur={() => markTouched("expectedUnits")}
                   />
                   {expectedUnitsError && <p className="text-xs text-bad mt-1">{expectedUnitsError}</p>}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, relative } from "node:path";
 
 // Vitest runs from the repo root, which IS the `app/` directory.
 const ROOT = process.cwd();
@@ -121,3 +121,50 @@ describe("the form asks a manageable number of questions up front", () => {
     ).toBeGreaterThan(0.5);
   });
 });
+
+describe("whole-number fields can be cleared", () => {
+  // A controlled input written as
+  //   value={n} onChange={e => set(Math.max(1, Number(e.target.value) || 1))}
+  // cannot be emptied: deleting the last character yields "", Number("") is 0,
+  // `|| 1` makes it 1, and React re-renders the field as "1" under the user's
+  // hands. On a phone, where select-all is awkward, the only way to enter 3 is
+  // to put the caret before the stubborn 1 and type — giving 13. An organiser
+  // reported exactly that. IntegerInput holds a draft string instead.
+  it("uses IntegerInput rather than a self-resetting handler", () => {
+    // Catches both shapes. `|| 1` is the one that was reported — clearing the
+    // field refills it and typing appends. `|| 0` is milder but the same bug:
+    // the field cannot be left empty either. `parseFloat` handlers are out of
+    // scope; those are decimal fields and IntegerInput is the wrong control.
+    const RESETTING = /(?:Number|parseInt)\(\s*e\.target\.value\s*\)\s*\|\|\s*\d/;
+
+    // IntegerInput's own documentation quotes the broken handler it replaces,
+    // so it matches its own guard. Excluded by full path rather than basename,
+    // and rather than rewording working documentation to dodge a regex — the
+    // same approach design-tokens.test.ts takes with itself.
+    const SELF = "components/shared/integer-input.tsx";
+    const offenders: string[] = [];
+
+    for (const rel of [...walkTsx(join(ROOT, "app")), ...walkTsx(join(ROOT, "components"))]) {
+      const path = relative(ROOT, rel).replace(/\\/g, "/");
+      if (path === SELF) continue;
+      if (RESETTING.test(readFileSync(rel, "utf8"))) offenders.push(path);
+    }
+
+    expect(
+      offenders,
+      "these whole-number fields refill themselves the moment they are cleared — " +
+        "use <IntegerInput>, which lets the field hold an empty draft while editing"
+    ).toEqual([]);
+  });
+});
+
+function walkTsx(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === ".next") continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walkTsx(full));
+    else if (entry.name.endsWith(".tsx")) out.push(full);
+  }
+  return out;
+}
