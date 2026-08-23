@@ -69,8 +69,52 @@ export const REVENUE_SHARE_FLOOR = 0.15;
  */
 export const REVENUE_SHARE_UPLIFT_CAP = 2;
 
-/** Creditable withholding tax on professional fees paid to an individual. */
+/**
+ * Creditable withholding on professional fees paid to an INDIVIDUAL.
+ *
+ * 10% is the default; it drops to 5% where a sworn declaration of gross
+ * receipts under ₱3M is on file with the payor. The quote shows 10% and says
+ * so, because assuming the lower rate understates what the organiser will
+ * actually deduct.
+ */
 export const EWT_RATE = 0.1;
+
+/**
+ * Creditable withholding when the training firm issues the invoice.
+ *
+ * A seminar and training provider billing as a corporation is ordinarily
+ * withheld at 2% as a contractor. A payor that instead classifies the billing
+ * as professional fees of a juridical entity withholds 10% (15% above ₱720K of
+ * gross income). The classification is the ORGANISER'S to make, so the quote
+ * names the rate it used and says the payor's own treatment governs, rather
+ * than asserting a single correct answer.
+ */
+export const EWT_RATE_FIRM = 0.02;
+
+/**
+ * Percentage tax on the gross receipts of a non-VAT entity.
+ *
+ * This is the firm's own cost, not the organiser's, so it appears as a note
+ * and never on the invoice. It is NOT built into the day rates: if you decide
+ * to stay whole by passing it on, gross the rate ladder up rather than adding
+ * a surcharge line an organiser will read as a tax they are being charged.
+ */
+export const PERCENTAGE_TAX_RATE = 0.03;
+
+/**
+ * The entity that issues a formal invoice when an organiser needs one.
+ *
+ * `vatRegistered: false` — the firm is below the ₱3M VAT threshold, so no 12%
+ * is added to the organiser's total. If it crosses that threshold and
+ * registers for VAT, flip this: VAT then has to be added on top of the fee as
+ * its own line, claimable by the organiser as input VAT, and the quotation
+ * total changes for every ticket this touches.
+ */
+export const INVOICING_ENTITY = {
+  name: "1Punch Inc.",
+  vatRegistered: false,
+  vatRate: 0.12,
+} as const;
 
 /** Quote validity, and how long the requested date is held without a deposit. */
 export const QUOTE_VALID_DAYS = 30;
@@ -78,6 +122,190 @@ export const DATE_HOLD_DAYS = 7;
 
 /** Home base. Everything in REGIONS is measured as travel away from here. */
 export const HOME_BASE = "Baguio City";
+
+// ---------------------------------------------------------------------------
+// Engagement type
+// ---------------------------------------------------------------------------
+
+export type EngagementTypeId = "speaking" | "facilitation" | "team-building";
+
+export interface EngagementType {
+  id: EngagementTypeId;
+  label: string;
+  detail: string;
+}
+
+/**
+ * What kind of work this is. It decides where the day rate comes from, and
+ * which questions the form asks at all.
+ *
+ * These are not variations on one service. A talk is prepared once and
+ * delivered; facilitation is designed for one specific room, and the day in
+ * that room is often HALF the engagement — the interviews before it and the
+ * written plan after it are the rest, and they are exactly the parts that get
+ * absorbed for free when everything is priced as "a day". So facilitation
+ * carries its own rate ladder and its own pre-work and output lines, rather
+ * than borrowing the subject-complexity ladder, which cannot apply to work
+ * that is bespoke by definition.
+ */
+export const ENGAGEMENT_TYPES: EngagementType[] = [
+  {
+    id: "speaking",
+    label: "Talk, workshop or training",
+    detail: "You want a subject taught — a keynote, a session, a multi-day course",
+    },
+  {
+    id: "facilitation",
+    label: "Planning facilitation",
+    detail:
+      "Strategic or business planning, a board retreat — you want a room guided to a decision, not a lecture",
+  },
+  {
+    id: "team-building",
+    label: "Team building",
+    detail: "Designed activities and facilitation, built around what the group actually needs",
+  },
+];
+
+export function engagementTypeFor(id: EngagementTypeId): EngagementType {
+  return ENGAGEMENT_TYPES.find((t) => t.id === id) ?? ENGAGEMENT_TYPES[0];
+}
+
+// ---------------------------------------------------------------------------
+// Facilitation
+// ---------------------------------------------------------------------------
+
+export type FacilitationScopeId = "team" | "organisation" | "board";
+
+export interface FacilitationScope {
+  id: FacilitationScopeId;
+  label: string;
+  detail: string;
+  dayRate: number;
+}
+
+/**
+ * Facilitation rates. Above every speaking tier, because facilitation is
+ * bespoke by definition — nothing is reusable, the process is designed for one
+ * room, and the facilitator carries the outcome rather than the content.
+ *
+ * The ladder is about how many principals have to be reconciled, which is what
+ * actually makes a room hard to run.
+ */
+export const FACILITATION_SCOPES: FacilitationScope[] = [
+  {
+    id: "team",
+    label: "One team or department",
+    detail: "A single planning session, clear scope, one set of decision-makers",
+    dayRate: 25_000,
+  },
+  {
+    id: "organisation",
+    label: "A whole organisation or cooperative",
+    detail:
+      "Several departments or member groups whose priorities have to be reconciled in the room",
+    dayRate: 28_000,
+  },
+  {
+    id: "board",
+    label: "A board, or several entities at once",
+    detail:
+      "Governance-level decisions with competing principals, where the facilitator carries the outcome",
+    dayRate: 30_000,
+  },
+];
+
+export function facilitationScopeFor(id: FacilitationScopeId): FacilitationScope {
+  return FACILITATION_SCOPES.find((f) => f.id === id) ?? FACILITATION_SCOPES[0];
+}
+
+/**
+ * Day rate for team building.
+ *
+ * Sits inside the speaking range rather than above it — above a settled subject
+ * (₱15,000), because activity design and a room on its feet are more work than
+ * a lecture, and below both the research tier (₱24,000) and all of facilitation,
+ * because nothing has to be read up on first and no decision rests on the day.
+ * Group size is already priced by AUDIENCE_BANDS, so it is not doubled up here.
+ */
+export const TEAM_BUILDING_DAY_RATE = 22_000;
+
+/**
+ * Desk days — interviews, document review, writing up — bill at this share of
+ * the room day rate.
+ *
+ * Not the full rate: time in the room is the premium, and quoting a day of
+ * writing at the same price as a day of facilitating is the kind of line an
+ * organiser is right to query. Not zero either, which is what happens when
+ * pre-work and write-ups are folded into "the day" and quietly absorbed.
+ */
+export const DESK_DAY_FACTOR = 0.7;
+
+export interface FacilitationStage {
+  id: string;
+  label: string;
+  detail: string;
+  /** Desk days this implies, billed at DESK_DAY_FACTOR of the day rate. */
+  days: number;
+}
+
+/** What happens before the room — the invisible half of a planning engagement. */
+export const PREPARATION_OPTIONS: FacilitationStage[] = [
+  {
+    id: "none",
+    label: "None — we will brief you on a call",
+    detail: "You arrive with what we send you and we start from there",
+    days: 0,
+  },
+  {
+    id: "review",
+    label: "Read our documents beforehand",
+    detail: "Financial statements, the previous plan, board papers, an organisation chart",
+    days: 0.5,
+  },
+  {
+    id: "interviews",
+    label: "Interview up to five of our people first",
+    detail: "Short one-to-one conversations, so the session opens with the real disagreements",
+    days: 1,
+  },
+  {
+    id: "deep",
+    label: "Interview six to twelve, and read the documents",
+    detail: "Enough groundwork to design the session around what is actually contested",
+    days: 2,
+  },
+];
+
+/** What happens after the room. */
+export const OUTPUT_OPTIONS: FacilitationStage[] = [
+  {
+    id: "none",
+    label: "None — we will write it up ourselves",
+    detail: "You leave with the outputs from the room, photographed and handed over",
+    days: 0,
+  },
+  {
+    id: "summary",
+    label: "A facilitator's summary",
+    detail: "What was decided, what was left open, and the agreed priorities in order",
+    days: 0.5,
+  },
+  {
+    id: "plan",
+    label: "The written plan itself",
+    detail: "The full document, drafted and formatted, ready to circulate or present",
+    days: 2,
+  },
+];
+
+export function preparationOptionFor(id: string): FacilitationStage {
+  return PREPARATION_OPTIONS.find((o) => o.id === id) ?? PREPARATION_OPTIONS[0];
+}
+
+export function outputOptionFor(id: string): FacilitationStage {
+  return OUTPUT_OPTIONS.find((o) => o.id === id) ?? OUTPUT_OPTIONS[0];
+}
 
 // ---------------------------------------------------------------------------
 // Engagement format
@@ -98,6 +326,14 @@ export interface EngagementFormat {
   dayEquivalent: number;
   /** True when the format is delivered online and never incurs travel. */
   remote: boolean;
+  /** Engagement types this format is offered for. A keynote is not a retreat. */
+  types: EngagementTypeId[];
+  /**
+   * Per-type wording. "Full-day workshop" is the right name for a training day
+   * and the wrong one for a board retreat, and the label is what appears on the
+   * quote's base line.
+   */
+  altLabels?: Partial<Record<EngagementTypeId, string>>;
 }
 
 export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
@@ -107,6 +343,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 90 minutes, single delivery, Q&A included",
     dayEquivalent: 0.5,
     remote: false,
+    types: ["speaking"],
   },
   {
     id: "panel",
@@ -114,6 +351,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 90 minutes, shared stage, light preparation",
     dayEquivalent: 0.4,
     remote: false,
+    types: ["speaking"],
   },
   {
     id: "webinar",
@@ -121,6 +359,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 2 hours delivered over video, no travel",
     dayEquivalent: 0.45,
     remote: true,
+    types: ["speaking", "facilitation"],
   },
   {
     id: "half-day",
@@ -128,6 +367,8 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 4 hours, exercises and facilitation included",
     dayEquivalent: 0.6,
     remote: false,
+    altLabels: { facilitation: "Half-day session", "team-building": "Half-day programme" },
+    types: ["speaking", "facilitation", "team-building"],
   },
   {
     id: "full-day",
@@ -135,6 +376,8 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "6 to 8 hours, hands-on, materials and facilitation included",
     dayEquivalent: 1,
     remote: false,
+    altLabels: { facilitation: "Full-day session", "team-building": "Full-day programme" },
+    types: ["speaking", "facilitation", "team-building"],
   },
 ];
 
@@ -158,36 +401,44 @@ export interface ComplexityTier {
 /**
  * The rate ladder, cheapest first.
  *
- * The two ends are the real anchors: a routine topic is a ₱15,000 day, and a
- * topic needing substantial research beyond core expertise is a ₱24,000 day.
- * The two middle tiers interpolate between them, so an engagement that is
- * neither purely delivery nor a research project does not have to be rounded
- * to whichever end is nearer.
+ * The two ends are the real anchors: an established subject is a ₱15,000 day,
+ * and one needing substantial research beyond core expertise is a ₱24,000 day.
+ * The middle tiers interpolate, so an engagement that is neither settled ground
+ * nor a research project need not round to whichever end is nearer.
+ *
+ * NOTHING HERE SAYS "OFF THE SHELF". Every engagement is adapted to the room —
+ * the examples, the figures and the exercises change even when the subject does
+ * not. The earlier wording ("already in the catalogue", "delivered as it
+ * stands") was both untrue and bad positioning: it told a paying organiser they
+ * were booking a canned talk, and it understated the work behind the cheapest
+ * tier. What the ladder prices is how much NEW GROUND the subject covers, not
+ * whether a deck already exists.
  */
 export const COMPLEXITY_TIERS: ComplexityTier[] = [
   {
     id: "routine",
-    label: "Core topic, already in the catalogue",
+    label: "Established subject",
     detail:
-      "Basic accounting, bookkeeping, cash flow, pricing, valuation — taught many times, delivered as it stands",
+      "Bookkeeping, cash flow, pricing, valuation — settled ground, adapted to your people and their numbers",
     dayRate: 15_000,
   },
   {
     id: "tailored",
-    label: "Core topic, rebuilt around your sector",
-    detail: "The same ground, with examples and worked figures redrawn from your industry",
+    label: "Established subject, rebuilt around your sector",
+    detail:
+      "The same ground, with the cases and worked figures redrawn from your industry",
     dayRate: 18_000,
   },
   {
     id: "applied",
-    label: "New curriculum, inside core expertise",
+    label: "New programme, within finance and accounting",
     detail:
-      "Written from scratch — outline, deck, exercises, assessment — but on familiar ground",
+      "Designed from scratch for this engagement — outline, deck, exercises, assessment",
     dayRate: 21_000,
   },
   {
     id: "frontier",
-    label: "Beyond core expertise, needs substantial research",
+    label: "New programme needing fresh research",
     detail:
       "AI applied to accounting, a standard that has just changed, an unfamiliar domain — days of reading and testing before any of it can be taught",
     dayRate: 24_000,
@@ -211,6 +462,74 @@ export function complexityTierFor(id: ComplexityId): ComplexityTier {
  * rate card the moment the rates moved.
  */
 export const MISSION_FLOOR_DAY_RATE = Math.round(DAY_RATE_MIN * (1 - MISSION_DISCOUNT));
+
+// ---------------------------------------------------------------------------
+// Who is in the room
+// ---------------------------------------------------------------------------
+
+export type AudienceProfileId =
+  | "students"
+  | "non-specialist"
+  | "practitioners"
+  | "leadership"
+  | "mixed";
+
+export interface AudienceProfile {
+  id: AudienceProfileId;
+  label: string;
+  detail: string;
+  factor: number;
+}
+
+/**
+ * Audience COMPOSITION, priced separately from audience SIZE.
+ *
+ * Different question, different cost. Size is a logistics problem — materials,
+ * breakout support, marking. Composition is a content problem: teaching cash
+ * flow to the people who prepare the statements is a different build from
+ * teaching it to the people who only ever see the summary. One has to survive
+ * standards-level questioning; the other needs translation and worked analogies.
+ *
+ * Deliberately gentle, and neutral for the two most common rooms, so a quote
+ * does not read as a stack of surcharges. Only the cases where preparation
+ * genuinely changes carry a premium.
+ */
+export const AUDIENCE_PROFILES: AudienceProfile[] = [
+  {
+    id: "students",
+    label: "Students or fresh graduates",
+    detail: "Undergraduate, graduate or entry-level, learning the subject for the first time",
+    factor: 1,
+  },
+  {
+    id: "non-specialist",
+    label: "Staff and managers without a finance background",
+    detail: "Branch staff, operations, sales, founders — people who use the numbers but do not prepare them",
+    factor: 1,
+  },
+  {
+    id: "practitioners",
+    label: "Finance, accounting or audit practitioners",
+    detail: "Peers who prepare the statements — the material has to hold up to standards-level questioning",
+    factor: 1.1,
+  },
+  {
+    id: "leadership",
+    label: "Owners, executives or board members",
+    detail: "Decision-makers with little time — the material is distilled, and usually briefed with the sponsor beforehand",
+    factor: 1.15,
+  },
+  {
+    id: "mixed",
+    label: "Several of these in one room",
+    detail: "A mixed room has to be pitched twice — once for the people who prepare the numbers, once for the people who read them",
+    factor: 1.1,
+  },
+];
+
+export function audienceProfileFor(id: AudienceProfileId): AudienceProfile {
+  return AUDIENCE_PROFILES.find((p) => p.id === id) ?? AUDIENCE_PROFILES[1];
+}
 
 // ---------------------------------------------------------------------------
 // Audience size
@@ -513,4 +832,15 @@ export const REGIONS: Region[] = [
 
 export function regionFor(id: RegionId): Region {
   return REGIONS.find((r) => r.id === id) ?? REGIONS[0];
+}
+
+
+/** The format's name for the engagement type it is being used in. */
+export function formatLabel(format: EngagementFormat, type: EngagementTypeId): string {
+  return format.altLabels?.[type] ?? format.label;
+}
+
+/** The formats offered for one engagement type. */
+export function formatsFor(type: EngagementTypeId): EngagementFormat[] {
+  return ENGAGEMENT_FORMATS.filter((f) => f.types.includes(type));
 }

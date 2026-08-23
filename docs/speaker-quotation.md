@@ -74,10 +74,72 @@ what a day costs is decided by what has to happen before it:
 
 | Tier | Day rate | What it means |
 | --- | --- | --- |
-| `routine` | ₱15,000 | Core catalogue — basic accounting, bookkeeping, cash flow, pricing, valuation. Taught many times. |
-| `tailored` | ₱18,000 | The same ground, rebuilt around one industry's figures. |
-| `applied` | ₱21,000 | New curriculum, still inside core expertise. |
-| `frontier` | ₱24,000 | Beyond it — AI and accounting, a standard that just changed. Days of reading before anything can be taught. |
+| `routine` | ₱15,000 | Settled ground — bookkeeping, accounting, cash flow, pricing, valuation. |
+| `tailored` | ₱18,000 | The same ground, rebuilt around one industry's cases and figures. |
+| `applied` | ₱21,000 | A new programme, still within finance and accounting. |
+| `frontier` | ₱24,000 | Needs fresh research — AI and accounting, a standard that just changed. |
+
+**Nothing in this ladder says "off the shelf", and it must not.** Every session
+is adapted to the room: the examples, the figures and the exercises change even
+when the subject does not. The cheapest tier means the SUBJECT is settled, not
+that the delivery is generic. An earlier draft said "already in the catalogue,
+delivered as it stands" — untrue, and it told a paying organiser they were
+booking a canned talk. A test in `lib/speaking/__tests__/quotation.test.ts`
+fails on that vocabulary reappearing, on the tier copy or on the quote itself.
+
+The tier is deliberately understated in the output: it appears once, as a short
+clause on the fee's base line, and nowhere in the printed quotation's header.
+Classifying a client's own subject more prominently than that reads as a verdict
+on it rather than an explanation of the price.
+
+### Engagement types
+
+The tool covers three kinds of work, chosen first on the form, because they are
+not variations on one service:
+
+| Type | Day rate from | Notes |
+| --- | --- | --- |
+| Talk, workshop or training | `COMPLEXITY_TIERS`, ₱15,000–₱24,000 | Priced by how much new ground the subject covers |
+| Planning facilitation | `FACILITATION_SCOPES`, ₱25,000–₱30,000 | Above every speaking tier — bespoke by definition, nothing reusable |
+| Team building | `TEAM_BUILDING_DAY_RATE`, ₱22,000 | Inside the speaking range: above a settled subject, below the research tier |
+
+`ENGAGEMENT_FORMATS` are tagged with the types they belong to, so a keynote is
+never offered for a board retreat, and carry `altLabels` so the same full day
+reads as a "workshop", a "session" or a "programme" depending on the type.
+
+Facilitation adds two lines nothing else has — `PREPARATION_OPTIONS` (interviews
+and document review before) and `OUTPUT_OPTIONS` (what gets written after) —
+billed as desk days at `DESK_DAY_FACTOR` (70%) of the room rate. That factor is
+the point: time in the room is the premium, but a day of writing up a plan is
+not free either, and folding it into "the day" is how half a planning
+engagement ends up unpaid. A facilitation quote with neither raises a flag.
+
+The audience-composition factor is skipped entirely for team building: those
+profiles describe how much finance the room already knows, which changes how a
+session on cash flow is built and changes nothing about running a day of
+activities.
+
+### Audience composition
+
+`AUDIENCE_PROFILES` prices WHO is in the room, separately from `AUDIENCE_BANDS`,
+which prices how many. They are different costs: size is logistics — materials,
+breakout support, marking — while composition is content. Teaching cash flow to
+the people who prepare the statements is a different build from teaching it to
+the people who only ever see the summary, and a room holding both has to be
+pitched twice.
+
+| Profile | Factor |
+| --- | --- |
+| Students, or staff and managers without a finance background | none |
+| Finance, accounting or audit practitioners | +10% |
+| A mixed room | +10% |
+| Owners, executives or board members | +15% |
+
+Kept gentle and neutral for the two commonest rooms, so a quote does not read as
+a stack of surcharges. Justify it as preparation — what the material has to hold
+up to — never as a judgement about the people attending; there is a test for
+that too, because this copy is read by the organiser and sometimes by the
+audience itself.
 
 The two ends are the real anchors; the middle two interpolate so an engagement
 that is neither pure delivery nor a research project need not round to whichever
@@ -114,6 +176,49 @@ The order the factors apply in is fixed and documented at the top of
 
 Withholding tax is displayed for transparency and is not deducted: it is the
 organiser's obligation to remit.
+
+## Invoicing
+
+An organiser who needs a formal invoice gets one from `INVOICING_ENTITY` in the
+rate card. **This does not change the professional fee** — issuing a proper
+invoice is not extra work worth charging for. What it changes is the tax
+presentation:
+
+- **Withholding basis.** Billed personally it is the individual professional
+  rate (10%, or 5% with a sworn declaration on file). Billed by the firm it is
+  the corporate rate — the quote uses 2%, the contractor rate a training
+  provider is ordinarily withheld at, and says on its face that a payor
+  classifying the billing as professional fees of a juridical entity withholds
+  10% instead. The organiser's own classification governs.
+- **VAT.** The firm is below the ₱3M threshold, so `vatRegistered` is `false`
+  and no VAT is added. If it registers, flip that one constant: VAT then
+  appears as its own line and the total changes on every quote.
+- **Percentage tax.** A non-VAT entity bears 3% on gross receipts. It is the
+  firm's cost, not the organiser's, so `quote.invoicing.percentageTax` is
+  computed for working out net take-home but deliberately never rendered on the
+  organiser's quote. It is also NOT built into the day rates — if you decide to
+  stay whole by passing it on, gross up the rate ladder rather than adding a
+  surcharge line an organiser will read as a tax they are being charged.
+
+A quote for a corporate, association, government or academic organiser that
+does *not* request an invoice raises a flag, because those payors cannot
+release funds without one and finding out afterwards is a delayed payment.
+
+## Mobile
+
+The tool is checked at 320, 375 and 390px. Two traps are worth knowing about,
+because both are invisible to a naive overflow check:
+
+- **`#main-content` is its own scroll container** (`overflow-auto` in
+  `app/tools/layout.tsx`). Content wider than the viewport therefore scrolls
+  *main* rather than the document, so `document.scrollWidth` stays clean while
+  the page slides sideways. Any overflow audit has to measure
+  `main.scrollWidth - main.clientWidth` as well.
+- **shadcn's `SelectTrigger` is `w-fit`.** Radix mirrors the selected item's
+  markup into the trigger, so a long option label stretches it without limit —
+  one measured 805px on a 375px phone. Every trigger here passes `w-full` and an
+  explicit `<SelectValue>{label}</SelectValue>`, and the option's explanation
+  lives in a wrapping second line inside the dropdown rather than in the trigger.
 
 ## What the tool does not do
 

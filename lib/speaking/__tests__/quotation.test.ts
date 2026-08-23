@@ -1,11 +1,20 @@
 import { describe, it, expect } from "vitest";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
+  COMPLEXITY_TIERS,
+  DESK_DAY_FACTOR,
+  EWT_RATE,
+  EWT_RATE_FIRM,
+  INVOICING_ENTITY,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
   REVENUE_SHARE_FLOOR,
+  FACILITATION_SCOPES,
+  TEAM_BUILDING_DAY_RATE,
   complexityTierFor,
+  facilitationScopeFor,
+  formatsFor,
 } from "@/lib/speaking/rate-card";
 
 // The rate is set by the topic, so the fixtures name the two ends of the
@@ -114,7 +123,13 @@ describe("factors", () => {
     const factorIds = quote.lines.filter((l) => l.kind === "factor").map((l) => l.id);
     // No "complexity" line: the topic sets the base rate, so it is named on the
     // base line rather than charged as a premium on top of one.
-    expect(factorIds).toEqual(["audience", "schedule", "lead-time", "organizer"]);
+    expect(factorIds).toEqual([
+      "audience",
+      "audience-profile",
+      "schedule",
+      "lead-time",
+      "organizer",
+    ]);
     // A neutral factor is present at zero pesos rather than omitted: the
     // breakdown should read as a rate card, not as a list of surcharges.
     expect(quote.lines.find((l) => l.id === "audience")?.amount).toBe(0);
@@ -362,8 +377,8 @@ describe("running totals and structure", () => {
   });
 
   it("reports withholding as informational, not deducted from the total", () => {
-    const quote = buildQuotation(input({ organizerType: "corporate" }));
-    expect(quote.withholding.amount).toBe(toPeso(quote.professionalFee * 0.1));
+    const quote = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
+    expect(quote.withholding.amount).toBe(toPeso(quote.professionalFee * EWT_RATE));
     expect(quote.withholding.net).toBe(quote.professionalFee - quote.withholding.amount);
     expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
   });
@@ -509,5 +524,354 @@ describe("quotation reference", () => {
     const a = buildQuotation(input({ addOns: ["workbook", "clinic"] }));
     const b = buildQuotation(input({ addOns: ["clinic", "workbook"] }));
     expect(a.reference).toBe(b.reference);
+  });
+});
+
+
+describe("invoicing", () => {
+  // The whole point of the answer to "should an invoice change the price?":
+  // issuing a proper invoice is not extra work worth charging for. What it
+  // changes is the withholding basis, and — if the firm ever registers for
+  // VAT — whether VAT sits on top.
+  it("does not move the professional fee", () => {
+    const billedPersonally = buildQuotation(input({ invoiceRequired: false }));
+    const billedByTheFirm = buildQuotation(input({ invoiceRequired: true }));
+    expect(billedByTheFirm.professionalFee).toBe(billedPersonally.professionalFee);
+    expect(billedByTheFirm.total).toBe(billedPersonally.total);
+  });
+
+  it("switches the withholding basis to the firm's rate", () => {
+    const personal = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
+    const firm = buildQuotation(input({ organizerType: "corporate", invoiceRequired: true }));
+
+    expect(personal.withholding.basis).toBe("individual");
+    expect(personal.withholding.rate).toBe(EWT_RATE);
+    expect(firm.withholding.basis).toBe("firm");
+    expect(firm.withholding.rate).toBe(EWT_RATE_FIRM);
+    // Materially different take-home, which is why showing the wrong one
+    // would misstate the payout rather than merely mislabel it.
+    expect(firm.withholding.net).toBeGreaterThan(personal.withholding.net);
+  });
+
+  it("names the issuing entity only when an invoice was asked for", () => {
+    expect(buildQuotation(input({ invoiceRequired: true })).invoicing.entity).toBe(
+      INVOICING_ENTITY.name
+    );
+    expect(buildQuotation(input({ invoiceRequired: false })).invoicing.entity).toBeNull();
+  });
+
+  it("adds no VAT while the firm is below the threshold", () => {
+    const quote = buildQuotation(input({ invoiceRequired: true }));
+    expect(INVOICING_ENTITY.vatRegistered).toBe(false);
+    expect(quote.invoicing.vat).toBe(0);
+    expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
+  });
+
+  it("reports percentage tax as the firm's cost, never on the organiser's total", () => {
+    const quote = buildQuotation(input({ invoiceRequired: true }));
+    expect(quote.invoicing.percentageTax).toBeGreaterThan(0);
+    // The organiser's total is untouched by it — it is the firm's cost.
+    expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
+  });
+
+  it("carries no percentage tax when nothing is invoiced", () => {
+    expect(buildQuotation(input({ invoiceRequired: false })).invoicing.percentageTax).toBe(0);
+  });
+
+  // A corporate or government payor cannot release funds without one, so
+  // finding out afterwards is a delayed payment rather than a surprise.
+  it("flags a withholding organiser who did not ask for an invoice", () => {
+    const quote = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
+    expect(quote.flags.some((f) => f.includes(INVOICING_ENTITY.name))).toBe(true);
+  });
+
+  it("does not nag a mission organiser about it", () => {
+    const quote = buildQuotation(input({ organizerType: "mission", invoiceRequired: false }));
+    expect(quote.flags.some((f) => f.includes(INVOICING_ENTITY.name))).toBe(false);
+  });
+
+  it("changes the reference when the invoicing arrangement changes", () => {
+    const a = buildQuotation(input({ invoiceRequired: true }));
+    const b = buildQuotation(input({ invoiceRequired: false }));
+    expect(a.reference).not.toBe(b.reference);
+  });
+});
+
+
+describe("audience composition", () => {
+  // Priced separately from audience SIZE, and answering a different question:
+  // size is a logistics cost (materials, breakout support, marking), whereas
+  // composition is a content cost — what the material has to survive.
+  it("is neutral for the two most common rooms", () => {
+    for (const audienceProfile of ["students", "non-specialist"] as const) {
+      const quote = buildQuotation(input({ audienceProfile }));
+      expect(quote.professionalFee, audienceProfile).toBe(ROUTINE_RATE);
+    }
+  });
+
+  it("charges for a room that has to hold up to standards-level questioning", () => {
+    const plain = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const peers = buildQuotation(input({ audienceProfile: "practitioners" }));
+    expect(peers.professionalFee).toBe(toPeso(plain.professionalFee * 1.1));
+  });
+
+  it("charges most for a board-level room", () => {
+    const plain = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const board = buildQuotation(input({ audienceProfile: "leadership" }));
+    expect(board.professionalFee).toBe(toPeso(plain.professionalFee * 1.15));
+  });
+
+  it("charges a mixed room for being pitched twice", () => {
+    const plain = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const mixed = buildQuotation(input({ audienceProfile: "mixed" }));
+    expect(mixed.professionalFee).toBeGreaterThan(plain.professionalFee);
+  });
+
+  it("is independent of how many people are in the room", () => {
+    // 20 practitioners and 20 non-specialists differ; 20 and 200
+    // non-specialists differ for an unrelated reason. The two must not be
+    // conflated into one lever.
+    const small = buildQuotation(input({ audienceSize: 20, audienceProfile: "practitioners" }));
+    const large = buildQuotation(input({ audienceSize: 200, audienceProfile: "practitioners" }));
+    const sizeLine = (q: ReturnType<typeof buildQuotation>) =>
+      q.lines.find((l) => l.id === "audience");
+    const profileLine = (q: ReturnType<typeof buildQuotation>) =>
+      q.lines.find((l) => l.id === "audience-profile");
+
+    expect(profileLine(small)?.factor).toBe(profileLine(large)?.factor);
+    expect(sizeLine(small)?.factor).not.toBe(sizeLine(large)?.factor);
+  });
+
+  it("changes the reference", () => {
+    const a = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const b = buildQuotation(input({ audienceProfile: "leadership" }));
+    expect(a.reference).not.toBe(b.reference);
+  });
+
+  it("keeps the breakdown reconciling", () => {
+    for (const audienceProfile of ["students", "practitioners", "leadership", "mixed"] as const) {
+      const quote = buildQuotation(input({ audienceProfile, organizerType: "corporate" }));
+      const sum = quote.lines.reduce((total, line) => total + line.amount, 0);
+      expect(sum, audienceProfile).toBe(quote.professionalFee);
+    }
+  });
+});
+
+describe("the rate card never calls an engagement off-the-shelf", () => {
+  // Every session is adapted to the room, so wording that implies a canned
+  // delivery is both untrue and bad positioning on a page a paying organiser
+  // reads. The cheapest tier means the SUBJECT is settled, not the delivery.
+  it("avoids canned-delivery language in the tier copy and on the quote", () => {
+    const forbidden = [
+      "already in the catalogue",
+      "delivered as it stands",
+      "off the shelf",
+      "off-the-shelf",
+      "canned",
+      "generic",
+      "standard talk",
+    ];
+
+    const surfaces = COMPLEXITY_TIERS.flatMap((t) => [t.label, t.detail]);
+    for (const tier of COMPLEXITY_TIERS) {
+      const quote = buildQuotation(input({ complexity: tier.id }));
+      surfaces.push(quote.lines.find((l) => l.id === "base")?.detail ?? "");
+      surfaces.push(quote.topicTier);
+    }
+
+    for (const text of surfaces) {
+      for (const term of forbidden) {
+        expect(text.toLowerCase(), `"${term}" in: ${text}`).not.toContain(term);
+      }
+    }
+  });
+});
+
+
+describe("engagement types", () => {
+  // A talk and a planning session are not variations on one service, and the
+  // subject-complexity ladder cannot price work that is bespoke by definition.
+  it("takes the day rate from the facilitation ladder, not the subject one", () => {
+    const quote = buildQuotation(
+      input({ engagementType: "facilitation", facilitationScope: "board", complexity: "routine" })
+    );
+    expect(quote.dayRate).toBe(facilitationScopeFor("board").dayRate);
+    // The routine subject tier must have no influence at all here.
+    const other = buildQuotation(
+      input({ engagementType: "facilitation", facilitationScope: "board", complexity: "frontier" })
+    );
+    expect(other.professionalFee).toBe(quote.professionalFee);
+  });
+
+  it("prices every facilitation scope above every speaking tier", () => {
+    const dearestTalk = Math.max(...COMPLEXITY_TIERS.map((t) => t.dayRate));
+    for (const scope of FACILITATION_SCOPES) {
+      expect(scope.dayRate, scope.id).toBeGreaterThan(dearestTalk);
+    }
+  });
+
+  it("uses the team building rate and ignores the subject tier", () => {
+    const quote = buildQuotation(
+      input({ engagementType: "team-building", complexity: "frontier", region: "baguio" })
+    );
+    expect(quote.dayRate).toBe(TEAM_BUILDING_DAY_RATE);
+  });
+
+  // The audience profiles describe how much finance the room already knows.
+  // That changes how a session on cash flow is built and changes nothing about
+  // running a day of activities, so charging for it there would be a factor
+  // with no work behind it.
+  it("drops the audience-composition factor for team building", () => {
+    const teamBuilding = buildQuotation(
+      input({ engagementType: "team-building", audienceProfile: "leadership" })
+    );
+    expect(teamBuilding.lines.some((l) => l.id === "audience-profile")).toBe(false);
+
+    const speaking = buildQuotation(input({ audienceProfile: "leadership" }));
+    expect(speaking.lines.some((l) => l.id === "audience-profile")).toBe(true);
+  });
+
+  it("offers only formats that make sense for the type", () => {
+    const facilitation = formatsFor("facilitation").map((f) => f.id);
+    expect(facilitation).not.toContain("keynote");
+    expect(facilitation).not.toContain("panel");
+    expect(formatsFor("speaking")).toHaveLength(5);
+    for (const type of ["speaking", "facilitation", "team-building"] as const) {
+      expect(formatsFor(type).length, type).toBeGreaterThan(0);
+    }
+  });
+
+  it("names the format the way the type names it", () => {
+    const facilitation = buildQuotation(input({ engagementType: "facilitation" }));
+    const speaking = buildQuotation(input({ engagementType: "speaking" }));
+    expect(facilitation.lines[0].label).toContain("session");
+    expect(speaking.lines[0].label).toContain("workshop");
+  });
+});
+
+describe("facilitation desk days", () => {
+  const facilitating = (overrides: Partial<QuotationInput> = {}) =>
+    buildQuotation(
+      input({
+        engagementType: "facilitation",
+        facilitationScope: "team",
+        region: "baguio",
+        organizerType: "government",
+        audienceProfile: "non-specialist",
+        ...overrides,
+      })
+    );
+
+  it("bills nothing extra when neither is asked for", () => {
+    const quote = facilitating({ preparation: "none", output: "none" });
+    expect(quote.deskDays).toBe(0);
+    expect(quote.professionalFee).toBe(FACILITATION_SCOPES[0].dayRate);
+  });
+
+  // The half of a planning engagement that is normally absorbed for free.
+  it("prices interviews and the written plan as their own lines", () => {
+    const quote = facilitating({ preparation: "interviews", output: "plan" });
+    const rate = FACILITATION_SCOPES[0].dayRate;
+
+    expect(quote.deskDays).toBe(3);
+    expect(quote.lines.find((l) => l.id === "preparation")?.amount).toBe(
+      toPeso(rate * DESK_DAY_FACTOR * 1)
+    );
+    expect(quote.lines.find((l) => l.id === "output")?.amount).toBe(
+      toPeso(rate * DESK_DAY_FACTOR * 2)
+    );
+  });
+
+  // Desk work is real work, but it is not the room. Billing a day of writing
+  // at the price of a day of facilitating is a line an organiser is right to
+  // query.
+  it("bills desk days below the room rate", () => {
+    expect(DESK_DAY_FACTOR).toBeLessThan(1);
+    expect(DESK_DAY_FACTOR).toBeGreaterThan(0);
+  });
+
+  it("counts desk days as days committed", () => {
+    const bare = facilitating({ preparation: "none", output: "none" });
+    const full = facilitating({ preparation: "deep", output: "plan" });
+    expect(full.daysCommitted).toBe(bare.daysCommitted + 4);
+  });
+
+  it("never bills desk days for a talk or for team building", () => {
+    for (const engagementType of ["speaking", "team-building"] as const) {
+      const quote = buildQuotation(
+        input({ engagementType, preparation: "deep", output: "plan" })
+      );
+      expect(quote.deskDays, engagementType).toBe(0);
+      expect(quote.lines.some((l) => l.id === "output"), engagementType).toBe(false);
+    }
+  });
+
+  it("flags a planning engagement with no groundwork and no write-up", () => {
+    const quote = facilitating({ preparation: "none", output: "none" });
+    expect(quote.flags.some((f) => f.includes("written output"))).toBe(true);
+    expect(quote.flags.some((f) => f.includes("groundwork"))).toBe(true);
+  });
+
+  it("keeps the breakdown reconciling with desk days in it", () => {
+    const quote = facilitating({
+      preparation: "deep",
+      output: "plan",
+      organizerType: "corporate",
+      region: "visayas-mindanao",
+      sessions: 2,
+    });
+    const sum = quote.lines.reduce((total, line) => total + line.amount, 0);
+    expect(sum).toBe(quote.professionalFee);
+  });
+
+  it("changes the reference when the scope of work changes", () => {
+    const references = new Set(
+      [
+        facilitating({ preparation: "none", output: "none" }),
+        facilitating({ preparation: "interviews", output: "none" }),
+        facilitating({ preparation: "none", output: "plan" }),
+        buildQuotation(input({ engagementType: "team-building" })),
+      ].map((q) => q.reference)
+    );
+    expect(references.size).toBe(4);
+  });
+});
+
+describe("line factors mean different things", () => {
+  // A multiplier and an add-on's share of the fee are both stored in `factor`,
+  // and the display layer rendered both as "×n" — printing a +20% recording
+  // licence as "×0.20", which reads as an 80% discount.
+  it("keeps multiplier factors at or above one, and add-on shares below it", () => {
+    const quote = buildQuotation(
+      input({ organizerType: "corporate", addOns: ["recording-internal", "recording-public"] })
+    );
+
+    for (const line of quote.lines.filter((l) => l.kind === "factor")) {
+      expect(line.factor, line.label).toBeGreaterThanOrEqual(1);
+    }
+    for (const line of quote.lines.filter((l) => l.kind === "addon" && l.factor !== undefined)) {
+      expect(line.factor, line.label).toBeLessThan(1);
+    }
+  });
+});
+
+describe("the day rate a quote reports", () => {
+  // The form showed a travel chip computed from the speaking ladder while the
+  // engine charged the facilitation rate — ₱9,000 on screen beside a ₱15,000
+  // line on the same page.
+  it("matches the travel line the engine actually charges", () => {
+    for (const [engagementType, expected] of [
+      ["speaking", complexityTierFor("tailored").dayRate],
+      ["facilitation", facilitationScopeFor("organisation").dayRate],
+      ["team-building", TEAM_BUILDING_DAY_RATE],
+    ] as const) {
+      const quote = buildQuotation(
+        input({ engagementType, complexity: "tailored", region: "metro-manila" })
+      );
+      expect(quote.dayRate, engagementType).toBe(expected);
+      expect(quote.lines.find((l) => l.kind === "travel")?.amount, engagementType).toBe(
+        toPeso(expected * 0.5)
+      );
+    }
   });
 });

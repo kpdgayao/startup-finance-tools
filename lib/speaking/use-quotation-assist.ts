@@ -17,10 +17,15 @@ import type { AvailabilityReport } from "./availability";
  */
 
 export interface IntakeDraft {
+  engagementType?: string;
+  facilitationScope?: string;
+  preparation?: string;
+  output?: string;
   format?: string;
   sessions?: number;
   complexity?: string;
   audienceSize?: number;
+  audienceProfile?: string;
   organizerType?: string;
   ticketed?: boolean;
   participantFee?: number;
@@ -31,6 +36,7 @@ export interface IntakeDraft {
   travelCovered?: boolean;
   accommodationCovered?: boolean;
   addOns?: string[];
+  invoiceRequired?: boolean;
   eventTitle?: string;
   organizationName?: string;
   venue?: string;

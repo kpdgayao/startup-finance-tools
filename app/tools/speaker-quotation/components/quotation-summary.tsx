@@ -4,11 +4,19 @@ import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResultCard } from "@/components/shared/result-card";
 import { cn, formatPHP, formatPercent } from "@/lib/utils";
-import { EWT_RATE, HOME_BASE } from "@/lib/speaking/rate-card";
-import type { Quotation } from "@/lib/speaking/quotation";
+import { formatEngagementDate } from "@/lib/speaking/availability";
+import { HOME_BASE } from "@/lib/speaking/rate-card";
+import type { LineKind, Quotation } from "@/lib/speaking/quotation";
 
-/** A factor line reads as "×1.15" rather than a peso figure it does not equal. */
-function factorLabel(factor: number): string {
+/**
+ * How a line's `factor` is written.
+ *
+ * A multiplier reads as "×1.15". An add-on's factor is a SHARE of the fee, not
+ * a multiplier, so the same rendering turned a +20% recording licence into
+ * "×0.20" — a number that looks like an 80% discount.
+ */
+function factorLabel(factor: number, kind: LineKind): string {
+  if (kind === "addon") return `+${Math.round(factor * 100)}%`;
   return `×${factor.toFixed(2)}`;
 }
 
@@ -17,10 +25,11 @@ interface QuotationSummaryProps {
 }
 
 export function QuotationSummary({ quote }: QuotationSummaryProps) {
-  // Judged against the rate the TOPIC set, not a shared anchor: a routine
-  // engagement clearing ₱15,000/day is on target, and comparing it to the
-  // research-tier rate would flag it as underpaid.
-  const feeVariant = quote.effectiveDayRate >= quote.dayRate ? "success" : "warning";
+  // No success/warning variant on the day-rate card. It compared the quote
+  // against the speaker's own target, which is not the organiser's business and
+  // put a warning triangle on their quotation whenever an engagement came in
+  // under it — reading, to the person about to pay, as though something were
+  // wrong with the number they had been handed.
 
   return (
     <div className="space-y-6">
@@ -28,17 +37,23 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
         <ResultCard
           label="Professional fee"
           value={formatPHP(quote.professionalFee)}
-          sublabel={`${quote.dayEquivalents} engagement ${
-            quote.dayEquivalents === 1 ? "day" : "days"
-          } · ${quote.topicTier.toLowerCase()}`}
+          // Naming the desk days here is the point of itemising them: a
+          // facilitation fee covering five days of work should not sit under a
+          // label saying "2 engagement days".
+          sublabel={
+            quote.deskDays > 0
+              ? `${quote.dayEquivalents} in the room · ${quote.deskDays} preparing and writing up`
+              : `${quote.dayEquivalents} engagement ${
+                  quote.dayEquivalents === 1 ? "day" : "days"
+                }`
+          }
         />
         <ResultCard
-          label="Effective day rate"
+          label="Cost per day"
           value={formatPHP(quote.effectiveDayRate)}
           sublabel={`Across ${quote.daysCommitted} ${
             quote.daysCommitted === 1 ? "day" : "days"
-          } committed · topic rate ${formatPHP(quote.dayRate)}`}
-          variant={feeVariant}
+          } of work in total`}
         />
         <ResultCard
           label="Billed logistics"
@@ -79,13 +94,17 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-rule text-left">
-                  <th className="py-2 pr-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <th className="py-2 pr-2 font-mono sm:pr-3 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                     Line
                   </th>
-                  <th className="py-2 px-3 text-right font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <th className="py-2 px-2 text-right font-mono sm:px-3 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                     Effect
                   </th>
-                  <th className="py-2 pl-3 text-right font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {/* Three columns do not fit a phone: the running total was
+                      clipped mid-figure ("₱18,00") and only reachable by
+                      swiping the table sideways. Below `sm` it moves under the
+                      effect instead, so nothing is lost and nothing scrolls. */}
+                  <th className="hidden py-2 pl-3 text-right font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground sm:table-cell">
                     Running
                   </th>
                 </tr>
@@ -95,12 +114,12 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                   const neutral = line.amount === 0;
                   return (
                     <tr key={line.id} className="border-b border-rule/60 align-top">
-                      <td className="py-2.5 pr-3">
+                      <td className="py-2.5 pr-2 sm:pr-3">
                         <p className={cn("font-medium", neutral && "text-muted-foreground")}>
                           {line.label}
                           {line.factor !== undefined && line.factor !== 1 && (
                             <span className="ml-2 font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
-                              {factorLabel(line.factor)}
+                              {factorLabel(line.factor, line.kind)}
                             </span>
                           )}
                         </p>
@@ -108,7 +127,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                       </td>
                       <td
                         className={cn(
-                          "py-2.5 px-3 text-right whitespace-nowrap tabular",
+                          "py-2.5 px-2 text-right whitespace-nowrap tabular sm:px-3",
                           neutral && "text-muted-foreground",
                           line.amount < 0 && "text-good"
                         )}
@@ -125,17 +144,26 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                             {formatPHP(line.amount)}
                           </>
                         )}
+                        {/* whitespace-normal: the cell is nowrap so the figures
+                            never break mid-number, but this sub-line may wrap —
+                            without it the column could not fit a 320px phone. */}
+                        <span className="block whitespace-normal text-xs text-muted-foreground sm:hidden">
+                          running {formatPHP(line.runningTotal)}
+                        </span>
                       </td>
-                      <td className="py-2.5 pl-3 text-right whitespace-nowrap text-muted-foreground tabular">
+                      <td className="hidden py-2.5 pl-3 text-right whitespace-nowrap text-muted-foreground tabular sm:table-cell">
                         {formatPHP(line.runningTotal)}
                       </td>
                     </tr>
                   );
                 })}
                 <tr>
-                  <td className="py-3 pr-3 font-medium">Professional fee</td>
-                  <td />
-                  <td className="py-3 pl-3 text-right font-medium whitespace-nowrap tabular">
+                  <td className="py-3 pr-2 font-medium sm:pr-3">Professional fee</td>
+                  <td className="py-3 px-2 text-right font-medium whitespace-nowrap tabular sm:hidden">
+                    {formatPHP(quote.professionalFee)}
+                  </td>
+                  <td className="hidden sm:table-cell" />
+                  <td className="hidden py-3 pl-3 text-right font-medium whitespace-nowrap tabular sm:table-cell">
                     {formatPHP(quote.professionalFee)}
                   </td>
                 </tr>
@@ -160,18 +188,26 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                 <tbody>
                   {quote.reimbursables.map((item) => (
                     <tr key={item.id} className="border-b border-rule/60 align-top">
-                      <td className="py-2.5 pr-3">
+                      <td className="py-2.5 pr-2 sm:pr-3">
                         <p className="font-medium">{item.label}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+                        {item.detail && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+                        )}
                       </td>
+                      {/* Not struck through: a strikethrough beside a price
+                          reads as a discount being given, when the point is the
+                          opposite — this is a cost the organiser is absorbing
+                          directly, shown so they can budget for it. */}
                       <td className="py-2.5 pl-3 text-right whitespace-nowrap tabular">
                         {item.billed ? (
                           formatPHP(item.amount)
                         ) : (
-                          <span className="text-muted-foreground">
-                            <span className="line-through">{formatPHP(item.amount)}</span>{" "}
+                          <>
                             {formatPHP(0)}
-                          </span>
+                            <span className="block text-xs font-normal text-muted-foreground">
+                              you arrange, about {formatPHP(item.amount)}
+                            </span>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -189,6 +225,11 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
         </Card>
       )}
 
+      {/* `quote.invoicing.percentageTax` is deliberately not rendered here. It is
+          the firm's own cost on gross receipts, not anything the organiser owes,
+          and putting a tax the reader is not being charged onto their quote
+          invites exactly the argument the itemisation exists to avoid. It stays
+          on the quotation object for working out net take-home. */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Terms</CardTitle>
@@ -209,14 +250,40 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
               ticket revenue.
             </p>
           )}
+          {quote.invoicing.entity && (
+            <p>
+              {/* The entity name ends in a full stop, so the sentence is built
+                  so it never lands sentence-final — "1Punch Inc.." otherwise. */}
+              <span className="text-foreground">Invoicing</span> a formal invoice is issued by{" "}
+              {quote.invoicing.entity}
+              {quote.invoicing.vatRegistered
+                ? `, which is VAT-registered — VAT of ${formatPHP(quote.invoicing.vat)} is added to the total above and is claimable as input VAT if you are VAT-registered too.`
+                : ", which is not VAT-registered, so no VAT is added to the total above."}
+            </p>
+          )}
           {quote.withholding.applies && (
             <p>
-              <span className="text-foreground">Withholding tax</span> professional fees paid to an
-              individual are subject to creditable withholding of{" "}
-              {formatPercent(EWT_RATE * 100, 0)} — {formatPHP(quote.withholding.amount)} here,
-              leaving {formatPHP(quote.withholding.net)} net. The rate is 5% instead where a sworn
-              declaration of gross receipts under ₱3M is on file. This is your obligation to remit,
-              not a deduction from the quote above.
+              <span className="text-foreground">Withholding tax</span>{" "}
+              {quote.withholding.basis === "firm" ? (
+                <>
+                  billing by a training firm is ordinarily withheld at{" "}
+                  {formatPercent(quote.withholding.rate * 100, 0)} as a contractor —{" "}
+                  {formatPHP(quote.withholding.amount)} here, leaving{" "}
+                  {formatPHP(quote.withholding.net)} net. A payor that instead treats it as
+                  professional fees of a juridical entity withholds 10%. Your own classification
+                  governs; either way it is your obligation to remit, not a deduction from the
+                  total above.
+                </>
+              ) : (
+                <>
+                  professional fees paid to an individual are subject to creditable withholding of{" "}
+                  {formatPercent(quote.withholding.rate * 100, 0)} —{" "}
+                  {formatPHP(quote.withholding.amount)} here, leaving{" "}
+                  {formatPHP(quote.withholding.net)} net. The rate is 5% instead where a sworn
+                  declaration of gross receipts under ₱3M is on file. This is your obligation to
+                  remit, not a deduction from the total above.
+                </>
+              )}
             </p>
           )}
           <p>
@@ -230,8 +297,9 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
           </p>
           <p>
             <span className="text-foreground">Validity</span> this quote holds until{" "}
-            {quote.validUntil}, and the {quote.dates.length === 1 ? "date is" : "dates are"} held
-            provisionally until {quote.holdUntil}.
+            {formatEngagementDate(quote.validUntil)}, and the{" "}
+            {quote.dates.length === 1 ? "date is" : "dates are"} held provisionally until{" "}
+            {formatEngagementDate(quote.holdUntil)}.
           </p>
           <p className="text-xs">
             An estimate generated from a published rate card, not a contract. Availability is

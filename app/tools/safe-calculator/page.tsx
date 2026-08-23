@@ -124,7 +124,7 @@ export default function SafeCalculatorPage() {
           </p>
           <LearnLink toolHref="/tools/safe-calculator" />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
             <RotateCcw className="h-4 w-4" />
           </Button>

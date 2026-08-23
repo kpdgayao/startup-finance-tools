@@ -24,23 +24,44 @@ import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { formatPHP } from "@/lib/utils";
 import {
   ADD_ONS,
+  AUDIENCE_PROFILES,
   COMPLEXITY_TIERS,
+  ENGAGEMENT_TYPES,
+  FACILITATION_SCOPES,
+  OUTPUT_OPTIONS,
+  PREPARATION_OPTIONS,
+  TEAM_BUILDING_DAY_RATE,
   DAY_RATE_MAX,
   DAY_RATE_MIN,
-  ENGAGEMENT_FORMATS,
+  INVOICING_ENTITY,
   ORGANIZER_TYPES,
   REGIONS,
   TRAVEL_DAY_FACTOR,
   audienceBandFor,
+  audienceProfileFor,
+  engagementTypeFor,
+  facilitationScopeFor,
+  formatLabel,
+  outputOptionFor,
+  preparationOptionFor,
+  formatsFor,
   type AddOnId,
+  type AudienceProfileId,
   type ComplexityId,
   type EngagementFormatId,
+  type EngagementTypeId,
+  type FacilitationScopeId,
   type OrganizerTypeId,
   type RegionId,
 } from "@/lib/speaking/rate-card";
 import { QUESTIONS } from "@/lib/speaking/questions";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
-import { addDays, isValidISODate, toISODate } from "@/lib/speaking/availability";
+import {
+  addDays,
+  formatEngagementDate,
+  isValidISODate,
+  toISODate,
+} from "@/lib/speaking/availability";
 import {
   useAvailability,
   useIntakeDraft,
@@ -80,6 +101,43 @@ function today(): string {
 const subscribeToNothing = () => () => {};
 const serverToday = () => "";
 
+
+/**
+ * Dropdowns are capped to the viewport. Radix sizes the panel to its widest
+ * item, and these options carry a sentence of explanation each — unconstrained,
+ * one of them measured 805px inside a 375px phone.
+ */
+const SELECT_CONTENT = "max-w-[calc(100vw-2rem)]";
+
+/**
+ * An option rendered as a stacked label and explanation rather than one long
+ * line, so it wraps and stays readable on a phone. `whitespace-normal` is
+ * required: the trigger sets `whitespace-nowrap` and the item inherits it.
+ */
+function OptionText({
+  label,
+  detail,
+  trailing,
+}: {
+  label: string;
+  detail: string;
+  trailing?: string;
+}) {
+  return (
+    <span className="flex flex-col gap-0.5 whitespace-normal">
+      <span className="flex items-baseline gap-2">
+        <span className="font-medium">{label}</span>
+        {trailing && (
+          <span className="font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
+            {trailing}
+          </span>
+        )}
+      </span>
+      <span className="text-xs text-muted-foreground">{detail}</span>
+    </span>
+  );
+}
+
 /** A percentage impact chip, e.g. "+15%". Neutral factors read "No change". */
 function factorImpact(factor: number): string {
   if (factor === 1) return "No change";
@@ -112,11 +170,41 @@ export default function SpeakerQuotationPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  /**
+   * Changing the engagement type can strand the chosen format — a keynote is
+   * not offered for a board retreat — so the format falls back to the last
+   * option the new type does offer, which is the full day in every list.
+   */
+  const setEngagementType = useCallback((value: EngagementTypeId) => {
+    setForm((prev) => {
+      const allowed = formatsFor(value);
+      const keep = allowed.some((f) => f.id === prev.format);
+      return {
+        ...prev,
+        engagementType: value,
+        format: keep ? prev.format : allowed[allowed.length - 1].id,
+      };
+    });
+  }, []);
+
   const availability = useAvailability();
   const intake = useIntakeDraft();
   const ai = useAiExplain("speaker-quotation");
 
-  const format = ENGAGEMENT_FORMATS.find((f) => f.id === input.format) ?? ENGAGEMENT_FORMATS[0];
+  const engagementType = engagementTypeFor(input.engagementType);
+  const isFacilitation = engagementType.id === "facilitation";
+  const isTeamBuilding = engagementType.id === "team-building";
+  const availableFormats = formatsFor(engagementType.id);
+  const format =
+    availableFormats.find((f) => f.id === input.format) ?? availableFormats[availableFormats.length - 1];
+  const facilitationScope = facilitationScopeFor(input.facilitationScope);
+  const preparationOption = preparationOptionFor(input.preparation);
+  const outputOption = outputOptionFor(input.output);
+  const dayLabel = (days: number) =>
+    days === 0 ? "No extra days" : `${days} ${days === 1 ? "day" : "days"} of work`;
+  const preparationDaysLabel = dayLabel(preparationOption.days);
+  const outputDaysLabel = dayLabel(outputOption.days);
+
   const isRemote = format.remote;
 
   const ready = Boolean(now) && isValidISODate(startDate);
@@ -142,8 +230,23 @@ export default function SpeakerQuotationPage() {
     if (draft.startDate && isValidISODate(draft.startDate)) setChosenDate(draft.startDate);
     setForm((prev) => {
       const next = { ...prev };
-      if (draft.format && ENGAGEMENT_FORMATS.some((f) => f.id === draft.format))
+      if (draft.engagementType && ENGAGEMENT_TYPES.some((t) => t.id === draft.engagementType))
+        next.engagementType = draft.engagementType as EngagementTypeId;
+      if (
+        draft.facilitationScope &&
+        FACILITATION_SCOPES.some((f) => f.id === draft.facilitationScope)
+      )
+        next.facilitationScope = draft.facilitationScope as FacilitationScopeId;
+      if (draft.preparation && PREPARATION_OPTIONS.some((o) => o.id === draft.preparation))
+        next.preparation = draft.preparation;
+      if (draft.output && OUTPUT_OPTIONS.some((o) => o.id === draft.output))
+        next.output = draft.output;
+      // Checked against the type the draft chose, not the one on screen.
+      const allowed = formatsFor(next.engagementType);
+      if (draft.format && allowed.some((f) => f.id === draft.format))
         next.format = draft.format as EngagementFormatId;
+      else if (!allowed.some((f) => f.id === next.format))
+        next.format = allowed[allowed.length - 1].id;
       if (draft.complexity && COMPLEXITY_TIERS.some((c) => c.id === draft.complexity))
         next.complexity = draft.complexity as ComplexityId;
       if (draft.organizerType && ORGANIZER_TYPES.some((o) => o.id === draft.organizerType))
@@ -156,11 +259,15 @@ export default function SpeakerQuotationPage() {
         );
       if (typeof draft.sessions === "number") next.sessions = draft.sessions;
       if (typeof draft.audienceSize === "number") next.audienceSize = draft.audienceSize;
+      if (draft.audienceProfile && AUDIENCE_PROFILES.some((p) => p.id === draft.audienceProfile))
+        next.audienceProfile = draft.audienceProfile as AudienceProfileId;
       if (typeof draft.ticketed === "boolean") next.ticketed = draft.ticketed;
       if (typeof draft.participantFee === "number") next.participantFee = draft.participantFee;
       if (typeof draft.expectedPaidAttendees === "number")
         next.expectedPaidAttendees = draft.expectedPaidAttendees;
       if (typeof draft.earlyStart === "boolean") next.earlyStart = draft.earlyStart;
+      if (typeof draft.invoiceRequired === "boolean")
+        next.invoiceRequired = draft.invoiceRequired;
       if (typeof draft.travelCovered === "boolean") next.travelCovered = draft.travelCovered;
       if (typeof draft.accommodationCovered === "boolean")
         next.accommodationCovered = draft.accommodationCovered;
@@ -175,19 +282,23 @@ export default function SpeakerQuotationPage() {
 
   const mailtoHref = useMemo(() => {
     if (!quote) return `mailto:${ENQUIRY_EMAIL}`;
+    const type = engagementTypeFor(input.engagementType);
+    const chosen = formatsFor(type.id).find((f) => f.id === input.format);
+    const chosenLabel = chosen ? formatLabel(chosen, type.id) : type.label;
     const lines = [
       `Quotation reference: ${quote.reference}`,
       input.eventTitle ? `Event: ${input.eventTitle}` : null,
       input.organizationName ? `Organisation: ${input.organizationName}` : null,
       input.venue ? `Venue: ${input.venue}` : null,
-      `Dates: ${quote.dates.map((d) => `${d.weekday}, ${d.date}`).join("; ")}`,
-      `Format: ${format.label}${input.sessions > 1 ? ` × ${input.sessions}` : ""}`,
+      `Dates: ${quote.dates.map((d) => formatEngagementDate(d.date, { weekday: true })).join("; ")}`,
+      `Engagement: ${type.label}`,
+      `Format: ${chosenLabel}${input.sessions > 1 ? ` × ${input.sessions}` : ""}`,
       `Participants: ${input.audienceSize}`,
       "",
       `Professional fee: ${formatPHP(quote.professionalFee)}`,
       `Billed logistics: ${formatPHP(quote.reimbursablesBilled)}`,
       `Total: ${formatPHP(quote.total)}`,
-      `Quote valid until ${quote.validUntil}.`,
+      `Quote valid until ${formatEngagementDate(quote.validUntil)}.`,
       "",
       "Generated from the published rate card at startupfinance.tools/tools/speaker-quotation.",
       "",
@@ -199,11 +310,23 @@ export default function SpeakerQuotationPage() {
     return `mailto:${ENQUIRY_EMAIL}?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(lines.join("\n"))}`;
-  }, [quote, input, format]);
+  }, [quote, input]);
 
   const audienceBand = audienceBandFor(input.audienceSize);
+  const audienceProfile = audienceProfileFor(input.audienceProfile);
   const complexity =
     COMPLEXITY_TIERS.find((c) => c.id === input.complexity) ?? COMPLEXITY_TIERS[0];
+  /**
+   * The rate the engine will use, resolved the same way it resolves it.
+   * Reading `complexity.dayRate` here put a ₱9,000 travel chip on screen beside
+   * the ₱15,000 travel line the quote actually charged, because the subject
+   * ladder does not price facilitation or team building.
+   */
+  const activeDayRate = isFacilitation
+    ? facilitationScope.dayRate
+    : isTeamBuilding
+      ? TEAM_BUILDING_DAY_RATE
+      : complexity.dayRate;
   const organizer = ORGANIZER_TYPES.find((o) => o.id === input.organizerType) ?? ORGANIZER_TYPES[0];
   const region = REGIONS.find((r) => r.id === input.region) ?? REGIONS[0];
   const leadFactor = quote?.lines.find((l) => l.id === "lead-time")?.factor ?? 1;
@@ -225,11 +348,11 @@ export default function SpeakerQuotationPage() {
 
       <div className="border-y border-rule py-4 font-serif text-[15px] leading-[1.55] text-ink-2">
         <p>
-          The day rate is set by the topic — {formatPHP(DAY_RATE_MIN)} for something already in the
-          catalogue, up to {formatPHP(DAY_RATE_MAX)} for one that needs real research first — with
-          transport and accommodation arranged by the organiser. Everything below either adds to
-          that or explains why it stays where it is. Nothing is hidden, and nothing here is sent to
-          anyone until you choose to send it.
+          The day rate is set by the subject — {formatPHP(DAY_RATE_MIN)} a day for settled ground,
+          up to {formatPHP(DAY_RATE_MAX)} where it needs fresh research first — with transport and
+          accommodation arranged by the organiser. Every session is built around your people either
+          way. Everything below adds to that rate or explains why it stays where it is, and nothing
+          here is sent to anyone until you choose to send it.
         </p>
       </div>
 
@@ -246,10 +369,38 @@ export default function SpeakerQuotationPage() {
         <CardHeader>
           <CardTitle>The engagement</CardTitle>
           <CardDescription>
-            What is being asked for, and how much of it has to be built from scratch.
+            What is being asked for, how much new ground it covers, and who it is for.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <RateFactorField
+            question={QUESTIONS.engagementType}
+            impact={`from ${formatPHP(
+              engagementType.id === "facilitation"
+                ? FACILITATION_SCOPES[0].dayRate
+                : engagementType.id === "team-building"
+                  ? TEAM_BUILDING_DAY_RATE
+                  : DAY_RATE_MIN
+            )}/day`}
+            active
+          >
+            <Select
+              value={input.engagementType}
+              onValueChange={(v) => setEngagementType(v as EngagementTypeId)}
+            >
+              <SelectTrigger id={QUESTIONS.engagementType.id} className="w-full">
+                <SelectValue>{engagementType.label}</SelectValue>
+              </SelectTrigger>
+              <SelectContent className={SELECT_CONTENT}>
+                {ENGAGEMENT_TYPES.map((option) => (
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </RateFactorField>
+
           <RateFactorField
             question={QUESTIONS.format}
             impact={`${format.dayEquivalent} day${format.dayEquivalent === 1 ? "" : "s"} each`}
@@ -259,13 +410,25 @@ export default function SpeakerQuotationPage() {
               value={input.format}
               onValueChange={(v) => set("format", v as EngagementFormatId)}
             >
-              <SelectTrigger id={QUESTIONS.format.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.format.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{formatLabel(format, engagementType.id)}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
-                {ENGAGEMENT_FORMATS.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label} — {option.detail}
+              <SelectContent className={SELECT_CONTENT}>
+                {availableFormats.map((option) => (
+                  <SelectItem
+                    key={option.id}
+                    value={option.id}
+                    textValue={formatLabel(option, engagementType.id)}
+                  >
+                    <OptionText
+                      label={formatLabel(option, engagementType.id)}
+                      detail={option.detail}
+                    />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -297,6 +460,7 @@ export default function SpeakerQuotationPage() {
             />
           </RateFactorField>
 
+          {!isFacilitation && !isTeamBuilding && (
           <RateFactorField
             question={QUESTIONS.complexity}
             impact={`${formatPHP(complexity.dayRate)}/day`}
@@ -306,18 +470,96 @@ export default function SpeakerQuotationPage() {
               value={input.complexity}
               onValueChange={(v) => set("complexity", v as ComplexityId)}
             >
-              <SelectTrigger id={QUESTIONS.complexity.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.complexity.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{complexity.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={SELECT_CONTENT}>
                 {COMPLEXITY_TIERS.map((tier) => (
-                  <SelectItem key={tier.id} value={tier.id}>
-                    {tier.label} — {tier.detail}
+                  <SelectItem key={tier.id} value={tier.id} textValue={tier.label}>
+                    <OptionText
+                      label={tier.label}
+                      detail={tier.detail}
+                      trailing={`${formatPHP(tier.dayRate)}/day`}
+                    />
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </RateFactorField>
+          )}
+
+          {isFacilitation && (
+            <>
+              <RateFactorField
+                question={QUESTIONS.facilitationScope}
+                impact={`${formatPHP(facilitationScope.dayRate)}/day`}
+                active
+              >
+                <Select
+                  value={input.facilitationScope}
+                  onValueChange={(v) => set("facilitationScope", v as FacilitationScopeId)}
+                >
+                  <SelectTrigger id={QUESTIONS.facilitationScope.id} className="w-full">
+                    <SelectValue>{facilitationScope.label}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className={SELECT_CONTENT}>
+                    {FACILITATION_SCOPES.map((option) => (
+                      <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                        <OptionText
+                          label={option.label}
+                          detail={option.detail}
+                          trailing={`${formatPHP(option.dayRate)}/day`}
+                        />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </RateFactorField>
+
+              <RateFactorField
+                question={QUESTIONS.preparation}
+                impact={preparationDaysLabel}
+                active={preparationOption.days > 0}
+              >
+                <Select value={input.preparation} onValueChange={(v) => set("preparation", v)}>
+                  <SelectTrigger id={QUESTIONS.preparation.id} className="w-full">
+                    <SelectValue>{preparationOption.label}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className={SELECT_CONTENT}>
+                    {PREPARATION_OPTIONS.map((option) => (
+                      <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                        <OptionText label={option.label} detail={option.detail} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </RateFactorField>
+
+              <RateFactorField
+                question={QUESTIONS.output}
+                impact={outputDaysLabel}
+                active={outputOption.days > 0}
+              >
+                <Select value={input.output} onValueChange={(v) => set("output", v)}>
+                  <SelectTrigger id={QUESTIONS.output.id} className="w-full">
+                    <SelectValue>{outputOption.label}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className={SELECT_CONTENT}>
+                    {OUTPUT_OPTIONS.map((option) => (
+                      <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                        <OptionText label={option.label} detail={option.detail} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </RateFactorField>
+            </>
+          )}
 
           <RateFactorField
             question={QUESTIONS.audienceSize}
@@ -334,6 +576,30 @@ export default function SpeakerQuotationPage() {
             />
           </RateFactorField>
 
+          {!isTeamBuilding && (
+          <RateFactorField
+            question={QUESTIONS.audienceProfile}
+            impact={factorImpact(audienceProfile.factor)}
+            active={audienceProfile.factor !== 1}
+          >
+            <Select
+              value={input.audienceProfile}
+              onValueChange={(v) => set("audienceProfile", v as AudienceProfileId)}
+            >
+              <SelectTrigger id={QUESTIONS.audienceProfile.id} className="w-full">
+                <SelectValue>{audienceProfile.label}</SelectValue>
+              </SelectTrigger>
+              <SelectContent className={SELECT_CONTENT}>
+                {AUDIENCE_PROFILES.map((option) => (
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </RateFactorField>
+          )}
+
           <div className="border-t border-rule pt-4">
             <Label htmlFor="event-title">Working title of the session</Label>
             <Input
@@ -344,7 +610,7 @@ export default function SpeakerQuotationPage() {
               className="mt-2"
             />
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Optional, but it is what decides whether the material already exists.
+              Optional, but it is the clearest signal of how much new ground the subject covers.
             </p>
           </div>
         </CardContent>
@@ -401,7 +667,7 @@ export default function SpeakerQuotationPage() {
                 ? "No travel"
                 : region.travelDays > 0
                   ? `+${formatPHP(
-                      complexity.dayRate * TRAVEL_DAY_FACTOR * region.travelDays
+                      activeDayRate * TRAVEL_DAY_FACTOR * region.travelDays
                     )} travel time`
                   : "No travel"
             }
@@ -412,13 +678,18 @@ export default function SpeakerQuotationPage() {
               onValueChange={(v) => set("region", v as RegionId)}
               disabled={isRemote}
             >
-              <SelectTrigger id={QUESTIONS.region.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.region.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{region.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={SELECT_CONTENT}>
                 {REGIONS.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label} — {option.detail}
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -502,9 +773,9 @@ export default function SpeakerQuotationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Who is asking</CardTitle>
+          <CardTitle>About your organisation</CardTitle>
           <CardDescription>
-            This decides which rate applies, and whether the event is funding itself.
+            This decides which rate applies to you, and whether the event is funding itself.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -517,13 +788,18 @@ export default function SpeakerQuotationPage() {
               value={input.organizerType}
               onValueChange={(v) => set("organizerType", v as OrganizerTypeId)}
             >
-              <SelectTrigger id={QUESTIONS.organizerType.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.organizerType.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{organizer.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={SELECT_CONTENT}>
                 {ORGANIZER_TYPES.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label} — {option.detail}
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -560,6 +836,29 @@ export default function SpeakerQuotationPage() {
               />
               <span className="text-sm text-muted-foreground">
                 {input.ticketed ? "Participants pay to attend" : "Free to participants"}
+              </span>
+            </div>
+          </RateFactorField>
+
+          <RateFactorField
+            question={QUESTIONS.invoiceRequired}
+            impact={
+              input.invoiceRequired
+                ? `Issued by ${INVOICING_ENTITY.name}`
+                : "Billed personally"
+            }
+            active={input.invoiceRequired}
+          >
+            <div className="flex items-center gap-3">
+              <Switch
+                id={QUESTIONS.invoiceRequired.id}
+                checked={input.invoiceRequired}
+                onCheckedChange={(v) => set("invoiceRequired", v)}
+              />
+              <span className="text-sm text-muted-foreground">
+                {input.invoiceRequired
+                  ? "We need an official invoice"
+                  : "No invoice needed"}
               </span>
             </div>
           </RateFactorField>
@@ -659,7 +958,7 @@ export default function SpeakerQuotationPage() {
       {quote && (
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
         <p className="text-sm text-muted-foreground">
-          Quote {quote.reference} · valid until {quote.validUntil}
+          Quote {quote.reference} · valid until {formatEngagementDate(quote.validUntil)}
         </p>
         <div className="flex flex-wrap gap-2">
           <ExportPDFButton
@@ -678,6 +977,7 @@ export default function SpeakerQuotationPage() {
 
       {quote && (
       <AiInsightsPanel
+        label="What does this quote mean?"
         explanation={ai.explanation}
         isLoading={ai.isLoading}
         error={ai.error}
@@ -685,11 +985,23 @@ export default function SpeakerQuotationPage() {
           ai.explain({
             reference: quote.reference,
             eventTitle: input.eventTitle || "(not given)",
-            format: format.label,
+            engagementType: engagementType.label,
+            format: formatLabel(format, engagementType.id),
             sessions: input.sessions,
             dayEquivalents: quote.dayEquivalents,
-            complexity: `${complexity.label} (₱${complexity.dayRate.toLocaleString("en-PH")}/day)`,
+            // Describes whichever basis actually set the rate. Sending the
+            // speaking tier on a facilitation quote had the model explaining a
+            // subject tier and a day rate that appear nowhere on the page.
+            rateBasis: `${quote.topicTier} (₱${quote.dayRate.toLocaleString("en-PH")}/day)`,
+            ...(isFacilitation
+              ? {
+                  preparation: preparationOption.label,
+                  writtenOutput: outputOption.label,
+                  deskDays: quote.deskDays,
+                }
+              : {}),
             audienceSize: input.audienceSize,
+            ...(isTeamBuilding ? {} : { audienceProfile: audienceProfile.label }),
             organizerType: organizer.label,
             // The engine forces "online" for a remote format, so sending the
             // stale dropdown value had the model explaining flights and hotel
@@ -712,6 +1024,7 @@ export default function SpeakerQuotationPage() {
             projectedGate: quote.projectedGate,
             gateSharePercent: quote.gateShare,
             addOns: input.addOns,
+            invoicedBy: quote.invoicing.entity ?? "billed personally",
           })
         }
         onDismiss={ai.reset}

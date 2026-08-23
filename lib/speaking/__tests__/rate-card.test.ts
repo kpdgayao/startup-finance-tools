@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   ADD_ONS,
   AUDIENCE_BANDS,
+  AUDIENCE_PROFILES,
   COMPLEXITY_TIERS,
   DAY_RATE_MAX,
   DAY_RATE_MIN,
@@ -27,10 +28,18 @@ describe("rate card integrity", () => {
     expect(unique(REGIONS.map((r) => r.id))).toBe(true);
     expect(unique(ADD_ONS.map((a) => a.id))).toBe(true);
     expect(unique(AUDIENCE_BANDS.map((b) => b.id))).toBe(true);
+    expect(unique(AUDIENCE_PROFILES.map((p) => p.id))).toBe(true);
   });
 
   it("gives every option a label and an explanation", () => {
-    for (const list of [ENGAGEMENT_FORMATS, COMPLEXITY_TIERS, ORGANIZER_TYPES, REGIONS, ADD_ONS]) {
+    for (const list of [
+      ENGAGEMENT_FORMATS,
+      COMPLEXITY_TIERS,
+      ORGANIZER_TYPES,
+      REGIONS,
+      ADD_ONS,
+      AUDIENCE_PROFILES,
+    ]) {
       for (const option of list) {
         expect(option.label.trim(), `${option.id} has no label`).not.toBe("");
         expect(
@@ -104,6 +113,7 @@ describe("rate card integrity", () => {
     for (const band of AUDIENCE_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
     for (const band of LEAD_TIME_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
     for (const type of ORGANIZER_TYPES) expect(type.factor).toBeGreaterThanOrEqual(1);
+    for (const profile of AUDIENCE_PROFILES) expect(profile.factor).toBeGreaterThanOrEqual(1);
   });
 
   it("gives exactly one organiser type the concessionary rate", () => {
@@ -146,6 +156,32 @@ describe("why-we-ask copy", () => {
       for (const term of forbidden) {
         expect(text.includes(term), `${question.id} mentions "${term}"`).toBe(false);
       }
+    }
+  });
+});
+
+
+describe("audience composition is a separate lever from audience size", () => {
+  it("keeps at least one neutral profile so the default quote is unmoved", () => {
+    expect(AUDIENCE_PROFILES.some((p) => p.factor === 1)).toBe(true);
+  });
+
+  // Gentle on purpose: a sixth multiplier that behaved like the others would
+  // make a quote read as a stack of surcharges rather than a rate card.
+  it("stays modest", () => {
+    for (const profile of AUDIENCE_PROFILES) {
+      expect(profile.factor, profile.id).toBeLessThanOrEqual(1.15);
+    }
+  });
+
+  it("explains itself in terms of the work, not the people", () => {
+    // The premium is for what the material has to survive. Copy that reads as
+    // a judgement about the attendees would be indefensible on a page they may
+    // well be the ones reading.
+    const forbidden = ["difficult", "demanding audience", "fussy", "important people", "vip"];
+    for (const profile of AUDIENCE_PROFILES) {
+      const text = `${profile.label} ${profile.detail}`.toLowerCase();
+      for (const term of forbidden) expect(text, profile.id).not.toContain(term);
     }
   });
 });

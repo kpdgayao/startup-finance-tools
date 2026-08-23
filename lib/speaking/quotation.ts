@@ -26,8 +26,12 @@ import {
   ADD_ONS,
   AUDIENCE_BANDS,
   DATE_HOLD_DAYS,
+  DESK_DAY_FACTOR,
   ENGAGEMENT_FORMATS,
   EWT_RATE,
+  EWT_RATE_FIRM,
+  INVOICING_ENTITY,
+  PERCENTAGE_TAX_RATE,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
@@ -37,13 +41,23 @@ import {
   SCHEDULE_FACTORS,
   TRAVEL_DAY_FACTOR,
   addOnFor,
+  TEAM_BUILDING_DAY_RATE,
   audienceBandFor,
+  audienceProfileFor,
+  engagementTypeFor,
+  facilitationScopeFor,
+  formatLabel,
   leadTimeBandFor,
+  outputOptionFor,
+  preparationOptionFor,
   organizerTypeFor,
   regionFor,
   type AddOnId,
+  type AudienceProfileId,
   type ComplexityId,
   type EngagementFormatId,
+  type EngagementTypeId,
+  type FacilitationScopeId,
   type OrganizerTypeId,
   type RegionId,
   type ScheduleFactorId,
@@ -63,11 +77,22 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface QuotationInput {
+  /** What kind of work this is. Decides where the day rate comes from. */
+  engagementType: EngagementTypeId;
   format: EngagementFormatId;
   /** Number of sessions or engagement days, consecutive from `startDate`. */
   sessions: number;
+  /** Speaking only: how much new ground the subject covers. */
   complexity: ComplexityId;
+  /** Facilitation only: how many principals have to be reconciled. */
+  facilitationScope: FacilitationScopeId;
+  /** Facilitation only: interviews and reading before the room. */
+  preparation: string;
+  /** Facilitation only: what gets written afterwards. */
+  output: string;
   audienceSize: number;
+  /** Who is in the room. Priced separately from how many — see AUDIENCE_PROFILES. */
+  audienceProfile: AudienceProfileId;
   organizerType: OrganizerTypeId;
   /** True when participants pay to attend. */
   ticketed: boolean;
@@ -83,6 +108,15 @@ export interface QuotationInput {
   /** Session starts before 10am, forcing an overnight the evening before. */
   earlyStart: boolean;
   addOns: AddOnId[];
+  /**
+   * The organiser needs a formal invoice, so the training firm issues it
+   * rather than the fee being billed personally.
+   *
+   * This does NOT change the professional fee. Issuing a proper invoice is not
+   * extra work worth charging for — what it changes is the withholding basis
+   * and, if the firm were ever VAT-registered, whether VAT sits on top.
+   */
+  invoiceRequired: boolean;
   /** Today, `YYYY-MM-DD`. Injected rather than read from the clock. */
   today: string;
   /** Free-text, carried through to the printed quote. */
@@ -93,10 +127,15 @@ export interface QuotationInput {
 }
 
 export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
+  engagementType: "speaking",
   format: "full-day",
   sessions: 1,
   complexity: "tailored",
+  facilitationScope: "organisation",
+  preparation: "none",
+  output: "none",
   audienceSize: 40,
+  audienceProfile: "non-specialist",
   organizerType: "corporate",
   ticketed: false,
   participantFee: 0,
@@ -106,6 +145,7 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   accommodationCovered: true,
   earlyStart: true,
   addOns: [],
+  invoiceRequired: true,
   eventTitle: "",
   organizationName: "",
   contactName: "",
@@ -151,8 +191,13 @@ export interface QuotationDateNote {
 export interface Quotation {
   /** Deterministic reference derived from the inputs — no clock, no random. */
   reference: string;
-  /** The day rate the topic tier set. The number effectiveDayRate is judged against. */
+  /** What kind of work this is. */
+  engagementType: EngagementTypeId;
+  engagementTypeLabel: string;
+  /** The day rate this engagement's type and scope set. */
   dayRate: number;
+  /** Desk days before and after the room. Facilitation only; zero otherwise. */
+  deskDays: number;
   /** The tier's label, so the summary can name what set the rate. */
   topicTier: string;
   dayEquivalents: number;
@@ -177,7 +222,24 @@ export interface Quotation {
   projectedGate: number;
   /** Fee as a share of the gate, 0 when the event is not ticketed. */
   gateShare: number;
-  withholding: { applies: boolean; rate: number; amount: number; net: number };
+  withholding: {
+    applies: boolean;
+    rate: number;
+    amount: number;
+    net: number;
+    /** Whose rate was used — the individual's or the firm's. */
+    basis: "individual" | "firm";
+  };
+  invoicing: {
+    required: boolean;
+    /** The issuing entity, or null when no formal invoice was asked for. */
+    entity: string | null;
+    vatRegistered: boolean;
+    /** VAT added to the organiser's total. Zero while the firm is non-VAT. */
+    vat: number;
+    /** Percentage tax the firm bears on gross receipts. Never invoiced. */
+    percentageTax: number;
+  };
   dates: QuotationDateNote[];
   schedule: { id: ScheduleFactorId; label: string; factor: number; reason: string };
   validUntil: string;
@@ -220,12 +282,17 @@ function referenceFor(input: QuotationInput): string {
   // an email, and the one printed on the PDF.
   const seed = [
     input.startDate,
+    input.engagementType,
+    input.facilitationScope,
+    input.preparation,
+    input.output,
     input.format,
     input.sessions,
     input.complexity,
     input.organizerType,
     input.region,
     input.audienceSize,
+    input.audienceProfile,
     input.ticketed ? "T" : "F",
     input.participantFee,
     input.expectedPaidAttendees,
@@ -233,6 +300,7 @@ function referenceFor(input: QuotationInput): string {
     input.accommodationCovered ? "T" : "F",
     input.earlyStart ? "T" : "F",
     [...input.addOns].sort().join(","),
+    input.invoiceRequired ? "INV" : "NOINV",
     input.organizationName ?? "",
   ].join("|");
 
@@ -271,11 +339,28 @@ function scheduleFor(dates: string[]): Quotation["schedule"] {
 export function buildQuotation(raw: QuotationInput): Quotation {
   const format =
     ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
+  const engagementType = engagementTypeFor(raw.engagementType);
   const complexity = complexityTierFor(raw.complexity);
-  // The topic sets the rate. Everything downstream that used to read a shared
-  // anchor — the base fee, travel days, the effective-rate comparison — reads
-  // this instead.
-  const dayRate = complexity.dayRate;
+  const facilitationScope = facilitationScopeFor(raw.facilitationScope);
+
+  // Where the day rate comes from depends on what the work IS. A talk is
+  // priced by how much new ground the subject covers; facilitation cannot be,
+  // because it is bespoke by definition and has no reusable material to be
+  // further or nearer from.
+  const dayRate =
+    engagementType.id === "facilitation"
+      ? facilitationScope.dayRate
+      : engagementType.id === "team-building"
+        ? TEAM_BUILDING_DAY_RATE
+        : complexity.dayRate;
+
+  const isFacilitation = engagementType.id === "facilitation";
+  const preparation = preparationOptionFor(raw.preparation);
+  const output = outputOptionFor(raw.output);
+  // Desk days only exist for facilitation. Speaking prep is already inside the
+  // format's day-equivalent, and team building uses the survey/report add-ons.
+  const preparationDays = isFacilitation ? preparation.days : 0;
+  const outputDays = isFacilitation ? output.days : 0;
   const organizer = organizerTypeFor(raw.organizerType);
   // An online format overrides whatever region was picked: there is no travel
   // to a webinar, and leaving a stale region selected would bill hotel nights
@@ -285,6 +370,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   const sessions = clampInt(raw.sessions, 1, 30);
   const audienceSize = clampInt(raw.audienceSize, 1, 100_000);
   const audience = audienceBandFor(audienceSize);
+  const audienceProfile = audienceProfileFor(raw.audienceProfile);
 
   const dates = engagementDates(raw.startDate, sessions);
   const schedule = scheduleFor(dates);
@@ -308,14 +394,48 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   push({
     id: "base",
     kind: "base",
-    label: `${format.label}${sessions > 1 ? ` × ${sessions}` : ""}`,
-    // The tier is named here rather than carried as its own factor line: it is
-    // not a surcharge on a standard rate, it IS the rate.
+    label: `${formatLabel(format, engagementType.id)}${sessions > 1 ? ` × ${sessions}` : ""}`,
+    // The tier sets the rate, so it is named here rather than carried as its
+    // own factor line — it is not a surcharge on a standard rate, it IS the
+    // rate. Kept to a short clause: every session is adapted to the room
+    // whatever the tier, and a longer classification of the client's own
+    // subject reads as a verdict on it rather than an explanation of the price.
     detail: `${dayEquivalents} engagement ${
       dayEquivalents === 1 ? "day" : "days"
-    } at ₱${dayRate.toLocaleString("en-PH")}/day — ${complexity.label.toLowerCase()}`,
+    } at ₱${dayRate.toLocaleString("en-PH")}/day, the rate for ${
+      isFacilitation
+        ? facilitationScope.label.toLowerCase()
+        : engagementType.id === "team-building"
+          ? "facilitated team building"
+          : complexity.id === "routine"
+            ? "a settled subject"
+            : complexity.label.toLowerCase()
+    }`,
     amount: baseFee,
   });
+
+  // 1b. Desk days ---------------------------------------------------------
+  // Placed with the base fee, before any multiplier, because they are part of
+  // what is being bought rather than a premium on it. A planning engagement
+  // whose interviews and written plan are invisible is one where half the work
+  // is done for free.
+  for (const stage of [
+    { id: "preparation", stage: preparation, days: preparationDays, when: "before" },
+    { id: "output", stage: output, days: outputDays, when: "after" },
+  ]) {
+    if (stage.days <= 0) continue;
+    push({
+      id: stage.id,
+      kind: "base",
+      label: stage.stage.label,
+      detail: `${stage.days} ${stage.days === 1 ? "day" : "days"} of work ${
+        stage.when === "before" ? "before" : "after"
+      } the session, billed at ${DESK_DAY_FACTOR * 100}% of the ₱${dayRate.toLocaleString(
+        "en-PH"
+      )} day rate — ${stage.stage.detail.toLowerCase()}`,
+      amount: dayRate * DESK_DAY_FACTOR * stage.days,
+    });
+  }
 
   // 2. Multiplicative factors ---------------------------------------------
   const factors: Array<{ id: string; label: string; detail: string; factor: number }> = [
@@ -328,6 +448,21 @@ export function buildQuotation(raw: QuotationInput): Quotation {
           : "Larger rooms mean more materials, more breakout support and a heavier assessment load",
       factor: audience.factor,
     },
+    // Skipped entirely for team building: the profiles describe how much
+    // finance the room already knows, which changes how a session on cash flow
+    // has to be built and changes nothing at all about facilitating a day of
+    // activities. Charging for it there would be a factor with no work behind
+    // it.
+    ...(engagementType.id === "team-building"
+      ? []
+      : [
+          {
+            id: "audience-profile",
+            label: audienceProfile.label,
+            detail: audienceProfile.detail,
+            factor: audienceProfile.factor,
+          },
+        ]),
     {
       id: "schedule",
       label: schedule.label,
@@ -396,7 +531,12 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     push({
       id: "travel-days",
       kind: "travel",
-      label: `${region.travelDays} travel ${region.travelDays === 1 ? "day" : "days"}`,
+      label:
+        region.travelDays === 1
+          ? "One travel day"
+          : region.travelDays < 1
+            ? "Part of a travel day"
+            : `${region.travelDays} travel days`,
       detail: `Getting to ${region.label} and back from Baguio is time that cannot be sold to anyone else — billed at ${
         TRAVEL_DAY_FACTOR * 100
       }% of the ₱${dayRate.toLocaleString("en-PH")} day rate`,
@@ -477,9 +617,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     reimbursables.push({
       id: "transport",
       label: `Round-trip transport, Baguio ↔ ${region.label}`,
-      detail: raw.travelCovered
-        ? "Booked and paid for directly by the organiser"
-        : "Estimate — billed at actual cost with receipts",
+      detail: raw.travelCovered ? "" : "Estimate — billed at actual cost with receipts",
       amount: region.transport,
       billed: !raw.travelCovered,
     });
@@ -490,7 +628,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
       id: "accommodation",
       label: `Accommodation, ${nights} ${nights === 1 ? "night" : "nights"}`,
       detail: raw.accommodationCovered
-        ? "Booked and paid for directly by the organiser"
+        ? `Budgeted at about ₱${region.nightly.toLocaleString("en-PH")} a night`
         : `Estimate at ₱${region.nightly.toLocaleString("en-PH")}/night — billed at actual cost with receipts`,
       amount: region.nightly * nights,
       billed: !raw.accommodationCovered,
@@ -503,7 +641,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
       id: "per-diem",
       label: `Ground transfers and meals, ${perDiemDays} ${perDiemDays === 1 ? "day" : "days"}`,
       detail: raw.travelCovered
-        ? "Arranged by the organiser"
+        ? `Budgeted at about ₱${region.perDiem.toLocaleString("en-PH")} a day`
         : `Estimate at ₱${region.perDiem.toLocaleString("en-PH")}/day`,
       amount: region.perDiem * perDiemDays,
       billed: !raw.travelCovered,
@@ -517,11 +655,28 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     reimbursables.filter((r) => !r.billed).reduce((sum, r) => sum + r.amount, 0)
   );
 
-  const total = professionalFee + reimbursablesBilled;
 
   // Withholding is informational: it is the organiser's obligation, not a
   // deduction the quote applies. It is shown so nobody is surprised at payout.
-  const withholdingAmount = organizer.withholds ? roundPeso(professionalFee * EWT_RATE) : 0;
+  //
+  // The rate follows WHO issues the invoice, not who is speaking. Billed
+  // personally it is the individual professional rate; billed by the firm it is
+  // the corporate one, which is materially lower and changes the net enough
+  // that showing the wrong one would misstate the payout.
+  const withholdingRate = raw.invoiceRequired ? EWT_RATE_FIRM : EWT_RATE;
+  const withholdingAmount = organizer.withholds
+    ? roundPeso(professionalFee * withholdingRate)
+    : 0;
+
+  // Zero while the firm is below the VAT threshold. Left in the shape rather
+  // than omitted so registering for VAT is a constant change, not a refactor.
+  const vat = raw.invoiceRequired && INVOICING_ENTITY.vatRegistered
+    ? roundPeso(professionalFee * INVOICING_ENTITY.vatRate)
+    : 0;
+
+  // Declared after the tax block because VAT, when it applies, is part of what
+  // the organiser pays.
+  const total = professionalFee + reimbursablesBilled + vat;
 
   // Flags ------------------------------------------------------------------
   const flags: string[] = [];
@@ -542,12 +697,32 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   }
   if (!raw.travelCovered || !raw.accommodationCovered) {
     flags.push(
-      "Travel or accommodation is not covered by the organiser, so it appears as a billed reimbursable. Booking it directly is usually cheaper for you than reimbursing it."
+      "Travel or accommodation is not being arranged by you, so it appears on the quote as a billed reimbursable at actual cost. Booking it directly is usually cheaper than reimbursing it, and it keeps the invoice simpler."
     );
   }
   if (daysOfNotice < 14 && daysOfNotice >= 0) {
     flags.push(
-      `Only ${daysOfNotice} ${daysOfNotice === 1 ? "day" : "days"} of notice — confirm availability before circulating this quote.`
+      `Only ${daysOfNotice} ${daysOfNotice === 1 ? "day" : "days"} of notice. Confirm the date is still open before you circulate this quote internally.`
+    );
+  }
+  // Corporates, agencies and schools cannot release payment without one, so
+  // discovering it after the engagement is a delayed payment, not a surprise.
+  // Keyed on the institutional tiers rather than on `withholds`: mission
+  // organisers withhold too, but a student org raising money by selling
+  // snacks does not need a formal invoice and should not be nagged for one.
+  if (!raw.invoiceRequired && !organizer.mission) {
+    flags.push(
+      `No formal invoice was requested. Organisations of this kind almost always need one before finance can release payment — say so on the form and it is issued by ${INVOICING_ENTITY.name}, at no change to the fee.`
+    );
+  }
+  if (isFacilitation && outputDays === 0) {
+    flags.push(
+      "No written output was asked for, so the quote covers the room only. Groups that plan to write it up themselves very often do not — worth deciding now rather than after the session."
+    );
+  }
+  if (isFacilitation && preparationDays === 0) {
+    flags.push(
+      "No preparation was asked for. A planning session with no groundwork spends its first half discovering what the disagreements are, which is the most expensive way to find out."
     );
   }
   if (sessions > 1) {
@@ -556,7 +731,9 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     );
   }
 
-  const daysCommitted = Number((dayEquivalents + region.travelDays).toFixed(3));
+  const daysCommitted = Number(
+    (dayEquivalents + region.travelDays + preparationDays + outputDays).toFixed(3)
+  );
 
   // Displayed amounts are the DIFFERENCE between consecutive rounded running
   // totals, not each raw amount rounded on its own.
@@ -575,8 +752,11 @@ export function buildQuotation(raw: QuotationInput): Quotation {
 
   return {
     reference: referenceFor(raw),
+    engagementType: engagementType.id,
+    engagementTypeLabel: engagementType.label,
     dayRate,
-    topicTier: complexity.label,
+    deskDays: preparationDays + outputDays,
+    topicTier: isFacilitation ? facilitationScope.label : complexity.label,
     dayEquivalents,
     daysCommitted,
     lines: reconciledLines,
@@ -590,9 +770,20 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     gateShare: projectedGate > 0 ? (professionalFee / projectedGate) * 100 : 0,
     withholding: {
       applies: organizer.withholds,
-      rate: EWT_RATE,
+      rate: withholdingRate,
       amount: withholdingAmount,
       net: professionalFee - withholdingAmount,
+      basis: raw.invoiceRequired ? "firm" : "individual",
+    },
+    invoicing: {
+      required: raw.invoiceRequired,
+      entity: raw.invoiceRequired ? INVOICING_ENTITY.name : null,
+      vatRegistered: INVOICING_ENTITY.vatRegistered,
+      vat,
+      percentageTax:
+        raw.invoiceRequired && !INVOICING_ENTITY.vatRegistered
+          ? roundPeso(professionalFee * PERCENTAGE_TAX_RATE)
+          : 0,
     },
     dates: dates.map((date) => ({
       date,

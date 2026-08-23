@@ -7,6 +7,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 interface AiInsightsPanelProps {
+  /**
+   * Button label. Defaults to the calculator wording every other tool uses;
+   * the speaker quotation overrides it because its reader is an organiser
+   * reading a quote, not a founder reading their own results.
+   */
+  label?: string;
   explanation: string;
   isLoading: boolean;
   error: string | null;
@@ -16,6 +22,7 @@ interface AiInsightsPanelProps {
 }
 
 export function AiInsightsPanel({
+  label = "Explain My Results",
   explanation,
   isLoading,
   error,
@@ -35,7 +42,7 @@ export function AiInsightsPanel({
           className="border-ochre/30 text-ochre hover:bg-ochre/10 hover:text-ochre-deep disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          Explain My Results
+          {label}
         </Button>
       </div>
     );

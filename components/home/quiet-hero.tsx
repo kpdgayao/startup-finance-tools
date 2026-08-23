@@ -33,10 +33,22 @@ export function QuietHero() {
       </p>
 
       <div className="mt-[26px] flex flex-wrap gap-[10px]">
-        <Button asChild size="lg" variant="ochre">
+        {/* The Button base sets `whitespace-nowrap` AND `shrink-0`, which held
+            this label on one 323px line and pushed the page 19px past a 320px
+            viewport — the narrowest phones still in use. Both have to go:
+            allowing the wrap alone left the item at its max-content width,
+            because a shrink-0 flex item never narrows below it. `max-w-full`
+            caps it at the row instead. No effect above ~360px, where the label
+            fits on one line anyway. */}
+        <Button
+          asChild
+          size="lg"
+          variant="ochre"
+          className="h-auto max-w-full whitespace-normal py-2.5 text-left"
+        >
           <Link href="/tools/self-assessment">
             Start with the {QUIZ_QUESTIONS.length}-question assessment
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
           </Link>
         </Button>
         <Button asChild size="lg" variant="outline">

@@ -18,6 +18,11 @@
 
 import {
   DAY_RATE_MAX,
+  DESK_DAY_FACTOR,
+  FACILITATION_SCOPES,
+  EWT_RATE,
+  EWT_RATE_FIRM,
+  INVOICING_ENTITY,
   DAY_RATE_MIN,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
@@ -42,6 +47,44 @@ export interface RateQuestion {
 }
 
 export const QUESTIONS = {
+  engagementType: {
+    id: "engagementType",
+    label: "What kind of engagement is it?",
+    hint: "This decides the rest of the form, and where the day rate comes from.",
+    why: "A talk and a planning session are not variations on one service. A talk is prepared once and delivered; a facilitated session is designed for one specific room, and the day in that room is often half the work — the interviews before it and the plan written after it are the rest. Pricing them the same way means one of them is wrong.",
+    impact: `Talks and workshops are priced by how much new ground the subject covers, from ${peso(
+      DAY_RATE_MIN
+    )} a day. Facilitation starts at ${peso(
+      FACILITATION_SCOPES[0].dayRate
+    )} a day and adds its own lines for preparation and written output.`,
+  },
+  facilitationScope: {
+    id: "facilitationScope",
+    label: "Whose plan is being made?",
+    hint: "How many sets of interests have to agree by the end of the day.",
+    why: "What makes a planning room hard to run is not the subject, it is the number of principals in it. One department with a clear remit reaches a decision; a cooperative with several member groups, or a board with competing interests, has to be brought to one — and that is the work being bought, not the slides.",
+    impact: `From ${peso(FACILITATION_SCOPES[0].dayRate)} a day for a single team up to ${peso(
+      FACILITATION_SCOPES[FACILITATION_SCOPES.length - 1].dayRate
+    )} for a board or several entities at once.`,
+  },
+  preparation: {
+    id: "preparation",
+    label: "How much groundwork before the session?",
+    hint: "Reading, and conversations with your people.",
+    why: "A planning session with no groundwork spends its first half discovering what the disagreements are — which is the most expensive possible way to find that out, because it is being discovered by everyone in the room at once. Interviews beforehand mean the session opens on the real questions instead of arriving at them by lunch.",
+    impact: `Charged as days of work at ${
+      DESK_DAY_FACTOR * 100
+    }% of the day rate — nothing if you skip it, up to two days for a full round of interviews and document review.`,
+  },
+  output: {
+    id: "output",
+    label: "What should exist afterwards?",
+    hint: "Beyond the flipcharts and photographs.",
+    why: "Writing up a plan properly takes days, and it is the single most commonly absorbed piece of work in this business: the room agrees, everyone leaves, and someone is expected to produce the document for free. Groups that intend to write it up themselves very often do not, and the session quietly stops mattering about a month later.",
+    impact: `Charged as days of work at ${
+      DESK_DAY_FACTOR * 100
+    }% of the day rate — nothing if you write it up yourselves, half a day for a summary, two days for the plan itself.`,
+  },
   format: {
     id: "format",
     label: "What kind of session is it?",
@@ -66,14 +109,14 @@ export const QUESTIONS = {
   },
   complexity: {
     id: "complexity",
-    label: "How far is this topic from the core catalogue?",
+    label: "How much new ground does the subject cover?",
     hint: "This sets the day rate — it is the single biggest lever on the price.",
-    why: "The rate is set by the topic, not by the room. Basic accounting, bookkeeping and cash flow are ground already covered many times over, so the day is mostly delivery and the rate reflects that. A topic sitting outside it — AI applied to accounting, a standard that has just changed — costs days of reading and testing before a single slide exists. That research never appears on the programme, but it is the part that decides what the day costs.",
+    why: "Every session is adapted to the room: the examples, the figures and the exercises are built around your people whatever the subject. What changes the rate is how much of the SUBJECT is new ground. Bookkeeping and cash flow are settled — the thinking is done, and the work is in fitting it to you. Something outside that, like AI applied to accounting or a standard that has just changed, costs days of reading and testing before a single slide exists. That research never appears on the programme, but it is what decides the price of the day.",
     impact: `Sets the day rate directly: ${peso(
       DAY_RATE_MIN
-    )} for a core catalogue topic, rising to ${peso(
+    )} a day for a settled subject, rising to ${peso(
       DAY_RATE_MAX
-    )} for one needing substantial research beyond it.`,
+    )} for one needing fresh research.`,
   },
   audienceSize: {
     id: "audienceSize",
@@ -83,6 +126,14 @@ export const QUESTIONS = {
     impact: `No change up to ${AUDIENCE_BANDS[0].max} participants, rising to +${pct(
       AUDIENCE_BANDS[AUDIENCE_BANDS.length - 1].factor
     )} for a hall of over ${AUDIENCE_BANDS[AUDIENCE_BANDS.length - 2].max}.`,
+  },
+  audienceProfile: {
+    id: "audienceProfile",
+    label: "Who will be in the room?",
+    hint: "Their background, not their number — that is the question above.",
+    why: "Who is in the room decides how the material is built, not just how it is delivered. Teaching cash flow to the people who prepare the statements is a different piece of work from teaching it to the people who only ever see the summary: one has to hold up to standards-level questioning, the other needs translation and worked analogies. A room holding both has to be pitched twice. Getting this right is also what stops a session landing over people's heads or under their feet — the most common way a well-priced engagement still disappoints.",
+    impact:
+      "No change for students, or for staff and managers without a finance background. +10% for a room of practitioners or a mixed one, +15% for owners, executives and board members, where the material is distilled and usually briefed with the sponsor beforehand.",
   },
   organizerType: {
     id: "organizerType",
@@ -156,6 +207,17 @@ export const QUESTIONS = {
     hint: "Only asked when the engagement needs an overnight.",
     why: "Same reasoning as transport, and it is usually the larger of the two. An organiser with a hotel partner pays a fraction of the walk-in rate.",
     impact: "Covered: shown at zero. Not covered: added as a reimbursable at the nightly estimate.",
+  },
+  invoiceRequired: {
+    id: "invoiceRequired",
+    label: "Do you need a formal invoice?",
+    hint: "Most companies, agencies and schools do, to release payment.",
+    why: "Finance departments cannot release funds against an email. Asking now means the paperwork is ready when the engagement is, rather than the fee sitting unpaid for a month while it is sorted out afterwards. It also decides who bills you, which changes the tax you withhold — not what you pay.",
+    impact: `No change to the fee. An invoice is issued by ${
+      INVOICING_ENTITY.name
+    }, and withholding follows the firm's rate of ${
+      EWT_RATE_FIRM * 100
+    }% instead of the ${EWT_RATE * 100}% that applies to an individual professional.`,
   },
   addOns: {
     id: "addOns",
