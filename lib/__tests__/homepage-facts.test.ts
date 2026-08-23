@@ -107,7 +107,7 @@ describe("homepage facts", () => {
       "TOOLS.length changed. Update the word in the eyebrow copy in " +
         "components/home/quiet-hero.tsx. The secondary CTA and FactStrip " +
         "cell 1 derive the number and need no edit."
-    ).toBe(16);
+    ).toBe(17);
 
     // Asserting TOOLS.length alone is a tripwire on the data, not the copy:
     // someone bumping this test to 17 would leave the eyebrow reading
@@ -156,6 +156,20 @@ describe("homepage facts", () => {
     // none of which is a calculation:
     //
     //   lib/ai/use-ai-explain.ts        opt-in AI Explain, POSTs tool inputs
+    //   lib/speaking/use-quotation-assist.ts
+    //                                   Speaker Quotation: an availability
+    //                                   check against the speaker's calendar
+    //                                   and an opt-in AI form draft. The quote
+    //                                   arithmetic itself is buildQuotation(),
+    //                                   which runs in the browser and posts
+    //                                   nothing — cell 4 holds.
+    //   lib/speaking/ics.ts             server-only: fetches the calendar feed
+    //                                   from the route handler. It lives under
+    //                                   lib/ rather than app/api/ so it can be
+    //                                   unit-tested, which is the only reason
+    //                                   the app/api/ exclusion below misses it.
+    //                                   Nothing imports it from a client
+    //                                   component — keep it that way.
     //
     // A new fetch() anywhere else fails this test, which is the point: the
     // next feature that phones home has to re-read the homepage copy rather
@@ -164,6 +178,8 @@ describe("homepage facts", () => {
     // visitor's browser.
     const ALLOWED = [
       "lib/ai/use-ai-explain.ts",
+      "lib/speaking/ics.ts",
+      "lib/speaking/use-quotation-assist.ts",
     ];
 
     const found: string[] = [];

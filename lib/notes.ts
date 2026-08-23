@@ -106,4 +106,18 @@ export const NOTES: Record<string, MarginNoteData[]> = {
       body: "Keep personal and business accounts separate from day one. Mixing them is the most common startup accounting mistake I see — it turns tax filing into a forensic exercise and undermines your books when an investor asks for due diligence.",
     },
   ],
+  "speaker-quotation": [
+    {
+      tone: "rule",
+      body: "Price the preparation, not the stage time. A 90-minute talk that already exists costs a day. A two-day workshop on a title nobody has taught before is a week of writing before anyone walks into the room — and that week is the part organisers never see, so it is the part you have to put in writing.",
+    },
+    {
+      tone: "watch",
+      body: "If the event sells seats, ask what a seat costs and how many they expect to fill. An event grossing \u20b1280,000 at the door and offering \u20b110,000 for two days of teaching is not short of money — it has simply never been asked to show the arithmetic.",
+    },
+    {
+      tone: "ph",
+      body: "Quote transport and accommodation as line items even when the organiser is covering them. A Philippine organiser with a hotel partner pays a fraction of the walk-in rate, and seeing the number they are absorbing is what stops \"can you just shoulder it and we reimburse\" — which in practice means carrying the cost for 30 days waiting on a liquidation.",
+    },
+  ],
 };
