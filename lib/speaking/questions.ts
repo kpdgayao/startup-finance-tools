@@ -149,9 +149,9 @@ export const QUESTIONS = {
   organizerType: {
     id: "organizerType",
     label: "Who is organising the event?",
-    hint: "This decides which rate applies — the largest single factor after the subject.",
+    hint: "This decides which rate applies. It is the biggest single factor on the price.",
     why: "This sets the rate, and it is the honest reason my quotes differ. A government agency cannot pay more than its own rules allow — the circular caps a resource person at about \u20b121,000 a day whatever I ask — so that is what public work pays. A corporate training budget is a different market entirely, and a cooperative is a third thing again: the law already sets aside part of its surplus for members' education and training, so the money is there but it is the members' own. Pricing all of them the same would mean either overcharging schools or underwriting companies out of my own time. Saying which you are gets you your sector's rate rather than an average of everyone's.",
-    impact: `Sets which day rate applies. Government and public-sector work is quoted at the ladder above; private schools, cooperatives, associations and companies each have their own rate, shown the moment you choose. Public schools, student organisations and NGOs get a further −${
+    impact: `Sets which day rate applies. Government and public-sector work is quoted at the public rate; private schools, cooperatives, associations and companies each have their own, shown the moment you choose. Public schools, student organisations and NGOs get a further −${
       MISSION_DISCOUNT * 100
     }%, floored at ${peso(MISSION_FLOOR_DAY_RATE)} per day.`,
   },

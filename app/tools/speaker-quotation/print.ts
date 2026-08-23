@@ -85,9 +85,20 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
       "Summary",
       `<div class="summary-grid">
         ${summaryCard("Professional fee", formatPHP(quote.professionalFee))}
-        ${summaryCard("Cost per day", formatPHP(quote.effectiveDayRate), {
-          sublabel: `Across ${quote.daysCommitted} day(s) of work in total`,
-        })}
+        ${
+          // Mirrors the screen: seats are the unit wherever seats are what is
+          // being bought, and a forwarded PDF is read by the person who has to
+          // justify the number, for whom per-head is the useful figure.
+          quote.engagementType === "facilitation"
+            ? summaryCard("Cost per day", formatPHP(quote.effectiveDayRate), {
+                sublabel: `Across ${quote.daysCommitted} day(s) of work in total`,
+              })
+            : summaryCard("Per participant", formatPHP(quote.perParticipant), {
+                sublabel: `The whole total, across ${quote.audienceSize.toLocaleString(
+                  "en-PH"
+                )} participant(s)`,
+              })
+        }
         ${summaryCard("Billed logistics", formatPHP(quote.reimbursablesBilled), {
           sublabel:
             quote.reimbursablesCovered > 0

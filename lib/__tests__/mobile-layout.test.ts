@@ -45,14 +45,35 @@ describe("select triggers are width-constrained", () => {
     const src = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
     const triggers = src.match(/<SelectTrigger[^>]*>/g) ?? [];
 
+    // The page routes them all through one constant. Resolve it rather than
+    // grepping each tag, so the guard follows the indirection instead of
+    // failing the moment the classes are named in one place.
+    const shared = src.match(/const SELECT_TRIGGER = "([^"]*)"/)?.[1] ?? "";
+
     expect(triggers.length, "expected the quotation form to render selects").toBeGreaterThan(0);
     for (const trigger of triggers) {
+      const classes = /SELECT_TRIGGER/.test(trigger)
+        ? shared
+        : (trigger.match(/className="([^"]*)"/)?.[1] ?? "");
       expect(
-        trigger,
+        classes,
         `SelectTrigger is w-fit by default, so a long option stretches it past ` +
           `the viewport: ${trigger}`
       ).toMatch(/w-full/);
     }
+  });
+
+  // w-full stops the trigger stretching the page. It does NOT stop the label
+  // inside it being cut off mid-word: the trigger is whitespace-nowrap and its
+  // value is a flex item, which will not shrink below its content without
+  // min-w-0 — so "Company or corporate in-house training" rendered as
+  // "Company or corporate in-house trainin", with no ellipsis to show that
+  // anything had been cut.
+  it("lets a long label shrink rather than be clipped mid-word", () => {
+    const src = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
+    const shared = src.match(/const SELECT_TRIGGER = "([^"]*)"/)?.[1] ?? "";
+    expect(shared, "SELECT_TRIGGER should carry the width classes").toMatch(/w-full/);
+    expect(shared, "the value needs min-w-0 for line-clamp to apply").toMatch(/min-w-0/);
   });
 });
 
