@@ -21,6 +21,7 @@ export interface IntakeDraft {
   sessions?: number;
   complexity?: string;
   audienceSize?: number;
+  audienceProfile?: string;
   organizerType?: string;
   ticketed?: boolean;
   participantFee?: number;

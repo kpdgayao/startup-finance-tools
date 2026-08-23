@@ -74,10 +74,45 @@ what a day costs is decided by what has to happen before it:
 
 | Tier | Day rate | What it means |
 | --- | --- | --- |
-| `routine` | ₱15,000 | Core catalogue — basic accounting, bookkeeping, cash flow, pricing, valuation. Taught many times. |
-| `tailored` | ₱18,000 | The same ground, rebuilt around one industry's figures. |
-| `applied` | ₱21,000 | New curriculum, still inside core expertise. |
-| `frontier` | ₱24,000 | Beyond it — AI and accounting, a standard that just changed. Days of reading before anything can be taught. |
+| `routine` | ₱15,000 | Settled ground — bookkeeping, accounting, cash flow, pricing, valuation. |
+| `tailored` | ₱18,000 | The same ground, rebuilt around one industry's cases and figures. |
+| `applied` | ₱21,000 | A new programme, still within finance and accounting. |
+| `frontier` | ₱24,000 | Needs fresh research — AI and accounting, a standard that just changed. |
+
+**Nothing in this ladder says "off the shelf", and it must not.** Every session
+is adapted to the room: the examples, the figures and the exercises change even
+when the subject does not. The cheapest tier means the SUBJECT is settled, not
+that the delivery is generic. An earlier draft said "already in the catalogue,
+delivered as it stands" — untrue, and it told a paying organiser they were
+booking a canned talk. A test in `lib/speaking/__tests__/quotation.test.ts`
+fails on that vocabulary reappearing, on the tier copy or on the quote itself.
+
+The tier is deliberately understated in the output: it appears once, as a short
+clause on the fee's base line, and nowhere in the printed quotation's header.
+Classifying a client's own subject more prominently than that reads as a verdict
+on it rather than an explanation of the price.
+
+### Audience composition
+
+`AUDIENCE_PROFILES` prices WHO is in the room, separately from `AUDIENCE_BANDS`,
+which prices how many. They are different costs: size is logistics — materials,
+breakout support, marking — while composition is content. Teaching cash flow to
+the people who prepare the statements is a different build from teaching it to
+the people who only ever see the summary, and a room holding both has to be
+pitched twice.
+
+| Profile | Factor |
+| --- | --- |
+| Students, or staff and managers without a finance background | none |
+| Finance, accounting or audit practitioners | +10% |
+| A mixed room | +10% |
+| Owners, executives or board members | +15% |
+
+Kept gentle and neutral for the two commonest rooms, so a quote does not read as
+a stack of surcharges. Justify it as preparation — what the material has to hold
+up to — never as a judgement about the people attending; there is a test for
+that too, because this copy is read by the organiser and sometimes by the
+audience itself.
 
 The two ends are the real anchors; the middle two interpolate so an engagement
 that is neither pure delivery nor a research project need not round to whichever

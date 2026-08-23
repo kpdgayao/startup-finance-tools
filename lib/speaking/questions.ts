@@ -69,14 +69,14 @@ export const QUESTIONS = {
   },
   complexity: {
     id: "complexity",
-    label: "How far is this topic from the core catalogue?",
+    label: "How much new ground does the subject cover?",
     hint: "This sets the day rate — it is the single biggest lever on the price.",
-    why: "The rate is set by the topic, not by the room. Basic accounting, bookkeeping and cash flow are ground already covered many times over, so the day is mostly delivery and the rate reflects that. A topic sitting outside it — AI applied to accounting, a standard that has just changed — costs days of reading and testing before a single slide exists. That research never appears on the programme, but it is the part that decides what the day costs.",
+    why: "Every session is adapted to the room: the examples, the figures and the exercises are built around your people whatever the subject. What changes the rate is how much of the SUBJECT is new ground. Bookkeeping and cash flow are settled — the thinking is done, and the work is in fitting it to you. Something outside that, like AI applied to accounting or a standard that has just changed, costs days of reading and testing before a single slide exists. That research never appears on the programme, but it is what decides the price of the day.",
     impact: `Sets the day rate directly: ${peso(
       DAY_RATE_MIN
-    )} for a core catalogue topic, rising to ${peso(
+    )} a day for a settled subject, rising to ${peso(
       DAY_RATE_MAX
-    )} for one needing substantial research beyond it.`,
+    )} for one needing fresh research.`,
   },
   audienceSize: {
     id: "audienceSize",
@@ -86,6 +86,14 @@ export const QUESTIONS = {
     impact: `No change up to ${AUDIENCE_BANDS[0].max} participants, rising to +${pct(
       AUDIENCE_BANDS[AUDIENCE_BANDS.length - 1].factor
     )} for a hall of over ${AUDIENCE_BANDS[AUDIENCE_BANDS.length - 2].max}.`,
+  },
+  audienceProfile: {
+    id: "audienceProfile",
+    label: "Who will be in the room?",
+    hint: "Their background, not their number — that is the question above.",
+    why: "Who is in the room decides how the material is built, not just how it is delivered. Teaching cash flow to the people who prepare the statements is a different piece of work from teaching it to the people who only ever see the summary: one has to hold up to standards-level questioning, the other needs translation and worked analogies. A room holding both has to be pitched twice. Getting this right is also what stops a session landing over people's heads or under their feet — the most common way a well-priced engagement still disappoints.",
+    impact:
+      "No change for students, or for staff and managers without a finance background. +10% for a room of practitioners or a mixed one, +15% for owners, executives and board members, where the material is distilled and usually briefed with the sponsor beforehand.",
   },
   organizerType: {
     id: "organizerType",

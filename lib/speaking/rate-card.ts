@@ -202,36 +202,44 @@ export interface ComplexityTier {
 /**
  * The rate ladder, cheapest first.
  *
- * The two ends are the real anchors: a routine topic is a ₱15,000 day, and a
- * topic needing substantial research beyond core expertise is a ₱24,000 day.
- * The two middle tiers interpolate between them, so an engagement that is
- * neither purely delivery nor a research project does not have to be rounded
- * to whichever end is nearer.
+ * The two ends are the real anchors: an established subject is a ₱15,000 day,
+ * and one needing substantial research beyond core expertise is a ₱24,000 day.
+ * The middle tiers interpolate, so an engagement that is neither settled ground
+ * nor a research project need not round to whichever end is nearer.
+ *
+ * NOTHING HERE SAYS "OFF THE SHELF". Every engagement is adapted to the room —
+ * the examples, the figures and the exercises change even when the subject does
+ * not. The earlier wording ("already in the catalogue", "delivered as it
+ * stands") was both untrue and bad positioning: it told a paying organiser they
+ * were booking a canned talk, and it understated the work behind the cheapest
+ * tier. What the ladder prices is how much NEW GROUND the subject covers, not
+ * whether a deck already exists.
  */
 export const COMPLEXITY_TIERS: ComplexityTier[] = [
   {
     id: "routine",
-    label: "Core topic, already in the catalogue",
+    label: "Established subject",
     detail:
-      "Basic accounting, bookkeeping, cash flow, pricing, valuation — taught many times, delivered as it stands",
+      "Bookkeeping, cash flow, pricing, valuation — settled ground, adapted to your people and their numbers",
     dayRate: 15_000,
   },
   {
     id: "tailored",
-    label: "Core topic, rebuilt around your sector",
-    detail: "The same ground, with examples and worked figures redrawn from your industry",
+    label: "Established subject, rebuilt around your sector",
+    detail:
+      "The same ground, with the cases and worked figures redrawn from your industry",
     dayRate: 18_000,
   },
   {
     id: "applied",
-    label: "New curriculum, inside core expertise",
+    label: "New programme, within finance and accounting",
     detail:
-      "Written from scratch — outline, deck, exercises, assessment — but on familiar ground",
+      "Designed from scratch for this engagement — outline, deck, exercises, assessment",
     dayRate: 21_000,
   },
   {
     id: "frontier",
-    label: "Beyond core expertise, needs substantial research",
+    label: "New programme needing fresh research",
     detail:
       "AI applied to accounting, a standard that has just changed, an unfamiliar domain — days of reading and testing before any of it can be taught",
     dayRate: 24_000,
@@ -255,6 +263,74 @@ export function complexityTierFor(id: ComplexityId): ComplexityTier {
  * rate card the moment the rates moved.
  */
 export const MISSION_FLOOR_DAY_RATE = Math.round(DAY_RATE_MIN * (1 - MISSION_DISCOUNT));
+
+// ---------------------------------------------------------------------------
+// Who is in the room
+// ---------------------------------------------------------------------------
+
+export type AudienceProfileId =
+  | "students"
+  | "non-specialist"
+  | "practitioners"
+  | "leadership"
+  | "mixed";
+
+export interface AudienceProfile {
+  id: AudienceProfileId;
+  label: string;
+  detail: string;
+  factor: number;
+}
+
+/**
+ * Audience COMPOSITION, priced separately from audience SIZE.
+ *
+ * Different question, different cost. Size is a logistics problem — materials,
+ * breakout support, marking. Composition is a content problem: teaching cash
+ * flow to the people who prepare the statements is a different build from
+ * teaching it to the people who only ever see the summary. One has to survive
+ * standards-level questioning; the other needs translation and worked analogies.
+ *
+ * Deliberately gentle, and neutral for the two most common rooms, so a quote
+ * does not read as a stack of surcharges. Only the cases where preparation
+ * genuinely changes carry a premium.
+ */
+export const AUDIENCE_PROFILES: AudienceProfile[] = [
+  {
+    id: "students",
+    label: "Students or fresh graduates",
+    detail: "Undergraduate, graduate or entry-level, learning the subject for the first time",
+    factor: 1,
+  },
+  {
+    id: "non-specialist",
+    label: "Staff and managers without a finance background",
+    detail: "Branch staff, operations, sales, founders — people who use the numbers but do not prepare them",
+    factor: 1,
+  },
+  {
+    id: "practitioners",
+    label: "Finance, accounting or audit practitioners",
+    detail: "Peers who prepare the statements — the material has to hold up to standards-level questioning",
+    factor: 1.1,
+  },
+  {
+    id: "leadership",
+    label: "Owners, executives or board members",
+    detail: "Decision-makers with little time — the material is distilled, and usually briefed with the sponsor beforehand",
+    factor: 1.15,
+  },
+  {
+    id: "mixed",
+    label: "Several of these in one room",
+    detail: "A mixed room has to be pitched twice — once for the people who prepare the numbers, once for the people who read them",
+    factor: 1.1,
+  },
+];
+
+export function audienceProfileFor(id: AudienceProfileId): AudienceProfile {
+  return AUDIENCE_PROFILES.find((p) => p.id === id) ?? AUDIENCE_PROFILES[1];
+}
 
 // ---------------------------------------------------------------------------
 // Audience size

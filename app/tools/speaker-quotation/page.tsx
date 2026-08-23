@@ -24,6 +24,7 @@ import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { formatPHP } from "@/lib/utils";
 import {
   ADD_ONS,
+  AUDIENCE_PROFILES,
   COMPLEXITY_TIERS,
   DAY_RATE_MAX,
   DAY_RATE_MIN,
@@ -33,7 +34,9 @@ import {
   REGIONS,
   TRAVEL_DAY_FACTOR,
   audienceBandFor,
+  audienceProfileFor,
   type AddOnId,
+  type AudienceProfileId,
   type ComplexityId,
   type EngagementFormatId,
   type OrganizerTypeId,
@@ -199,6 +202,8 @@ export default function SpeakerQuotationPage() {
         );
       if (typeof draft.sessions === "number") next.sessions = draft.sessions;
       if (typeof draft.audienceSize === "number") next.audienceSize = draft.audienceSize;
+      if (draft.audienceProfile && AUDIENCE_PROFILES.some((p) => p.id === draft.audienceProfile))
+        next.audienceProfile = draft.audienceProfile as AudienceProfileId;
       if (typeof draft.ticketed === "boolean") next.ticketed = draft.ticketed;
       if (typeof draft.participantFee === "number") next.participantFee = draft.participantFee;
       if (typeof draft.expectedPaidAttendees === "number")
@@ -247,6 +252,7 @@ export default function SpeakerQuotationPage() {
   }, [quote, input, format]);
 
   const audienceBand = audienceBandFor(input.audienceSize);
+  const audienceProfile = audienceProfileFor(input.audienceProfile);
   const complexity =
     COMPLEXITY_TIERS.find((c) => c.id === input.complexity) ?? COMPLEXITY_TIERS[0];
   const organizer = ORGANIZER_TYPES.find((o) => o.id === input.organizerType) ?? ORGANIZER_TYPES[0];
@@ -270,11 +276,11 @@ export default function SpeakerQuotationPage() {
 
       <div className="border-y border-rule py-4 font-serif text-[15px] leading-[1.55] text-ink-2">
         <p>
-          The day rate is set by the topic — {formatPHP(DAY_RATE_MIN)} for something already in the
-          catalogue, up to {formatPHP(DAY_RATE_MAX)} for one that needs real research first — with
-          transport and accommodation arranged by the organiser. Everything below either adds to
-          that or explains why it stays where it is. Nothing is hidden, and nothing here is sent to
-          anyone until you choose to send it.
+          The day rate is set by the subject — {formatPHP(DAY_RATE_MIN)} a day for settled ground,
+          up to {formatPHP(DAY_RATE_MAX)} where it needs fresh research first — with transport and
+          accommodation arranged by the organiser. Every session is built around your people either
+          way. Everything below adds to that rate or explains why it stays where it is, and nothing
+          here is sent to anyone until you choose to send it.
         </p>
       </div>
 
@@ -291,7 +297,7 @@ export default function SpeakerQuotationPage() {
         <CardHeader>
           <CardTitle>The engagement</CardTitle>
           <CardDescription>
-            What is being asked for, and how much of it has to be built from scratch.
+            What is being asked for, how much new ground it covers, and who it is for.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -393,6 +399,28 @@ export default function SpeakerQuotationPage() {
             />
           </RateFactorField>
 
+          <RateFactorField
+            question={QUESTIONS.audienceProfile}
+            impact={factorImpact(audienceProfile.factor)}
+            active={audienceProfile.factor !== 1}
+          >
+            <Select
+              value={input.audienceProfile}
+              onValueChange={(v) => set("audienceProfile", v as AudienceProfileId)}
+            >
+              <SelectTrigger id={QUESTIONS.audienceProfile.id} className="w-full">
+                <SelectValue>{audienceProfile.label}</SelectValue>
+              </SelectTrigger>
+              <SelectContent className={SELECT_CONTENT}>
+                {AUDIENCE_PROFILES.map((option) => (
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </RateFactorField>
+
           <div className="border-t border-rule pt-4">
             <Label htmlFor="event-title">Working title of the session</Label>
             <Input
@@ -403,7 +431,7 @@ export default function SpeakerQuotationPage() {
               className="mt-2"
             />
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Optional, but it is what decides whether the material already exists.
+              Optional, but it is the clearest signal of how much new ground the subject covers.
             </p>
           </div>
         </CardContent>
@@ -783,6 +811,7 @@ export default function SpeakerQuotationPage() {
             dayEquivalents: quote.dayEquivalents,
             complexity: `${complexity.label} (₱${complexity.dayRate.toLocaleString("en-PH")}/day)`,
             audienceSize: input.audienceSize,
+            audienceProfile: audienceProfile.label,
             organizerType: organizer.label,
             // The engine forces "online" for a remote format, so sending the
             // stale dropdown value had the model explaining flights and hotel

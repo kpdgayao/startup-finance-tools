@@ -41,10 +41,12 @@ import {
   TRAVEL_DAY_FACTOR,
   addOnFor,
   audienceBandFor,
+  audienceProfileFor,
   leadTimeBandFor,
   organizerTypeFor,
   regionFor,
   type AddOnId,
+  type AudienceProfileId,
   type ComplexityId,
   type EngagementFormatId,
   type OrganizerTypeId,
@@ -71,6 +73,8 @@ export interface QuotationInput {
   sessions: number;
   complexity: ComplexityId;
   audienceSize: number;
+  /** Who is in the room. Priced separately from how many — see AUDIENCE_PROFILES. */
+  audienceProfile: AudienceProfileId;
   organizerType: OrganizerTypeId;
   /** True when participants pay to attend. */
   ticketed: boolean;
@@ -109,6 +113,7 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   sessions: 1,
   complexity: "tailored",
   audienceSize: 40,
+  audienceProfile: "non-specialist",
   organizerType: "corporate",
   ticketed: false,
   participantFee: 0,
@@ -256,6 +261,7 @@ function referenceFor(input: QuotationInput): string {
     input.organizerType,
     input.region,
     input.audienceSize,
+    input.audienceProfile,
     input.ticketed ? "T" : "F",
     input.participantFee,
     input.expectedPaidAttendees,
@@ -316,6 +322,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   const sessions = clampInt(raw.sessions, 1, 30);
   const audienceSize = clampInt(raw.audienceSize, 1, 100_000);
   const audience = audienceBandFor(audienceSize);
+  const audienceProfile = audienceProfileFor(raw.audienceProfile);
 
   const dates = engagementDates(raw.startDate, sessions);
   const schedule = scheduleFor(dates);
@@ -340,11 +347,16 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     id: "base",
     kind: "base",
     label: `${format.label}${sessions > 1 ? ` × ${sessions}` : ""}`,
-    // The tier is named here rather than carried as its own factor line: it is
-    // not a surcharge on a standard rate, it IS the rate.
+    // The tier sets the rate, so it is named here rather than carried as its
+    // own factor line — it is not a surcharge on a standard rate, it IS the
+    // rate. Kept to a short clause: every session is adapted to the room
+    // whatever the tier, and a longer classification of the client's own
+    // subject reads as a verdict on it rather than an explanation of the price.
     detail: `${dayEquivalents} engagement ${
       dayEquivalents === 1 ? "day" : "days"
-    } at ₱${dayRate.toLocaleString("en-PH")}/day — ${complexity.label.toLowerCase()}`,
+    } at ₱${dayRate.toLocaleString("en-PH")}/day, the rate for ${
+      complexity.id === "routine" ? "a settled subject" : complexity.label.toLowerCase()
+    }`,
     amount: baseFee,
   });
 
@@ -358,6 +370,12 @@ export function buildQuotation(raw: QuotationInput): Quotation {
           ? "A room this size needs no extra facilitation support"
           : "Larger rooms mean more materials, more breakout support and a heavier assessment load",
       factor: audience.factor,
+    },
+    {
+      id: "audience-profile",
+      label: audienceProfile.label,
+      detail: audienceProfile.detail,
+      factor: audienceProfile.factor,
     },
     {
       id: "schedule",

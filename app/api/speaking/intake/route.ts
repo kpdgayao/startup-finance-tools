@@ -3,6 +3,7 @@ import { z } from "zod";
 import { RateLimiter } from "@/app/lib/rate-limit";
 import {
   ADD_ONS,
+  AUDIENCE_PROFILES,
   COMPLEXITY_TIERS,
   ENGAGEMENT_FORMATS,
   ORGANIZER_TYPES,
@@ -41,6 +42,7 @@ const draftTool = {
       sessions: { type: "integer", minimum: 1, maximum: 30 },
       complexity: { type: "string", enum: ids(COMPLEXITY_TIERS) },
       audienceSize: { type: "integer", minimum: 1, maximum: 100000 },
+      audienceProfile: { type: "string", enum: ids(AUDIENCE_PROFILES) },
       organizerType: { type: "string", enum: ids(ORGANIZER_TYPES) },
       ticketed: { type: "boolean" },
       participantFee: { type: "number", minimum: 0 },
@@ -80,6 +82,7 @@ const draftSchema = z.object({
   sessions: z.number().int().min(1).max(30).optional(),
   complexity: z.enum(ids(COMPLEXITY_TIERS) as [string, ...string[]]).optional(),
   audienceSize: z.number().int().min(1).max(100_000).optional(),
+  audienceProfile: z.enum(ids(AUDIENCE_PROFILES) as [string, ...string[]]).optional(),
   organizerType: z.enum(ids(ORGANIZER_TYPES) as [string, ...string[]]).optional(),
   ticketed: z.boolean().optional(),
   participantFee: z.number().min(0).max(1_000_000).optional(),
@@ -106,12 +109,13 @@ Today is ${today}. Resolve relative dates ("next month", "the second week of Mar
 RULES
 - Extract what is stated. Infer only what is strongly implied, and list every inference in "assumptions".
 - Leave a field out entirely rather than guessing it. An omitted field keeps the form's default; a wrong one becomes a wrong price the organiser then has to argue about.
-- "complexity" is the TOPIC's distance from the core catalogue, and it sets the day rate. Judge it by how much research the subject demands, never by how the organiser describes their budget.
-  - "routine": basic accounting, bookkeeping, cash flow, pricing, valuation, SAFEs, compliance. Standard subjects, however specific the title. "Bookkeeping for non-accountants" is routine.
-  - "tailored": one of those subjects rebuilt around a named industry's own figures.
-  - "applied": a new curriculum that is still within accounting, finance or startup practice.
-  - "frontier": the subject requires substantial reading beyond that — AI applied to accounting, a newly issued standard, an unfamiliar domain.
+- "complexity" is how much NEW GROUND the subject covers, and it sets the day rate. Judge it by the subject, never by how the organiser describes their budget. Every session is adapted to the audience regardless, so adaptation alone never raises the tier.
+  - "routine": settled subjects — bookkeeping, accounting, cash flow, pricing, valuation, SAFEs, compliance — however specific the title. "Bookkeeping for non-accountants" is routine.
+  - "tailored": one of those subjects rebuilt around a named industry's own cases and figures.
+  - "applied": a new programme, still within accounting, finance or startup practice.
+  - "frontier": the subject needs substantial reading first — AI applied to accounting, a newly issued standard, an unfamiliar domain.
 - "region" is measured from Baguio City. Map the venue's province to the nearest option; use "online" only when the event is genuinely remote.
+- "audienceProfile" is WHO is in the room, not how many. Organisers usually say this outright ("our branch managers, none of them accountants", "the board", "our audit team"). Map it to the closest option and leave it out if the description does not say.
 - "ticketed" is true if participants or their employers pay anything to attend, including a registration fee.
 - "invoiceRequired" is true when the description mentions an invoice, official receipt, purchase order, accreditation, procurement, or supplier onboarding. Leave it out if nothing suggests either way.
 - In "questions", ask only about details that would change the price. Do not ask for anything the description already answers.

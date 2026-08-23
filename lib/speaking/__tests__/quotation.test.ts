@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
+  COMPLEXITY_TIERS,
   EWT_RATE,
   EWT_RATE_FIRM,
   INVOICING_ENTITY,
@@ -117,7 +118,13 @@ describe("factors", () => {
     const factorIds = quote.lines.filter((l) => l.kind === "factor").map((l) => l.id);
     // No "complexity" line: the topic sets the base rate, so it is named on the
     // base line rather than charged as a premium on top of one.
-    expect(factorIds).toEqual(["audience", "schedule", "lead-time", "organizer"]);
+    expect(factorIds).toEqual([
+      "audience",
+      "audience-profile",
+      "schedule",
+      "lead-time",
+      "organizer",
+    ]);
     // A neutral factor is present at zero pesos rather than omitted: the
     // breakdown should read as a rate card, not as a list of surcharges.
     expect(quote.lines.find((l) => l.id === "audience")?.amount).toBe(0);
@@ -582,5 +589,95 @@ describe("invoicing", () => {
     const a = buildQuotation(input({ invoiceRequired: true }));
     const b = buildQuotation(input({ invoiceRequired: false }));
     expect(a.reference).not.toBe(b.reference);
+  });
+});
+
+
+describe("audience composition", () => {
+  // Priced separately from audience SIZE, and answering a different question:
+  // size is a logistics cost (materials, breakout support, marking), whereas
+  // composition is a content cost — what the material has to survive.
+  it("is neutral for the two most common rooms", () => {
+    for (const audienceProfile of ["students", "non-specialist"] as const) {
+      const quote = buildQuotation(input({ audienceProfile }));
+      expect(quote.professionalFee, audienceProfile).toBe(ROUTINE_RATE);
+    }
+  });
+
+  it("charges for a room that has to hold up to standards-level questioning", () => {
+    const plain = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const peers = buildQuotation(input({ audienceProfile: "practitioners" }));
+    expect(peers.professionalFee).toBe(toPeso(plain.professionalFee * 1.1));
+  });
+
+  it("charges most for a board-level room", () => {
+    const plain = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const board = buildQuotation(input({ audienceProfile: "leadership" }));
+    expect(board.professionalFee).toBe(toPeso(plain.professionalFee * 1.15));
+  });
+
+  it("charges a mixed room for being pitched twice", () => {
+    const plain = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const mixed = buildQuotation(input({ audienceProfile: "mixed" }));
+    expect(mixed.professionalFee).toBeGreaterThan(plain.professionalFee);
+  });
+
+  it("is independent of how many people are in the room", () => {
+    // 20 practitioners and 20 non-specialists differ; 20 and 200
+    // non-specialists differ for an unrelated reason. The two must not be
+    // conflated into one lever.
+    const small = buildQuotation(input({ audienceSize: 20, audienceProfile: "practitioners" }));
+    const large = buildQuotation(input({ audienceSize: 200, audienceProfile: "practitioners" }));
+    const sizeLine = (q: ReturnType<typeof buildQuotation>) =>
+      q.lines.find((l) => l.id === "audience");
+    const profileLine = (q: ReturnType<typeof buildQuotation>) =>
+      q.lines.find((l) => l.id === "audience-profile");
+
+    expect(profileLine(small)?.factor).toBe(profileLine(large)?.factor);
+    expect(sizeLine(small)?.factor).not.toBe(sizeLine(large)?.factor);
+  });
+
+  it("changes the reference", () => {
+    const a = buildQuotation(input({ audienceProfile: "non-specialist" }));
+    const b = buildQuotation(input({ audienceProfile: "leadership" }));
+    expect(a.reference).not.toBe(b.reference);
+  });
+
+  it("keeps the breakdown reconciling", () => {
+    for (const audienceProfile of ["students", "practitioners", "leadership", "mixed"] as const) {
+      const quote = buildQuotation(input({ audienceProfile, organizerType: "corporate" }));
+      const sum = quote.lines.reduce((total, line) => total + line.amount, 0);
+      expect(sum, audienceProfile).toBe(quote.professionalFee);
+    }
+  });
+});
+
+describe("the rate card never calls an engagement off-the-shelf", () => {
+  // Every session is adapted to the room, so wording that implies a canned
+  // delivery is both untrue and bad positioning on a page a paying organiser
+  // reads. The cheapest tier means the SUBJECT is settled, not the delivery.
+  it("avoids canned-delivery language in the tier copy and on the quote", () => {
+    const forbidden = [
+      "already in the catalogue",
+      "delivered as it stands",
+      "off the shelf",
+      "off-the-shelf",
+      "canned",
+      "generic",
+      "standard talk",
+    ];
+
+    const surfaces = COMPLEXITY_TIERS.flatMap((t) => [t.label, t.detail]);
+    for (const tier of COMPLEXITY_TIERS) {
+      const quote = buildQuotation(input({ complexity: tier.id }));
+      surfaces.push(quote.lines.find((l) => l.id === "base")?.detail ?? "");
+      surfaces.push(quote.topicTier);
+    }
+
+    for (const text of surfaces) {
+      for (const term of forbidden) {
+        expect(text.toLowerCase(), `"${term}" in: ${text}`).not.toContain(term);
+      }
+    }
   });
 });

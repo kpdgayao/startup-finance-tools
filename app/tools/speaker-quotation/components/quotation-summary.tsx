@@ -32,7 +32,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
           value={formatPHP(quote.professionalFee)}
           sublabel={`${quote.dayEquivalents} engagement ${
             quote.dayEquivalents === 1 ? "day" : "days"
-          } · ${quote.topicTier.toLowerCase()}`}
+          }`}
         />
         <ResultCard
           label="Cost per day"

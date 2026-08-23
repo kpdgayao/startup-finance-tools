@@ -69,7 +69,6 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
                 : ""
             }`,
           ],
-          ["Topic tier", `${esc(quote.topicTier)} — ${formatPHP(quote.dayRate)}/day`],
         ]
       )
     )
