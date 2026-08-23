@@ -1077,6 +1077,40 @@ describe("sector rates", () => {
   });
 });
 
+describe("per participant", () => {
+  // The unit the summary now leads with. A day rate invites "for ONE day?";
+  // a per-head figure invites a comparison with what a seat costs elsewhere,
+  // and both are the same quote.
+  it("divides the whole total, not the professional fee", () => {
+    const quote = buildQuotation(
+      input({ audienceSize: 40, region: "metro-manila", travelCovered: false })
+    );
+    expect(quote.reimbursablesBilled).toBeGreaterThan(0);
+    expect(quote.perParticipant).toBe(Math.round(quote.total / 40));
+  });
+
+  it("reports the clamped head count it actually divided by", () => {
+    // The form shows this count beside the amount. Reporting the raw input
+    // while dividing by the clamped one would print a divisor that does not
+    // produce the figure next to it.
+    expect(buildQuotation(input({ audienceSize: 0 })).audienceSize).toBe(1);
+    expect(buildQuotation(input({ audienceSize: Number.NaN })).audienceSize).toBe(1);
+    const huge = buildQuotation(input({ audienceSize: 250_000 }));
+    expect(huge.audienceSize).toBe(100_000);
+    expect(huge.perParticipant).toBe(Math.round(huge.total / huge.audienceSize));
+  });
+
+  it("rounds to the peso, not the hundred", () => {
+    // At 300 participants a ₱169 figure rounded to ₱200 would be a fifth out,
+    // on the one number a reader is most likely to multiply back up and check.
+    const quote = buildQuotation(
+      input({ format: "keynote", audienceSize: 300, region: "baguio" })
+    );
+    expect(quote.perParticipant).toBe(Math.round(quote.total / 300));
+    expect(quote.perParticipant % 100).not.toBe(0);
+  });
+});
+
 describe("the honorarium ceiling", () => {
   // The card quotes above the DBM ceiling in two places — the top of the
   // subject ladder and all of facilitation — on the basis that work at that

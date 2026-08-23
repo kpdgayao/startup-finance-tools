@@ -206,7 +206,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
           <ResultCard
             label="Per participant"
             value={formatPHP(quote.perParticipant)}
-            sublabel={`Everything below, across ${quote.audienceSize.toLocaleString(
+            sublabel={`The whole total, across ${quote.audienceSize.toLocaleString(
               "en-PH"
             )} ${quote.audienceSize === 1 ? "person" : "people"}`}
           />

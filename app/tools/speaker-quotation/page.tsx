@@ -364,8 +364,11 @@ export default function SpeakerQuotationPage() {
    */
   const perHeadLine =
     quote && !isFacilitation && quote.perParticipant > 0
-      ? `For ${input.audienceSize.toLocaleString("en-PH")} ${
-          input.audienceSize === 1 ? "person" : "people"
+      ? // Both halves read off the quote. Taking the head count from the raw
+        // input instead would let a clamped value (0, or 200,000) print a
+        // divisor the amount beside it was not actually divided by.
+        `For ${quote.audienceSize.toLocaleString("en-PH")} ${
+          quote.audienceSize === 1 ? "person" : "people"
         }, everything on this quote works out at about ${formatPHP(
           quote.perParticipant
         )} each.`

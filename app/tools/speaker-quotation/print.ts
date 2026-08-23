@@ -94,7 +94,7 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
                 sublabel: `Across ${quote.daysCommitted} day(s) of work in total`,
               })
             : summaryCard("Per participant", formatPHP(quote.perParticipant), {
-                sublabel: `Everything below, across ${quote.audienceSize.toLocaleString(
+                sublabel: `The whole total, across ${quote.audienceSize.toLocaleString(
                   "en-PH"
                 )} participant(s)`,
               })
