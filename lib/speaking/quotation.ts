@@ -33,8 +33,10 @@ import {
   INVOICING_ENTITY,
   PERCENTAGE_TAX_RATE,
   MINIMUM_ENGAGEMENT_FEE,
+  ABSOLUTE_MINIMUM_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
+  RETURNING_CLIENT_DISCOUNT,
   QUOTE_VALID_DAYS,
   REVENUE_SHARE_FLOOR,
   REVENUE_SHARE_UPLIFT_CAP,
@@ -117,6 +119,8 @@ export interface QuotationInput {
    * and, if the firm were ever VAT-registered, whether VAT sits on top.
    */
   invoiceRequired: boolean;
+  /** They have booked before, so the discovery is already done. */
+  returningClient: boolean;
   /** Today, `YYYY-MM-DD`. Injected rather than read from the clock. */
   today: string;
   /** Free-text, carried through to the printed quote. */
@@ -146,6 +150,7 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   earlyStart: true,
   addOns: [],
   invoiceRequired: true,
+  returningClient: false,
   eventTitle: "",
   organizationName: "",
   contactName: "",
@@ -301,6 +306,7 @@ function referenceFor(input: QuotationInput): string {
     input.earlyStart ? "T" : "F",
     [...input.addOns].sort().join(","),
     input.invoiceRequired ? "INV" : "NOINV",
+    input.returningClient ? "RETURNING" : "NEW",
     input.organizationName ?? "",
   ].join("|");
 
@@ -544,7 +550,20 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     });
   }
 
-  // 6. Mission discount, then its floor ------------------------------------
+  // 6. Concessions ---------------------------------------------------------
+  // The returning-client discount goes first so the mission floor, which is
+  // checked below, remains the last word on how low a quote can go.
+  if (raw.returningClient) {
+    push({
+      id: "returning-client",
+      kind: "discount",
+      label: `Booked before (−${RETURNING_CLIENT_DISCOUNT * 100}%)`,
+      detail:
+        "We have worked together, so the discovery is already done — I know your sector and your constraints, and the preparation genuinely costs less this time",
+      amount: -(running * RETURNING_CLIENT_DISCOUNT),
+    });
+  }
+
   if (organizer.mission) {
     const discount = running * MISSION_DISCOUNT;
     const afterDiscount = running - discount;
@@ -565,6 +584,22 @@ export function buildQuotation(raw: QuotationInput): Quotation {
         amount: -applied,
       });
     }
+  }
+
+  // 6c. The floor under every concession -----------------------------------
+  // Checked after all of them, because the mission floor is a day rate and
+  // stops binding on short formats: mission and returning-client together took
+  // a panel to ₱7,600 while the card promised no lower than ₱8,000.
+  if (running < ABSOLUTE_MINIMUM_FEE) {
+    push({
+      id: "absolute-minimum",
+      kind: "floor",
+      label: "Minimum after concessions",
+      detail: `Concessions stop here — no engagement is quoted below ₱${ABSOLUTE_MINIMUM_FEE.toLocaleString(
+        "en-PH"
+      )} however they combine`,
+      amount: ABSOLUTE_MINIMUM_FEE - running,
+    });
   }
 
   // 7. Revenue-share floor -------------------------------------------------

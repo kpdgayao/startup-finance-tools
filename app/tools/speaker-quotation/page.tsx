@@ -31,11 +31,11 @@ import {
   OUTPUT_OPTIONS,
   PREPARATION_OPTIONS,
   TEAM_BUILDING_DAY_RATE,
-  DAY_RATE_MAX,
   DAY_RATE_MIN,
   INVOICING_ENTITY,
   ORGANIZER_TYPES,
   REGIONS,
+  RETURNING_CLIENT_DISCOUNT,
   TRAVEL_DAY_FACTOR,
   audienceBandFor,
   audienceProfileFor,
@@ -71,6 +71,7 @@ import { RateFactorField } from "./components/rate-factor-field";
 import { AvailabilityPanel } from "./components/availability-panel";
 import { IntakeAssistant } from "./components/intake-assistant";
 import { QuotationSummary } from "./components/quotation-summary";
+import { DetailSection } from "./components/detail-section";
 import { buildQuotationPrint } from "./print";
 
 const ENQUIRY_EMAIL = "hello@startupfinance.tools";
@@ -335,10 +336,10 @@ export default function SpeakerQuotationPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Speaker Engagement Quotation</h1>
+          <h1 className="text-3xl font-bold">What would it cost to book me?</h1>
           <p className="mt-1 text-muted-foreground">
-            Cost a workshop, keynote or training day against a published rate card — and see
-            exactly which answers moved the number.
+            Answer a few questions and you will have a real number, with my reasoning attached to
+            every line of it.
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
@@ -348,11 +349,10 @@ export default function SpeakerQuotationPage() {
 
       <div className="border-y border-rule py-4 font-serif text-[15px] leading-[1.55] text-ink-2">
         <p>
-          The day rate is set by the subject — {formatPHP(DAY_RATE_MIN)} a day for settled ground,
-          up to {formatPHP(DAY_RATE_MAX)} where it needs fresh research first — with transport and
-          accommodation arranged by the organiser. Every session is built around your people either
-          way. Everything below adds to that rate or explains why it stays where it is, and nothing
-          here is sent to anyone until you choose to send it.
+          I would rather you saw the arithmetic than a number I made up on a call. My day rate
+          starts at {formatPHP(DAY_RATE_MIN)} and moves with how much of the work is new, where it
+          is, and who it is for — and every question below tells you what it does to the total
+          before you answer it. Nothing is sent to me until you decide to send it.
         </p>
       </div>
 
@@ -367,10 +367,8 @@ export default function SpeakerQuotationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>The engagement</CardTitle>
-          <CardDescription>
-            What is being asked for, how much new ground it covers, and who it is for.
-          </CardDescription>
+          <CardTitle>What are you planning?</CardTitle>
+          <CardDescription>The four answers that move the number most.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <RateFactorField
@@ -561,58 +559,6 @@ export default function SpeakerQuotationPage() {
             </>
           )}
 
-          <RateFactorField
-            question={QUESTIONS.audienceSize}
-            impact={factorImpact(audienceBand.factor)}
-            active={audienceBand.factor !== 1}
-          >
-            <Input
-              id={QUESTIONS.audienceSize.id}
-              type="number"
-              min={1}
-              max={100000}
-              value={input.audienceSize}
-              onChange={(e) => set("audienceSize", Math.max(1, Number(e.target.value) || 1))}
-            />
-          </RateFactorField>
-
-          {!isTeamBuilding && (
-          <RateFactorField
-            question={QUESTIONS.audienceProfile}
-            impact={factorImpact(audienceProfile.factor)}
-            active={audienceProfile.factor !== 1}
-          >
-            <Select
-              value={input.audienceProfile}
-              onValueChange={(v) => set("audienceProfile", v as AudienceProfileId)}
-            >
-              <SelectTrigger id={QUESTIONS.audienceProfile.id} className="w-full">
-                <SelectValue>{audienceProfile.label}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className={SELECT_CONTENT}>
-                {AUDIENCE_PROFILES.map((option) => (
-                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                    <OptionText label={option.label} detail={option.detail} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </RateFactorField>
-          )}
-
-          <div className="border-t border-rule pt-4">
-            <Label htmlFor="event-title">Working title of the session</Label>
-            <Input
-              id="event-title"
-              value={input.eventTitle ?? ""}
-              onChange={(e) => set("eventTitle", e.target.value.slice(0, 200))}
-              placeholder="e.g. Bookkeeping for Non-Accountants"
-              className="mt-2"
-            />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Optional, but it is the clearest signal of how much new ground the subject covers.
-            </p>
-          </div>
         </CardContent>
       </Card>
 
@@ -620,7 +566,7 @@ export default function SpeakerQuotationPage() {
         <CardHeader>
           <CardTitle>When and where</CardTitle>
           <CardDescription>
-            The date decides both availability and how much notice the request gives.
+            I will check the date against my calendar before you go any further.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -701,81 +647,15 @@ export default function SpeakerQuotationPage() {
             )}
           </RateFactorField>
 
-          <div className="border-t border-rule pt-4">
-            <Label htmlFor="venue">Venue</Label>
-            <Input
-              id="venue"
-              value={input.venue ?? ""}
-              onChange={(e) => set("venue", e.target.value.slice(0, 200))}
-              placeholder="e.g. Baguio Country Club, or Zoom"
-              className="mt-2"
-            />
-          </div>
 
-          {!isRemote && (
-            <>
-              <RateFactorField
-                question={QUESTIONS.earlyStart}
-                impact={input.earlyStart ? "One extra night" : "No overnight added"}
-                active={input.earlyStart}
-              >
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id={QUESTIONS.earlyStart.id}
-                    checked={input.earlyStart}
-                    onCheckedChange={(v) => set("earlyStart", v)}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {input.earlyStart ? "Starts before 10am" : "Starts at 10am or later"}
-                  </span>
-                </div>
-              </RateFactorField>
-
-              <RateFactorField
-                question={QUESTIONS.travelCovered}
-                impact={input.travelCovered ? "Not billed" : "Billed as a reimbursable"}
-                active={!input.travelCovered}
-              >
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id={QUESTIONS.travelCovered.id}
-                    checked={input.travelCovered}
-                    onCheckedChange={(v) => set("travelCovered", v)}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {input.travelCovered ? "We arrange transport" : "Please arrange and bill us"}
-                  </span>
-                </div>
-              </RateFactorField>
-
-              <RateFactorField
-                question={QUESTIONS.accommodationCovered}
-                impact={input.accommodationCovered ? "Not billed" : "Billed as a reimbursable"}
-                active={!input.accommodationCovered}
-              >
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id={QUESTIONS.accommodationCovered.id}
-                    checked={input.accommodationCovered}
-                    onCheckedChange={(v) => set("accommodationCovered", v)}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {input.accommodationCovered
-                      ? "We arrange accommodation"
-                      : "Please arrange and bill us"}
-                  </span>
-                </div>
-              </RateFactorField>
-            </>
-          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>About your organisation</CardTitle>
+          <CardTitle>And about you</CardTitle>
           <CardDescription>
-            This decides which rate applies to you, and whether the event is funding itself.
+            Which rate applies, and whether we have met before.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -806,16 +686,23 @@ export default function SpeakerQuotationPage() {
             </Select>
           </RateFactorField>
 
-          <div className="border-t border-rule pt-4">
-            <Label htmlFor="organization">Organisation</Label>
-            <Input
-              id="organization"
-              value={input.organizationName ?? ""}
-              onChange={(e) => set("organizationName", e.target.value.slice(0, 200))}
-              placeholder="Who the quote is addressed to"
-              className="mt-2"
-            />
-          </div>
+
+          <RateFactorField
+            question={QUESTIONS.returningClient}
+            impact={input.returningClient ? `−${RETURNING_CLIENT_DISCOUNT * 100}%` : "No change"}
+            active={input.returningClient}
+          >
+            <div className="flex items-center gap-3">
+              <Switch
+                id={QUESTIONS.returningClient.id}
+                checked={input.returningClient}
+                onCheckedChange={(v) => set("returningClient", v)}
+              />
+              <span className="text-sm text-muted-foreground">
+                {input.returningClient ? "Yes, we have worked together" : "This would be the first time"}
+              </span>
+            </div>
+          </RateFactorField>
 
           <RateFactorField
             question={QUESTIONS.ticketed}
@@ -840,28 +727,6 @@ export default function SpeakerQuotationPage() {
             </div>
           </RateFactorField>
 
-          <RateFactorField
-            question={QUESTIONS.invoiceRequired}
-            impact={
-              input.invoiceRequired
-                ? `Issued by ${INVOICING_ENTITY.name}`
-                : "Billed personally"
-            }
-            active={input.invoiceRequired}
-          >
-            <div className="flex items-center gap-3">
-              <Switch
-                id={QUESTIONS.invoiceRequired.id}
-                checked={input.invoiceRequired}
-                onCheckedChange={(v) => set("invoiceRequired", v)}
-              />
-              <span className="text-sm text-muted-foreground">
-                {input.invoiceRequired
-                  ? "We need an official invoice"
-                  : "No invoice needed"}
-              </span>
-            </div>
-          </RateFactorField>
 
           {input.ticketed && (
             <>
@@ -893,58 +758,201 @@ export default function SpeakerQuotationPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Beyond the session</CardTitle>
-          <CardDescription>
-            Everything here is optional, and each one is a separate piece of work.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RateFactorField
-            question={QUESTIONS.addOns}
-            labelMode="group"
-            impact={
-              input.addOns.length
-                ? `${input.addOns.length} selected`
-                : "None"
-            }
-            active={input.addOns.length > 0}
-          >
-            <div className="space-y-3">
-              {ADD_ONS.map((addOn) => {
-                const checked = input.addOns.includes(addOn.id);
-                return (
-                  <div key={addOn.id} className="flex items-start gap-3">
-                    <Checkbox
-                      id={`addon-${addOn.id}`}
-                      checked={checked}
-                      onCheckedChange={(value) =>
-                        set(
-                          "addOns",
-                          value === true
-                            ? [...input.addOns, addOn.id]
-                            : input.addOns.filter((id) => id !== addOn.id)
-                        )
-                      }
-                      className="mt-0.5"
-                    />
-                    <div className="min-w-0">
-                      <Label htmlFor={`addon-${addOn.id}`} className="font-medium">
-                        {addOn.label}
-                        <span className="ml-2 font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
-                          {addOn.factor ? `+${Math.round(addOn.factor * 100)}%` : `+${formatPHP(addOn.amount ?? 0)}`}
-                        </span>
-                      </Label>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{addOn.detail}</p>
-                    </div>
-                  </div>
-                );
-              })}
+      <DetailSection
+        title="Anything else I should know?"
+        summary="Room size, the venue, travel arrangements, invoicing, extras. All optional — the quote above already assumes sensible answers, and everything you set here shows on it."
+      >
+            <RateFactorField
+              question={QUESTIONS.audienceSize}
+              impact={factorImpact(audienceBand.factor)}
+              active={audienceBand.factor !== 1}
+            >
+              <Input
+                id={QUESTIONS.audienceSize.id}
+                type="number"
+                min={1}
+                max={100000}
+                value={input.audienceSize}
+                onChange={(e) => set("audienceSize", Math.max(1, Number(e.target.value) || 1))}
+              />
+            </RateFactorField>
+            {!isTeamBuilding && (
+            <RateFactorField
+              question={QUESTIONS.audienceProfile}
+              impact={factorImpact(audienceProfile.factor)}
+              active={audienceProfile.factor !== 1}
+            >
+              <Select
+                value={input.audienceProfile}
+                onValueChange={(v) => set("audienceProfile", v as AudienceProfileId)}
+              >
+                <SelectTrigger id={QUESTIONS.audienceProfile.id} className="w-full">
+                  <SelectValue>{audienceProfile.label}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className={SELECT_CONTENT}>
+                  {AUDIENCE_PROFILES.map((option) => (
+                    <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                      <OptionText label={option.label} detail={option.detail} />
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </RateFactorField>
+            )}
+            <div className="border-t border-rule pt-4">
+              <Label htmlFor="event-title">Working title of the session</Label>
+              <Input
+                id="event-title"
+                value={input.eventTitle ?? ""}
+                onChange={(e) => set("eventTitle", e.target.value.slice(0, 200))}
+                placeholder="e.g. Bookkeeping for Non-Accountants"
+                className="mt-2"
+              />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Optional, but it is the clearest signal of how much new ground the subject covers.
+              </p>
             </div>
-          </RateFactorField>
-        </CardContent>
-      </Card>
+            <div className="border-t border-rule pt-4">
+              <Label htmlFor="organization">Organisation</Label>
+              <Input
+                id="organization"
+                value={input.organizationName ?? ""}
+                onChange={(e) => set("organizationName", e.target.value.slice(0, 200))}
+                placeholder="Who the quote is addressed to"
+                className="mt-2"
+              />
+            </div>
+            <div className="border-t border-rule pt-4">
+              <Label htmlFor="venue">Venue</Label>
+              <Input
+                id="venue"
+                value={input.venue ?? ""}
+                onChange={(e) => set("venue", e.target.value.slice(0, 200))}
+                placeholder="e.g. Baguio Country Club, or Zoom"
+                className="mt-2"
+              />
+            </div>
+            {!isRemote && (
+              <>
+                <RateFactorField
+                  question={QUESTIONS.earlyStart}
+                  impact={input.earlyStart ? "One extra night" : "No overnight added"}
+                  active={input.earlyStart}
+                >
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id={QUESTIONS.earlyStart.id}
+                      checked={input.earlyStart}
+                      onCheckedChange={(v) => set("earlyStart", v)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {input.earlyStart ? "Starts before 10am" : "Starts at 10am or later"}
+                    </span>
+                  </div>
+                </RateFactorField>
+
+                <RateFactorField
+                  question={QUESTIONS.travelCovered}
+                  impact={input.travelCovered ? "Not billed" : "Billed as a reimbursable"}
+                  active={!input.travelCovered}
+                >
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id={QUESTIONS.travelCovered.id}
+                      checked={input.travelCovered}
+                      onCheckedChange={(v) => set("travelCovered", v)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {input.travelCovered ? "We arrange transport" : "Please arrange and bill us"}
+                    </span>
+                  </div>
+                </RateFactorField>
+
+                <RateFactorField
+                  question={QUESTIONS.accommodationCovered}
+                  impact={input.accommodationCovered ? "Not billed" : "Billed as a reimbursable"}
+                  active={!input.accommodationCovered}
+                >
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id={QUESTIONS.accommodationCovered.id}
+                      checked={input.accommodationCovered}
+                      onCheckedChange={(v) => set("accommodationCovered", v)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {input.accommodationCovered
+                        ? "We arrange accommodation"
+                        : "Please arrange and bill us"}
+                    </span>
+                  </div>
+                </RateFactorField>
+              </>
+            )}
+            <RateFactorField
+              question={QUESTIONS.invoiceRequired}
+              impact={
+                input.invoiceRequired
+                  ? `Issued by ${INVOICING_ENTITY.name}`
+                  : "Billed personally"
+              }
+              active={input.invoiceRequired}
+            >
+              <div className="flex items-center gap-3">
+                <Switch
+                  id={QUESTIONS.invoiceRequired.id}
+                  checked={input.invoiceRequired}
+                  onCheckedChange={(v) => set("invoiceRequired", v)}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {input.invoiceRequired
+                    ? "We need an official invoice"
+                    : "No invoice needed"}
+                </span>
+              </div>
+            </RateFactorField>
+            <RateFactorField
+              question={QUESTIONS.addOns}
+              labelMode="group"
+              impact={
+                input.addOns.length
+                  ? `${input.addOns.length} selected`
+                  : "None"
+              }
+              active={input.addOns.length > 0}
+            >
+              <div className="space-y-3">
+                {ADD_ONS.map((addOn) => {
+                  const checked = input.addOns.includes(addOn.id);
+                  return (
+                    <div key={addOn.id} className="flex items-start gap-3">
+                      <Checkbox
+                        id={`addon-${addOn.id}`}
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          set(
+                            "addOns",
+                            value === true
+                              ? [...input.addOns, addOn.id]
+                              : input.addOns.filter((id) => id !== addOn.id)
+                          )
+                        }
+                        className="mt-0.5"
+                      />
+                      <div className="min-w-0">
+                        <Label htmlFor={`addon-${addOn.id}`} className="font-medium">
+                          {addOn.label}
+                          <span className="ml-2 font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
+                            {addOn.factor ? `+${Math.round(addOn.factor * 100)}%` : `+${formatPHP(addOn.amount ?? 0)}`}
+                          </span>
+                        </Label>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{addOn.detail}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </RateFactorField>
+      </DetailSection>
 
       {quote && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">

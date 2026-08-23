@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
+  ABSOLUTE_MINIMUM_FEE,
   COMPLEXITY_TIERS,
   DESK_DAY_FACTOR,
   EWT_RATE,
@@ -8,6 +9,7 @@ import {
   INVOICING_ENTITY,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
+  RETURNING_CLIENT_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
   REVENUE_SHARE_FLOOR,
   FACILITATION_SCOPES,
@@ -873,5 +875,54 @@ describe("the day rate a quote reports", () => {
         toPeso(expected * 0.5)
       );
     }
+  });
+});
+
+
+describe("returning clients", () => {
+  it("costs nothing to answer no", () => {
+    const first = buildQuotation(input({ returningClient: false }));
+    expect(first.professionalFee).toBe(ROUTINE_RATE);
+    expect(first.lines.some((l) => l.id === "returning-client")).toBe(false);
+  });
+
+  it("recognises a returning client with a modest reduction", () => {
+    const first = buildQuotation(input({ returningClient: false }));
+    const again = buildQuotation(input({ returningClient: true }));
+    expect(again.professionalFee).toBe(
+      toPeso(first.professionalFee * (1 - RETURNING_CLIENT_DISCOUNT))
+    );
+  });
+
+  // Small on purpose: a large returning-client discount only says the first
+  // quote was padded.
+  it("stays small enough to be a thank-you rather than a correction", () => {
+    expect(RETURNING_CLIENT_DISCOUNT).toBeGreaterThan(0);
+    expect(RETURNING_CLIENT_DISCOUNT).toBeLessThanOrEqual(0.1);
+  });
+
+  // Applied before the mission concession so the concessionary floor, which is
+  // checked afterwards, is still the last word on how low a quote can go.
+  it("cannot combine with the mission rate to breach the concessionary floor", () => {
+    for (const format of ["panel", "keynote", "half-day", "full-day"] as const) {
+      const quote = buildQuotation(
+        input({ organizerType: "mission", returningClient: true, format, audienceSize: 8 })
+      );
+      expect(quote.professionalFee, format).toBeGreaterThanOrEqual(ABSOLUTE_MINIMUM_FEE);
+    }
+  });
+
+  it("keeps the breakdown reconciling", () => {
+    const quote = buildQuotation(
+      input({ returningClient: true, organizerType: "corporate", addOns: ["workbook"] })
+    );
+    const sum = quote.lines.reduce((total, line) => total + line.amount, 0);
+    expect(sum).toBe(quote.professionalFee);
+  });
+
+  it("changes the reference", () => {
+    expect(buildQuotation(input({ returningClient: true })).reference).not.toBe(
+      buildQuotation(input({ returningClient: false })).reference
+    );
   });
 });

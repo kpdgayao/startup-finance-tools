@@ -145,11 +145,24 @@ The two ends are the real anchors; the middle two interpolate so an engagement
 that is neither pure delivery nor a research project need not round to whichever
 end is nearer.
 
-Two floors are derived from `DAY_RATE_MIN` and must stay below it:
-`MISSION_FLOOR_DAY_RATE` (₱12,000, exactly the routine rate less the 20%
-concession) and `MINIMUM_ENGAGEMENT_FEE` (₱10,000). If the minimum ever reaches
-the routine rate, every format on a core topic prices identically and the format
-dropdown stops meaning anything — there is a test for it.
+Three floors, checked in this order:
+
+- `MINIMUM_ENGAGEMENT_FEE` (₱10,000) — before concessions, so they apply to the
+  whole fee. Must stay below `DAY_RATE_MIN`, or every format on a core subject
+  prices identically and the format dropdown stops meaning anything.
+- `MISSION_FLOOR_DAY_RATE` (₱12,000/day) — the concessionary rate cannot go
+  below this per day. Expressed as a day rate, so on short formats it does not
+  bind.
+- `ABSOLUTE_MINIMUM_FEE` (₱8,000) — last, after every concession has compounded.
+  This one exists because the mission floor is a day rate: mission plus
+  returning-client took a 0.4-day panel to ₱7,600 while the card promised no
+  lower than ₱8,000. It is the answer to "how low can this possibly go".
+
+Concessions themselves are the 20% mission rate and the 5%
+`RETURNING_CLIENT_DISCOUNT`, which is a real saving rather than a loyalty
+gimmick — the discovery is already done, so the preparation genuinely costs
+less. Small on purpose: a large returning-client discount only says the first
+quote was padded.
 
 **The tier prices the subject, not the audience or the buyer.** Bookkeeping for
 non-accountants is `routine` even when the deck is written from scratch, because
