@@ -113,11 +113,11 @@ export const QUESTIONS = {
     label: "How much new ground does the subject cover?",
     hint: "This sets the day rate — it is the single biggest lever on the price.",
     why: "I adapt every session to the room — the examples, the figures and the exercises are built around your people whatever the subject. What changes my rate is how much of the SUBJECT is new ground. Bookkeeping and cash flow are settled; I have taught them many times and the work is in fitting them to you. Something outside that, like AI applied to accounting, costs me days of reading before I can write a single slide.",
-    impact: `Sets the day rate directly: ${peso(
+    impact: `Sets the day rate: from ${peso(
       DAY_RATE_MIN
-    )} a day for a settled subject, rising to ${peso(
+    )} a day for a settled subject up to ${peso(
       DAY_RATE_MAX
-    )} for one needing fresh research.`,
+    )} for one needing fresh research, at public-sector rates. Your sector scales it from there.`,
   },
   audienceSize: {
     id: "audienceSize",
@@ -139,9 +139,9 @@ export const QUESTIONS = {
   organizerType: {
     id: "organizerType",
     label: "Who is organising the event?",
-    hint: "This decides which rate applies to you.",
-    why: "A corporate training budget, a government line item and a student organisation raising money by selling snacks are not the same buyer, and pretending otherwise means I either overcharge schools or underwrite companies. Saying which you are keeps any concession visible instead of buried in a haggle.",
-    impact: `Companies pay a premium; agencies and private schools pay the standard rate. Public schools, student organisations and NGOs get −${
+    hint: "This decides which rate applies — the largest single factor after the subject.",
+    why: "This sets the rate, and it is the honest reason my quotes differ. A government agency cannot pay more than its own rules allow — the circular caps a resource person at about \u20b121,000 a day whatever I ask — so that is what public work pays. A corporate training budget is a different market entirely, and pricing both the same would mean either overcharging schools or underwriting companies out of my own time. Saying which you are gets you your sector's rate rather than an average of everyone's.",
+    impact: `Sets which day rate applies. Government and public-sector work is quoted at the ladder above; private schools, associations and companies each have their own rate, shown the moment you choose. Public schools, student organisations and NGOs get a further −${
       MISSION_DISCOUNT * 100
     }%, floored at ${peso(MISSION_FLOOR_DAY_RATE)} per day.`,
   },

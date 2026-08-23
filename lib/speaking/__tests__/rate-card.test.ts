@@ -6,6 +6,7 @@ import {
   COMPLEXITY_TIERS,
   DAY_RATE_MAX,
   DAY_RATE_MIN,
+  deriveDayRate,
   ENGAGEMENT_FORMATS,
   LEAD_TIME_BANDS,
   MISSION_DISCOUNT,
@@ -112,7 +113,9 @@ describe("rate card integrity", () => {
     // list: they set the rate rather than multiplying one.
     for (const band of AUDIENCE_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
     for (const band of LEAD_TIME_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
-    for (const type of ORGANIZER_TYPES) expect(type.factor).toBeGreaterThanOrEqual(1);
+    // Organiser tiers are no longer in this list: the sector sets the day
+    // rate rather than multiplying a settled one, so its scaling is checked
+    // against the benchmarks below instead.
     for (const profile of AUDIENCE_PROFILES) expect(profile.factor).toBeGreaterThanOrEqual(1);
   });
 
@@ -182,6 +185,57 @@ describe("audience composition is a separate lever from audience size", () => {
     for (const profile of AUDIENCE_PROFILES) {
       const text = `${profile.label} ${profile.detail}`.toLowerCase();
       for (const term of forbidden) expect(text, profile.id).not.toContain(term);
+    }
+  });
+});
+
+describe("sector rates against the market benchmarks", () => {
+  // Researched August 2026. The public rate is a CEILING, not a discount:
+  // DBM BC 2007-1 pays a resource person twice the hourly rate of the salary
+  // grade they are pegged to, for delivery hours plus equal preparation hours
+  // — roughly ₱18,700–21,200 a day at SG-24 to SG-25 on the 2026 table.
+  // Corporate is a different market: Philippine in-house training is quoted at
+  // ₱40,000–280,000 a session and ₱100,000–500,000 for a two-day programme.
+  const dayRate = (organizer: string, base: number) =>
+    deriveDayRate(base, ORGANIZER_TYPES.find((o) => o.id === organizer)!.rateMultiplier);
+
+  it("leaves the public sector at the ladder, which is where its ceiling is", () => {
+    for (const id of ["government", "mission"]) {
+      expect(dayRate(id, DAY_RATE_MIN), id).toBe(DAY_RATE_MIN);
+      expect(dayRate(id, DAY_RATE_MAX), id).toBe(DAY_RATE_MAX);
+    }
+    // The computed government ceiling sits inside the public band.
+    expect(DAY_RATE_MAX).toBeGreaterThanOrEqual(21_200);
+  });
+
+  it("puts a corporate day inside the observed corporate market", () => {
+    // A single in-house session starts at ₱40,000; a day should not undercut it.
+    expect(dayRate("corporate", DAY_RATE_MIN)).toBeGreaterThanOrEqual(40_000);
+    // And should stay well under the ₱280,000 top of the session range, which
+    // buys far more than one speaker's day.
+    expect(dayRate("corporate", DAY_RATE_MAX)).toBeLessThan(120_000);
+  });
+
+  it("orders the sectors public < academic < association < corporate", () => {
+    const order = ["government", "academic", "association", "corporate"].map((id) =>
+      dayRate(id, DAY_RATE_MIN)
+    );
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(new Set(order).size).toBe(order.length);
+  });
+
+  it("never scales a sector below the public rate", () => {
+    for (const type of ORGANIZER_TYPES) {
+      expect(type.rateMultiplier, type.id).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("rounds a quoted day rate to something a person would say out loud", () => {
+    for (const type of ORGANIZER_TYPES) {
+      for (const tier of COMPLEXITY_TIERS) {
+        const rate = deriveDayRate(tier.dayRate, type.rateMultiplier);
+        expect(rate % 1_000, `${type.id}/${tier.id} → ${rate}`).toBe(0);
+      }
     }
   });
 });

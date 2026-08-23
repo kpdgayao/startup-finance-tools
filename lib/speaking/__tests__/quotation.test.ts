@@ -15,8 +15,10 @@ import {
   FACILITATION_SCOPES,
   TEAM_BUILDING_DAY_RATE,
   complexityTierFor,
+  deriveDayRate,
   facilitationScopeFor,
   formatsFor,
+  organizerTypeFor,
 } from "@/lib/speaking/rate-card";
 
 // The rate is set by the topic, so the fixtures name the two ends of the
@@ -125,13 +127,10 @@ describe("factors", () => {
     const factorIds = quote.lines.filter((l) => l.kind === "factor").map((l) => l.id);
     // No "complexity" line: the topic sets the base rate, so it is named on the
     // base line rather than charged as a premium on top of one.
-    expect(factorIds).toEqual([
-      "audience",
-      "audience-profile",
-      "schedule",
-      "lead-time",
-      "organizer",
-    ]);
+    // No "organizer" line either: the sector scales the day rate rather than
+    // multiplying a settled one, so it is named on the base line beside the
+    // rate it produced.
+    expect(factorIds).toEqual(["audience", "audience-profile", "schedule", "lead-time"]);
     // A neutral factor is present at zero pesos rather than omitted: the
     // breakdown should read as a rate card, not as a list of surcharges.
     expect(quote.lines.find((l) => l.id === "audience")?.amount).toBe(0);
@@ -171,11 +170,12 @@ describe("factors", () => {
     expect(quote.topicTier).toBe(complexityTierFor("frontier").label);
   });
 
-  it("applies the remaining factors on top of whichever rate the topic set", () => {
+  it("scales the topic rate by the sector rather than surcharging it", () => {
+    const corporate = organizerTypeFor("corporate").rateMultiplier;
     const routine = buildQuotation(input({ complexity: "routine", organizerType: "corporate" }));
     const frontier = buildQuotation(input({ complexity: "frontier", organizerType: "corporate" }));
-    expect(routine.professionalFee).toBe(toPeso(ROUTINE_RATE * 1.15));
-    expect(frontier.professionalFee).toBe(toPeso(FRONTIER_RATE * 1.15));
+    expect(routine.professionalFee).toBe(deriveDayRate(ROUTINE_RATE, corporate));
+    expect(frontier.professionalFee).toBe(deriveDayRate(FRONTIER_RATE, corporate));
   });
 });
 
