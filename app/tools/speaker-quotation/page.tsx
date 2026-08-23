@@ -447,9 +447,17 @@ export default function SpeakerQuotationPage() {
               type="number"
               min={1}
               max={30}
+              step={1}
               value={input.sessions}
               onChange={(e) => {
-                set("sessions", Math.max(1, Math.min(30, Number(e.target.value) || 1)));
+                // Floored, not just clamped: a number input accepts "2.5",
+                // which the engine silently priced as 2 while the chip read
+                // "2.5 engagement days" and the availability request was
+                // rejected as a non-integer.
+                set(
+                  "sessions",
+                  Math.max(1, Math.min(30, Math.floor(Number(e.target.value) || 1)))
+                );
                 // The session count decides how many dates the engagement
                 // spans, so an existing check no longer covers it. Leaving it
                 // on screen showed a one-date "Open" beside a three-date quote.

@@ -380,7 +380,9 @@ describe("running totals and structure", () => {
 
   it("reports withholding as informational, not deducted from the total", () => {
     const quote = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
-    expect(quote.withholding.amount).toBe(toPeso(quote.professionalFee * EWT_RATE));
+    // To the nearest peso, not the nearest hundred: a tax is arithmetic the
+    // reader can check against the rate printed beside it.
+    expect(quote.withholding.amount).toBe(Math.round(quote.professionalFee * EWT_RATE));
     expect(quote.withholding.net).toBe(quote.professionalFee - quote.withholding.amount);
     expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
   });
@@ -924,5 +926,47 @@ describe("returning clients", () => {
     expect(buildQuotation(input({ returningClient: true })).reference).not.toBe(
       buildQuotation(input({ returningClient: false })).reference
     );
+  });
+});
+
+
+describe("tax figures are exact", () => {
+  // "withheld at 2% — ₱200 here" against a ₱8,000 fee is a quote contradicting
+  // itself in one sentence, on a page whose entire argument is that the
+  // numbers add up. Fees round to ₱100; taxes round to ₱1.
+  it("matches the rate printed beside it", () => {
+    const quote = buildQuotation(
+      input({
+        organizerType: "mission",
+        returningClient: true,
+        format: "panel",
+        audienceSize: 8,
+        region: "baguio",
+      })
+    );
+    expect(quote.withholding.amount).toBe(
+      Math.round(quote.professionalFee * quote.withholding.rate)
+    );
+    expect(quote.invoicing.percentageTax).toBe(Math.round(quote.professionalFee * 0.03));
+    expect(quote.withholding.net).toBe(quote.professionalFee - quote.withholding.amount);
+  });
+
+  it("holds across every organiser tier", () => {
+    for (const organizerType of [
+      "corporate",
+      "association",
+      "government",
+      "academic",
+      "mission",
+    ] as const) {
+      for (const invoiceRequired of [true, false]) {
+        const quote = buildQuotation(input({ organizerType, invoiceRequired }));
+        expect(quote.withholding.amount, `${organizerType}/${invoiceRequired}`).toBe(
+          quote.withholding.applies
+            ? Math.round(quote.professionalFee * quote.withholding.rate)
+            : 0
+        );
+      }
+    }
   });
 });

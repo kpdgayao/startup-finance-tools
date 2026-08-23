@@ -184,7 +184,11 @@ function collect(event: RawEvent, busy: Set<string>): void {
   if (event.allDay && event.end) last = addDaysISO(event.end, -1);
   if (diffDays(event.start, last) < 0) last = event.start;
 
-  const span = Math.min(diffDays(event.start, last), 30);
+  // A year, not a month. The cap only exists to stop a malformed DTEND
+  // expanding without bound; at 30 days a real 45-day block reported every
+  // date past the first month as open, which is the failure that loses a
+  // booking rather than merely inconveniencing one.
+  const span = Math.min(diffDays(event.start, last), 366);
   const occurrences = expandRecurrence(event);
 
   for (const occurrence of occurrences) {

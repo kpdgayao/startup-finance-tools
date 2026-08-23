@@ -398,3 +398,32 @@ describe("weekly recurrences with named days", () => {
     expect(busy.has("2026-11-17")).toBe(true);
   });
 });
+
+describe("long calendar blocks", () => {
+  const wrap = (body: string) =>
+    `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${body}\r\nEND:VCALENDAR`;
+
+  // A 30-day span cap meant a real block longer than a month — a sabbatical, a
+  // term commitment, an extended trip — reported every date past the first
+  // month as open. The cap only ever existed to bound a malformed DTEND.
+  it("blocks a stay longer than a month for its whole length", () => {
+    const busy = busyDatesFromICS(
+      wrap(
+        "BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20261101\r\nDTEND;VALUE=DATE:20261217\r\nEND:VEVENT"
+      )
+    );
+    expect(busy.has("2026-11-01")).toBe(true);
+    expect(busy.has("2026-12-10")).toBe(true);
+    expect(busy.has("2026-12-16")).toBe(true);
+    expect(busy.has("2026-12-17")).toBe(false); // DTEND is exclusive
+  });
+
+  it("still refuses to expand an absurd span without bound", () => {
+    const busy = busyDatesFromICS(
+      wrap(
+        "BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20260101\r\nDTEND;VALUE=DATE:20990101\r\nEND:VEVENT"
+      )
+    );
+    expect(busy.size).toBeLessThanOrEqual(367);
+  });
+});

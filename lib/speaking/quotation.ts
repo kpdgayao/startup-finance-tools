@@ -264,6 +264,19 @@ function roundPeso(amount: number): number {
   return Math.round(amount / 100) * 100;
 }
 
+/**
+ * Tax figures round to the nearest peso, not the nearest hundred.
+ *
+ * A fee is a negotiated round number; a tax is arithmetic the reader can check.
+ * Rounding it to ₱100 made the quote contradict itself in a single sentence —
+ * "withheld at 2% — ₱200 here" against a ₱8,000 fee, where 2% is ₱160. On a
+ * page whose whole argument is that the numbers add up, that is the worst
+ * possible place to be sloppy.
+ */
+function roundToPeso(amount: number): number {
+  return Math.round(amount);
+}
+
 function clampInt(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, Math.floor(value)));
@@ -700,13 +713,13 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   // that showing the wrong one would misstate the payout.
   const withholdingRate = raw.invoiceRequired ? EWT_RATE_FIRM : EWT_RATE;
   const withholdingAmount = organizer.withholds
-    ? roundPeso(professionalFee * withholdingRate)
+    ? roundToPeso(professionalFee * withholdingRate)
     : 0;
 
   // Zero while the firm is below the VAT threshold. Left in the shape rather
   // than omitted so registering for VAT is a constant change, not a refactor.
   const vat = raw.invoiceRequired && INVOICING_ENTITY.vatRegistered
-    ? roundPeso(professionalFee * INVOICING_ENTITY.vatRate)
+    ? roundToPeso(professionalFee * INVOICING_ENTITY.vatRate)
     : 0;
 
   // Declared after the tax block because VAT, when it applies, is part of what
@@ -817,7 +830,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
       vat,
       percentageTax:
         raw.invoiceRequired && !INVOICING_ENTITY.vatRegistered
-          ? roundPeso(professionalFee * PERCENTAGE_TAX_RATE)
+          ? roundToPeso(professionalFee * PERCENTAGE_TAX_RATE)
           : 0,
     },
     dates: dates.map((date) => ({
