@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
@@ -176,16 +177,11 @@ export function FinancialModelInputs({
                 Depreciation (years)
                 <InfoTooltip content="Useful life of assets for straight-line depreciation." />
               </Label>
-              <Input
-                type="number"
+              <IntegerInput
                 min={1}
                 max={30}
                 value={depreciationYears}
-                onChange={(e) =>
-                  setDepreciationYears(
-                    Math.max(1, parseInt(e.target.value) || 1)
-                  )
-                }
+                onChange={setDepreciationYears}
               />
             </div>
           </div>

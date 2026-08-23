@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1150,12 +1151,11 @@ export default function MsmeFinancialPlanPage() {
               Useful Life (years)
               <InfoTooltip content="How many years assets are depreciated over. Equipment typically 5-10 years, leasehold improvements 3-5 years." />
             </Label>
-            <Input
-              type="number"
+            <IntegerInput
               min={1}
               max={30}
               value={usefulLifeYears}
-              onChange={(e) => setUsefulLifeYears(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={setUsefulLifeYears}
             />
           </div>
         </CardContent>
@@ -1185,12 +1185,11 @@ export default function MsmeFinancialPlanPage() {
             />
             <div className="space-y-2">
               <Label>Term (years)</Label>
-              <Input
-                type="number"
+              <IntegerInput
                 min={1}
                 max={30}
                 value={loanTermYears}
-                onChange={(e) => setLoanTermYears(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={setLoanTermYears}
               />
             </div>
             <div className="space-y-2">

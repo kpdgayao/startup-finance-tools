@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -258,16 +258,12 @@ export default function SafeCalculatorPage() {
               />
               <div className="space-y-2">
                 <Label htmlFor="term-months">Term (months)</Label>
-                <Input
+                <IntegerInput
                   id="term-months"
-                  type="number"
-                  inputMode="numeric"
                   min={1}
                   max={120}
                   value={termMonths}
-                  onChange={(e) =>
-                    setTermMonths(Math.max(1, parseInt(e.target.value) || 1))
-                  }
+                  onChange={setTermMonths}
                   onBlur={() => markTouched("termMonths")}
                 />
                 {termMonthsError && <p className="text-xs text-bad mt-1">{termMonthsError}</p>}
