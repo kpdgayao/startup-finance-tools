@@ -357,12 +357,35 @@ describe("facilitation is scaled by its own sector multipliers", () => {
     );
   });
 
-  it("prices team building off the speaking ladder, not the facilitation one", () => {
-    // Team building's rate is set inside the speaking range on purpose. Moving
-    // it onto the facilitation multipliers would drop its corporate rate by
-    // ₱15,000 a day as a side effect of a change that was never about it.
+  it("scales team building as facilitated work, not as teaching", () => {
+    // Its BASE rate is set inside the speaking range, but what it sells is a
+    // designed day and a room on its feet, not a subject taught — so it does
+    // not track the corporate training budget. Scaled by the speaking
+    // multiplier it reached ₱70,000 for a corporate day, above a corporate
+    // one-team planning day, which contradicts the ladder it is built on.
     for (const type of ORGANIZER_TYPES) {
-      expect(sectorMultiplier(type, "team-building"), type.id).toBe(type.rateMultiplier);
+      expect(sectorMultiplier(type, "team-building"), type.id).toBe(type.facilitationMultiplier);
+    }
+  });
+
+  it("keeps team building under every facilitation scope in every sector", () => {
+    const cheapestScope = Math.min(...FACILITATION_SCOPES.map((f) => f.dayRate));
+    for (const type of ORGANIZER_TYPES) {
+      const teamBuilding = deriveDayRate(
+        TEAM_BUILDING_DAY_RATE,
+        sectorMultiplier(type, "team-building")
+      );
+      expect(teamBuilding, type.id).toBeLessThan(
+        deriveDayRate(cheapestScope, sectorMultiplier(type, "facilitation"))
+      );
+      // And above a settled subject, below a research-heavy one, since that is
+      // the other half of what the rate card says about it.
+      expect(teamBuilding, type.id).toBeGreaterThan(
+        deriveDayRate(DAY_RATE_MIN, sectorMultiplier(type, "speaking"))
+      );
+      expect(teamBuilding, type.id).toBeLessThan(
+        deriveDayRate(DAY_RATE_MAX, sectorMultiplier(type, "speaking"))
+      );
     }
   });
 });

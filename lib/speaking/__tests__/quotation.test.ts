@@ -1028,6 +1028,35 @@ describe("sector rates", () => {
     expect(quote.withholding.applies).toBe(true);
   });
 
+  it("tells a cooperative that one rate cannot fit the whole sector", () => {
+    // Co-ops run from a village store to a multi-billion-peso bank. The flag
+    // is the honest alternative to a rate card that silently prices them all
+    // the same and loses the small ones without ever hearing from them.
+    const quote = buildQuotation(input({ organizerType: "cooperative" }));
+    const flag = quote.flags.find((f) => f.includes("cooperative rate"));
+    expect(flag).toBeDefined();
+    expect(flag).toContain("small primary co-op");
+    // And nobody else is told about it.
+    expect(
+      buildQuotation(input({ organizerType: "corporate" })).flags.some((f) =>
+        f.includes("cooperative rate")
+      )
+    ).toBe(false);
+  });
+
+  it("prices a corporate team-building day as facilitated work", () => {
+    // ₱55,000, not the ₱70,000 the speaking multiplier produced — which was
+    // above a corporate one-team planning day and so contradicted the ladder.
+    const teamBuilding = buildQuotation(
+      input({ engagementType: "team-building", organizerType: "corporate" })
+    );
+    const planning = buildQuotation(
+      input({ engagementType: "facilitation", facilitationScope: "team", organizerType: "corporate" })
+    );
+    expect(teamBuilding.dayRate).toBe(55_000);
+    expect(teamBuilding.dayRate).toBeLessThan(planning.dayRate);
+  });
+
   it("names the cooperative sector on the base line", () => {
     const quote = buildQuotation(input({ organizerType: "cooperative" }));
     expect(quote.lines[0].detail).toContain("cooperative rate");
@@ -1044,6 +1073,46 @@ describe("sector rates", () => {
           sectorMultiplier(organizerTypeFor(organizer), "facilitation")
         )
       );
+    }
+  });
+});
+
+describe("the honorarium ceiling", () => {
+  // The card quotes above the DBM ceiling in two places — the top of the
+  // subject ladder and all of facilitation — on the basis that work at that
+  // level is procured as a service contract rather than paid as an honorarium.
+  // That is a different rule, not an exemption, so the quote has to say it.
+  const ceilingFlag = (quote: ReturnType<typeof buildQuotation>) =>
+    quote.flags.find((f) => f.includes("honorarium"));
+
+  it("warns a government organiser quoted above it", () => {
+    const quote = buildQuotation(input({ organizerType: "government", complexity: "frontier" }));
+    expect(quote.dayRate).toBe(FRONTIER_RATE);
+    expect(ceilingFlag(quote)).toContain("procured as a service or consultancy contract");
+  });
+
+  it("says nothing when the public rate stays under it", () => {
+    expect(ceilingFlag(buildQuotation(input({ organizerType: "government" })))).toBeUndefined();
+  });
+
+  it("warns on public-sector facilitation, which always clears it", () => {
+    const quote = buildQuotation(
+      input({ organizerType: "government", engagementType: "facilitation" })
+    );
+    expect(ceilingFlag(quote)).toBeDefined();
+  });
+
+  it("compares the concessionary rate for a mission organiser, not the list one", () => {
+    // ₱24,000 less the 20% concession is ₱19,200, under the ceiling. Comparing
+    // the pre-concession rate would warn about a price never being asked for.
+    const quote = buildQuotation(input({ organizerType: "mission", complexity: "frontier" }));
+    expect(ceilingFlag(quote)).toBeUndefined();
+  });
+
+  it("says nothing to an organiser the circular does not govern", () => {
+    for (const organizerType of ["corporate", "association", "cooperative", "academic"] as const) {
+      const quote = buildQuotation(input({ organizerType, complexity: "frontier" }));
+      expect(ceilingFlag(quote), organizerType).toBeUndefined();
     }
   });
 });

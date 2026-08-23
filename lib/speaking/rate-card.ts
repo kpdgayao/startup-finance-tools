@@ -137,6 +137,24 @@ export const INVOICING_ENTITY = {
   vatRate: 0.12,
 } as const;
 
+/**
+ * What a Philippine public body can pay a resource person as an HONORARIUM,
+ * per day, under DBM Budget Circular 2007-1.
+ *
+ * The circular pays twice the hourly rate of the salary grade the speaker is
+ * pegged to, for delivery hours plus an equal number of preparation hours —
+ * roughly ₱18,700 to ₱21,200 a day at SG-24 to SG-25 on the 2026 table. This
+ * is the round figure at the top of that band.
+ *
+ * It is a real constraint on one payment ROUTE, not on the work: a public body
+ * that needs a service the honorarium rules cannot buy procures it as a
+ * consultancy or service contract instead. The card quotes above this ceiling
+ * in two places — the top of the subject ladder, and all of facilitation — and
+ * the quote raises a flag when it does, because a procurement officer who
+ * discovers it after the fact loses weeks, not pesos.
+ */
+export const HONORARIUM_DAY_CEILING = 21_000;
+
 /** Quote validity, and how long the requested date is held without a deposit. */
 export const QUOTE_VALID_DAYS = 30;
 export const DATE_HOLD_DAYS = 7;
@@ -270,6 +288,14 @@ export function facilitationScopeFor(id: FacilitationScopeId): FacilitationScope
  * a lecture, and below both the research tier (₱24,000) and all of facilitation,
  * because nothing has to be read up on first and no decision rests on the day.
  * Group size is already priced by AUDIENCE_BANDS, so it is not doubled up here.
+ *
+ * The sector scales it by `facilitationMultiplier`, not the speaking one, even
+ * though the base rate is set inside the speaking range. Team building is
+ * facilitated room work: what it sells is a designed day and a room on its
+ * feet, not a subject taught, so it does not track the corporate TRAINING
+ * budget the way a technical workshop does. Scaling it by the speaking
+ * multiplier put a corporate team-building day at ₱70,000 — above a corporate
+ * one-team planning day at ₱63,000, which contradicts every word above.
  */
 export const TEAM_BUILDING_DAY_RATE = 22_000;
 
@@ -671,8 +697,9 @@ export interface OrganizerType {
    */
   rateMultiplier: number;
   /**
-   * The same idea for facilitation, which is a different market with a
-   * different ceiling and so needs its own scaling.
+   * The same idea for FACILITATED work — a planning session or a team-building
+   * day — which is a different market with a different ceiling and so needs
+   * its own scaling.
    *
    * Teaching scales with the corporate TRAINING budget, which is large and
    * well evidenced here. Facilitation does not: the only comparable day rates
@@ -800,15 +827,19 @@ export const TOP_SECTOR_FACILITATION_MULTIPLIER = Math.max(
 /**
  * Which of a sector's two multipliers applies.
  *
+ * The split is teaching versus facilitated room work, not "facilitation versus
+ * everything else". Teaching a subject is bought out of a training budget and
+ * scales with it. Facilitated work — a planning session, a team-building day —
+ * is bought as a facilitator's time, a market that does not widen between
+ * sectors nearly as far.
+ *
  * Every surface that shows a day rate — the form's chips, the "why we ask"
  * copy, the printed quote — resolves it through here rather than reaching for
- * `rateMultiplier` directly, so the two ladders cannot drift apart on one
- * screen. Team building deliberately uses the SPEAKING multiplier: its rate is
- * set inside the speaking range, and pricing it off the facilitation ladder
- * would move a number nobody asked to move.
+ * a multiplier field directly, so the two ladders cannot drift apart on one
+ * screen.
  */
 export function sectorMultiplier(organizer: OrganizerType, type: EngagementTypeId): number {
-  return type === "facilitation" ? organizer.facilitationMultiplier : organizer.rateMultiplier;
+  return type === "speaking" ? organizer.rateMultiplier : organizer.facilitationMultiplier;
 }
 
 export function organizerTypeFor(id: OrganizerTypeId): OrganizerType {
