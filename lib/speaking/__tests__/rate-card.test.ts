@@ -2,11 +2,14 @@ import { describe, it, expect } from "vitest";
 import {
   ADD_ONS,
   AUDIENCE_BANDS,
-  BASE_DAY_RATE,
   COMPLEXITY_TIERS,
+  DAY_RATE_MAX,
+  DAY_RATE_MIN,
   ENGAGEMENT_FORMATS,
   LEAD_TIME_BANDS,
+  MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
+  MINIMUM_ENGAGEMENT_FEE,
   ORGANIZER_TYPES,
   REGIONS,
   audienceBandFor,
@@ -49,11 +52,26 @@ describe("rate card integrity", () => {
     }
   });
 
-  it("keeps the mission floor below the standard day rate", () => {
+  it("keeps the mission floor below the cheapest day rate", () => {
     // A concession that is not actually cheaper is a bug in the rate card,
     // not a rounding detail — it would quote mission organisers the standard
     // rate while telling them they got a discount.
-    expect(MISSION_FLOOR_DAY_RATE).toBeLessThan(BASE_DAY_RATE);
+    expect(MISSION_FLOOR_DAY_RATE).toBeLessThan(DAY_RATE_MIN);
+    expect(MISSION_FLOOR_DAY_RATE).toBe(DAY_RATE_MIN * (1 - MISSION_DISCOUNT));
+  });
+
+  it("keeps the minimum engagement fee below the cheapest day rate", () => {
+    // At or above it, every format on a core topic prices identically and the
+    // format ladder stops meaning anything.
+    expect(MINIMUM_ENGAGEMENT_FEE).toBeLessThan(DAY_RATE_MIN);
+  });
+
+  it("orders the topic rate ladder cheapest first", () => {
+    const rates = COMPLEXITY_TIERS.map((t) => t.dayRate);
+    expect([...rates].sort((a, b) => a - b)).toEqual(rates);
+    expect(rates[0]).toBe(DAY_RATE_MIN);
+    expect(rates[rates.length - 1]).toBe(DAY_RATE_MAX);
+    for (const rate of rates) expect(rate).toBeGreaterThan(0);
   });
 
   it("orders the audience bands so every size lands in exactly one", () => {
@@ -78,11 +96,11 @@ describe("rate card integrity", () => {
     expect(leadTimeBandFor(0).id).toBe("emergency");
   });
 
-  it("never discounts below the standard rate through a factor", () => {
+  it("never discounts below the topic rate through a factor", () => {
     // Every multiplier is a premium or neutral. A factor below 1 would be a
     // silent discount with no line explaining it — concessions go through the
-    // mission discount, which is itemised.
-    for (const tier of COMPLEXITY_TIERS) expect(tier.factor).toBeGreaterThanOrEqual(1);
+    // mission discount, which is itemised. The topic tiers are not in this
+    // list: they set the rate rather than multiplying one.
     for (const band of AUDIENCE_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
     for (const band of LEAD_TIME_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
     for (const type of ORGANIZER_TYPES) expect(type.factor).toBeGreaterThanOrEqual(1);
@@ -106,9 +124,12 @@ describe("why-we-ask copy", () => {
   // The copy interpolates the rate card rather than restating it, so a change
   // to BASE_DAY_RATE cannot leave the form quoting last year's number. This
   // fails if someone replaces an interpolation with a typed literal.
-  it("quotes the live day rate rather than a typed literal", () => {
-    expect(QUESTIONS.format.impact).toContain(BASE_DAY_RATE.toLocaleString("en-PH"));
-    expect(QUESTIONS.sessions.impact).toContain((BASE_DAY_RATE * 2).toLocaleString("en-PH"));
+  it("quotes the live rate ladder rather than typed literals", () => {
+    expect(QUESTIONS.format.impact).toContain(DAY_RATE_MIN.toLocaleString("en-PH"));
+    expect(QUESTIONS.format.impact).toContain(DAY_RATE_MAX.toLocaleString("en-PH"));
+    expect(QUESTIONS.complexity.impact).toContain(DAY_RATE_MIN.toLocaleString("en-PH"));
+    expect(QUESTIONS.complexity.impact).toContain(DAY_RATE_MAX.toLocaleString("en-PH"));
+    expect(QUESTIONS.sessions.impact).toContain((DAY_RATE_MIN * 2).toLocaleString("en-PH"));
     expect(QUESTIONS.organizerType.impact).toContain(
       MISSION_FLOOR_DAY_RATE.toLocaleString("en-PH")
     );

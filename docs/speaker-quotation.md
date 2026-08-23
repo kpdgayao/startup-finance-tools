@@ -59,26 +59,54 @@ Eid'l Adha are not included, because they are proclaimed only weeks ahead.
 
 ## Changing the rate card
 
-Everything lives in `lib/speaking/rate-card.ts`: the ₱25,000 day rate, the
+Everything lives in `lib/speaking/rate-card.ts`: the topic rate ladder, the
 format day-equivalents, every multiplier, the add-ons and the regional travel
 estimates. The form copy in `lib/speaking/questions.ts` interpolates those
-numbers rather than restating them, so changing the day rate updates the
-questions, the quote, the printed PDF and the AI prompt together.
+numbers rather than restating them, so changing a rate updates the questions,
+the quote, the printed PDF and the AI prompt together.
 `lib/speaking/__tests__/rate-card.test.ts` fails if someone replaces an
 interpolation with a typed literal.
+
+### The topic rate ladder
+
+There is no single day rate. `COMPLEXITY_TIERS` carries one per tier, because
+what a day costs is decided by what has to happen before it:
+
+| Tier | Day rate | What it means |
+| --- | --- | --- |
+| `routine` | ₱15,000 | Core catalogue — basic accounting, bookkeeping, cash flow, pricing, valuation. Taught many times. |
+| `tailored` | ₱18,000 | The same ground, rebuilt around one industry's figures. |
+| `applied` | ₱21,000 | New curriculum, still inside core expertise. |
+| `frontier` | ₱24,000 | Beyond it — AI and accounting, a standard that just changed. Days of reading before anything can be taught. |
+
+The two ends are the real anchors; the middle two interpolate so an engagement
+that is neither pure delivery nor a research project need not round to whichever
+end is nearer.
+
+Two floors are derived from `DAY_RATE_MIN` and must stay below it:
+`MISSION_FLOOR_DAY_RATE` (₱12,000, exactly the routine rate less the 20%
+concession) and `MINIMUM_ENGAGEMENT_FEE` (₱10,000). If the minimum ever reaches
+the routine rate, every format on a core topic prices identically and the format
+dropdown stops meaning anything — there is a test for it.
+
+**The tier prices the subject, not the audience or the buyer.** Bookkeeping for
+non-accountants is `routine` even when the deck is written from scratch, because
+the subject is standard. The gap between that and a lowball offer comes from
+counting two days honestly, not from reclassifying a basic subject as difficult.
 
 The order the factors apply in is fixed and documented at the top of
 `lib/speaking/quotation.ts`. Reordering the steps changes the number.
 
 ## How the price is built
 
-1. Base fee — the day rate × day-equivalents for the format and session count.
-2. Multipliers — preparation load, audience size, weekend/holiday, notice,
-   organiser type. Each is listed on the quote even when it changes nothing.
-3. Minimum engagement fee (₱15,000), before concessions.
+1. Base fee — the topic's day rate × day-equivalents for the format and session
+   count. The tier is named on this line rather than charged as a premium.
+2. Multipliers — audience size, weekend/holiday, notice, organiser type. Each is
+   listed on the quote even when it changes nothing.
+3. Minimum engagement fee (₱10,000), before concessions.
 4. Add-ons — percentages read the pre-add-on fee; flat amounts are added after.
-5. Travel days at half the day rate.
-6. Mission concession of 20%, floored at ₱18,000/day.
+5. Travel days at half the topic's day rate.
+6. Mission concession of 20%, floored at ₱12,000/day.
 7. Revenue-share floor — for ticketed events, 15% of projected gross gate,
    capped at twice the rate-card fee. It can only raise the fee.
 8. Reimbursables — transport, accommodation and per diem, shown at zero when

@@ -4,7 +4,7 @@ import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResultCard } from "@/components/shared/result-card";
 import { cn, formatPHP, formatPercent } from "@/lib/utils";
-import { BASE_DAY_RATE, EWT_RATE, HOME_BASE } from "@/lib/speaking/rate-card";
+import { EWT_RATE, HOME_BASE } from "@/lib/speaking/rate-card";
 import type { Quotation } from "@/lib/speaking/quotation";
 
 /** A factor line reads as "×1.15" rather than a peso figure it does not equal. */
@@ -17,8 +17,10 @@ interface QuotationSummaryProps {
 }
 
 export function QuotationSummary({ quote }: QuotationSummaryProps) {
-  const feeVariant =
-    quote.effectiveDayRate >= BASE_DAY_RATE ? "success" : "warning";
+  // Judged against the rate the TOPIC set, not a shared anchor: a routine
+  // engagement clearing ₱15,000/day is on target, and comparing it to the
+  // research-tier rate would flag it as underpaid.
+  const feeVariant = quote.effectiveDayRate >= quote.dayRate ? "success" : "warning";
 
   return (
     <div className="space-y-6">
@@ -28,14 +30,14 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
           value={formatPHP(quote.professionalFee)}
           sublabel={`${quote.dayEquivalents} engagement ${
             quote.dayEquivalents === 1 ? "day" : "days"
-          }`}
+          } · ${quote.topicTier.toLowerCase()}`}
         />
         <ResultCard
           label="Effective day rate"
           value={formatPHP(quote.effectiveDayRate)}
           sublabel={`Across ${quote.daysCommitted} ${
             quote.daysCommitted === 1 ? "day" : "days"
-          } committed · standard ${formatPHP(BASE_DAY_RATE)}`}
+          } committed · topic rate ${formatPHP(quote.dayRate)}`}
           variant={feeVariant}
         />
         <ResultCard

@@ -24,11 +24,13 @@ import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { formatPHP } from "@/lib/utils";
 import {
   ADD_ONS,
-  BASE_DAY_RATE,
   COMPLEXITY_TIERS,
+  DAY_RATE_MAX,
+  DAY_RATE_MIN,
   ENGAGEMENT_FORMATS,
   ORGANIZER_TYPES,
   REGIONS,
+  TRAVEL_DAY_FACTOR,
   audienceBandFor,
   type AddOnId,
   type ComplexityId,
@@ -221,10 +223,11 @@ export default function SpeakerQuotationPage() {
 
       <div className="border-y border-rule py-4 font-serif text-[15px] leading-[1.55] text-ink-2">
         <p>
-          Every engagement starts from a {formatPHP(BASE_DAY_RATE)} day rate, with transport and
-          accommodation arranged by the organiser. Everything below either adds to that or explains
-          why it stays where it is. Nothing is hidden, and nothing here is sent to anyone until you
-          choose to send it.
+          The day rate is set by the topic — {formatPHP(DAY_RATE_MIN)} for something already in the
+          catalogue, up to {formatPHP(DAY_RATE_MAX)} for one that needs real research first — with
+          transport and accommodation arranged by the organiser. Everything below either adds to
+          that or explains why it stays where it is. Nothing is hidden, and nothing here is sent to
+          anyone until you choose to send it.
         </p>
       </div>
 
@@ -286,8 +289,8 @@ export default function SpeakerQuotationPage() {
 
           <RateFactorField
             question={QUESTIONS.complexity}
-            impact={factorImpact(complexity.factor)}
-            active={complexity.factor !== 1}
+            impact={`${formatPHP(complexity.dayRate)}/day`}
+            active
           >
             <Select
               value={input.complexity}
@@ -387,7 +390,9 @@ export default function SpeakerQuotationPage() {
               isRemote
                 ? "No travel"
                 : region.travelDays > 0
-                  ? `+${formatPHP(BASE_DAY_RATE * 0.5 * region.travelDays)} travel time`
+                  ? `+${formatPHP(
+                      complexity.dayRate * TRAVEL_DAY_FACTOR * region.travelDays
+                    )} travel time`
                   : "No travel"
             }
             active={!isRemote && region.travelDays > 0}
@@ -673,7 +678,7 @@ export default function SpeakerQuotationPage() {
             format: format.label,
             sessions: input.sessions,
             dayEquivalents: quote.dayEquivalents,
-            complexity: complexity.label,
+            complexity: `${complexity.label} (₱${complexity.dayRate.toLocaleString("en-PH")}/day)`,
             audienceSize: input.audienceSize,
             organizerType: organizer.label,
             region: region.label,
@@ -686,7 +691,8 @@ export default function SpeakerQuotationPage() {
             })),
             professionalFee: quote.professionalFee,
             effectiveDayRate: quote.effectiveDayRate,
-            standardDayRate: BASE_DAY_RATE,
+            topicDayRate: quote.dayRate,
+            daysCommitted: quote.daysCommitted,
             billedLogistics: quote.reimbursablesBilled,
             coveredLogistics: quote.reimbursablesCovered,
             total: quote.total,

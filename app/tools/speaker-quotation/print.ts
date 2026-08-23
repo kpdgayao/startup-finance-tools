@@ -1,6 +1,6 @@
 import { section, summaryCard, table } from "@/components/shared/export-pdf-button";
 import { formatPHP, formatPercent } from "@/lib/utils";
-import { BASE_DAY_RATE, EWT_RATE, HOME_BASE } from "@/lib/speaking/rate-card";
+import { EWT_RATE, HOME_BASE } from "@/lib/speaking/rate-card";
 import type { Quotation, QuotationInput } from "@/lib/speaking/quotation";
 
 /**
@@ -47,8 +47,9 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
               quote.daysCommitted > quote.dayEquivalents
                 ? `, ${Number((quote.daysCommitted - quote.dayEquivalents).toFixed(3))} travel`
                 : ""
-            } (standard day rate ${formatPHP(BASE_DAY_RATE)})`,
+            }`,
           ],
+          ["Topic tier", `${esc(quote.topicTier)} — ${formatPHP(quote.dayRate)}/day`],
         ]
       )
     )
@@ -60,8 +61,8 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
       `<div class="summary-grid">
         ${summaryCard("Professional fee", formatPHP(quote.professionalFee))}
         ${summaryCard("Effective day rate", formatPHP(quote.effectiveDayRate), {
-          sublabel: `Across ${quote.daysCommitted} day(s) committed, standard ${formatPHP(
-            BASE_DAY_RATE
+          sublabel: `Across ${quote.daysCommitted} day(s) committed, topic rate ${formatPHP(
+            quote.dayRate
           )}`,
         })}
         ${summaryCard("Billed logistics", formatPHP(quote.reimbursablesBilled), {

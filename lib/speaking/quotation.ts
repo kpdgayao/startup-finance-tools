@@ -9,8 +9,8 @@
  * work rather than from their budget.
  *
  * ORDER OF OPERATIONS matters and is fixed:
- *   1. base fee from day-equivalents
- *   2. multiplicative factors (prep, audience, schedule, notice, organiser)
+ *   1. base fee: the topic's day rate × day-equivalents
+ *   2. multiplicative factors (audience, schedule, notice, organiser)
  *   3. the minimum engagement floor
  *   4. add-ons (percentages read the floored fee, flat amounts are added after)
  *   5. travel days
@@ -25,7 +25,6 @@
 import {
   ADD_ONS,
   AUDIENCE_BANDS,
-  BASE_DAY_RATE,
   DATE_HOLD_DAYS,
   ENGAGEMENT_FORMATS,
   EWT_RATE,
@@ -49,7 +48,7 @@ import {
   type RegionId,
   type ScheduleFactorId,
 } from "./rate-card";
-import { COMPLEXITY_TIERS } from "./rate-card";
+import { complexityTierFor } from "./rate-card";
 import {
   addDays,
   daysBetween,
@@ -152,6 +151,10 @@ export interface QuotationDateNote {
 export interface Quotation {
   /** Deterministic reference derived from the inputs — no clock, no random. */
   reference: string;
+  /** The day rate the topic tier set. The number effectiveDayRate is judged against. */
+  dayRate: number;
+  /** The tier's label, so the summary can name what set the rate. */
+  topicTier: string;
   dayEquivalents: number;
   /**
    * Every day the engagement consumes: delivery days plus travel days.
@@ -168,7 +171,7 @@ export interface Quotation {
   reimbursablesBilled: number;
   reimbursablesCovered: number;
   total: number;
-  /** Fee ÷ days committed. The number to compare against BASE_DAY_RATE. */
+  /** Fee ÷ days committed. The number to compare against the topic's day rate. */
   effectiveDayRate: number;
   /** Projected gross gate, when the event is ticketed. */
   projectedGate: number;
@@ -257,8 +260,11 @@ function scheduleFor(dates: string[]): Quotation["schedule"] {
 export function buildQuotation(raw: QuotationInput): Quotation {
   const format =
     ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
-  const complexity =
-    COMPLEXITY_TIERS.find((c) => c.id === raw.complexity) ?? COMPLEXITY_TIERS[0];
+  const complexity = complexityTierFor(raw.complexity);
+  // The topic sets the rate. Everything downstream that used to read a shared
+  // anchor — the base fee, travel days, the effective-rate comparison — reads
+  // this instead.
+  const dayRate = complexity.dayRate;
   const organizer = organizerTypeFor(raw.organizerType);
   // An online format overrides whatever region was picked: there is no travel
   // to a webinar, and leaving a stale region selected would bill hotel nights
@@ -287,25 +293,21 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   };
 
   // 1. Base fee ------------------------------------------------------------
-  const baseFee = BASE_DAY_RATE * dayEquivalents;
+  const baseFee = dayRate * dayEquivalents;
   push({
     id: "base",
     kind: "base",
     label: `${format.label}${sessions > 1 ? ` × ${sessions}` : ""}`,
+    // The tier is named here rather than carried as its own factor line: it is
+    // not a surcharge on a standard rate, it IS the rate.
     detail: `${dayEquivalents} engagement ${
       dayEquivalents === 1 ? "day" : "days"
-    } at the ₱${BASE_DAY_RATE.toLocaleString("en-PH")} standard day rate`,
+    } at ₱${dayRate.toLocaleString("en-PH")}/day — ${complexity.label.toLowerCase()}`,
     amount: baseFee,
   });
 
   // 2. Multiplicative factors ---------------------------------------------
   const factors: Array<{ id: string; label: string; detail: string; factor: number }> = [
-    {
-      id: "complexity",
-      label: complexity.label,
-      detail: complexity.detail,
-      factor: complexity.factor,
-    },
     {
       id: "audience",
       label: audience.label,
@@ -386,8 +388,8 @@ export function buildQuotation(raw: QuotationInput): Quotation {
       label: `${region.travelDays} travel ${region.travelDays === 1 ? "day" : "days"}`,
       detail: `Getting to ${region.label} and back from Baguio is time that cannot be sold to anyone else — billed at ${
         TRAVEL_DAY_FACTOR * 100
-      }% of the day rate`,
-      amount: BASE_DAY_RATE * TRAVEL_DAY_FACTOR * region.travelDays,
+      }% of the ₱${dayRate.toLocaleString("en-PH")} day rate`,
+      amount: dayRate * TRAVEL_DAY_FACTOR * region.travelDays,
     });
   }
 
@@ -547,6 +549,8 @@ export function buildQuotation(raw: QuotationInput): Quotation {
 
   return {
     reference: referenceFor(raw),
+    dayRate,
+    topicTier: complexity.label,
     dayEquivalents,
     daysCommitted,
     lines: lines.map((l) => ({ ...l, amount: roundPeso(l.amount) })),

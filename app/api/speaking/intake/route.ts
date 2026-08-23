@@ -100,7 +100,11 @@ Today is ${today}. Resolve relative dates ("next month", "the second week of Mar
 RULES
 - Extract what is stated. Infer only what is strongly implied, and list every inference in "assumptions".
 - Leave a field out entirely rather than guessing it. An omitted field keeps the form's default; a wrong one becomes a wrong price the organiser then has to argue about.
-- Choose "complexity" from what the material demands, not from how the organiser describes their budget. A named, specific topic that is not general startup finance ("bookkeeping for non-accountants", "PFRS 16 for cooperatives") is usually "custom" or "technical", not "existing".
+- "complexity" is the TOPIC's distance from the core catalogue, and it sets the day rate. Judge it by how much research the subject demands, never by how the organiser describes their budget.
+  - "routine": basic accounting, bookkeeping, cash flow, pricing, valuation, SAFEs, compliance. Standard subjects, however specific the title. "Bookkeeping for non-accountants" is routine.
+  - "tailored": one of those subjects rebuilt around a named industry's own figures.
+  - "applied": a new curriculum that is still within accounting, finance or startup practice.
+  - "frontier": the subject requires substantial reading beyond that — AI applied to accounting, a newly issued standard, an unfamiliar domain.
 - "region" is measured from Baguio City. Map the venue's province to the nearest option; use "online" only when the event is genuinely remote.
 - "ticketed" is true if participants or their employers pay anything to attend, including a registration fee.
 - In "questions", ask only about details that would change the price. Do not ask for anything the description already answers.

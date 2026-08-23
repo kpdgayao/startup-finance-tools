@@ -17,7 +17,8 @@
  */
 
 import {
-  BASE_DAY_RATE,
+  DAY_RATE_MAX,
+  DAY_RATE_MIN,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
@@ -26,7 +27,6 @@ import {
   TRAVEL_DAY_FACTOR,
   LEAD_TIME_BANDS,
   AUDIENCE_BANDS,
-  COMPLEXITY_TIERS,
 } from "./rate-card";
 
 const peso = (n: number) => `₱${n.toLocaleString("en-PH")}`;
@@ -47,9 +47,11 @@ export const QUESTIONS = {
     label: "What kind of session is it?",
     hint: "A keynote and a full-day workshop are different pieces of work.",
     why: "Format decides the preparation, not just the hours on stage. A 90-minute keynote still costs the better part of a working day once the deck, the rehearsal and the travel window are counted — which is why the shortest format is priced at half a day rather than at an hourly rate.",
-    impact: `Sets the base fee as a share of the ${peso(
-      BASE_DAY_RATE
-    )} standard day rate — from 0.4 of a day for a panel to a full day for a workshop. Nothing is quoted below ${peso(
+    impact: `Sets the base fee as a share of your topic's day rate (${peso(
+      DAY_RATE_MIN
+    )}–${peso(
+      DAY_RATE_MAX
+    )}) — from 0.4 of a day for a panel to a full day for a workshop. Nothing is quoted below ${peso(
       MINIMUM_ENGAGEMENT_FEE
     )}.`,
   },
@@ -58,18 +60,20 @@ export const QUESTIONS = {
     label: "How many days or sessions?",
     hint: "Assumed consecutive. Tell us if they are spread out.",
     why: "Multi-day programmes are the ones most often underpriced. A two-day workshop is two days of delivery plus two days of preparation, and it blocks a full working week once travel is included.",
-    impact: `Multiplies the base fee directly. Two full days is ${peso(
-      BASE_DAY_RATE * 2
-    )} before any other factor.`,
+    impact: `Multiplies the base fee directly. Two full days on a core topic is ${peso(
+      DAY_RATE_MIN * 2
+    )} before any other factor; on a research-heavy one, ${peso(DAY_RATE_MAX * 2)}.`,
   },
   complexity: {
     id: "complexity",
-    label: "How much of this material already exists?",
-    hint: "Be honest here — it is the single biggest lever on the price.",
-    why: "Delivering a talk that already exists costs a day. Building a new curriculum — outline, deck, worked examples, exercises, an assessment — costs a week of unpaid preparation before anyone walks into the room. A title like \"bookkeeping for non-accountants\" is usually a build, not a booking.",
-    impact: `From no change for a catalogue topic up to +${pct(
-      COMPLEXITY_TIERS[COMPLEXITY_TIERS.length - 1].factor
-    )} for a new curriculum with regulatory or board-exam depth.`,
+    label: "How far is this topic from the core catalogue?",
+    hint: "This sets the day rate — it is the single biggest lever on the price.",
+    why: "The rate is set by the topic, not by the room. Basic accounting, bookkeeping and cash flow are ground already covered many times over, so the day is mostly delivery and the rate reflects that. A topic sitting outside it — AI applied to accounting, a standard that has just changed — costs days of reading and testing before a single slide exists. That research never appears on the programme, but it is the part that decides what the day costs.",
+    impact: `Sets the day rate directly: ${peso(
+      DAY_RATE_MIN
+    )} for a core catalogue topic, rising to ${peso(
+      DAY_RATE_MAX
+    )} for one needing substantial research beyond it.`,
   },
   audienceSize: {
     id: "audienceSize",

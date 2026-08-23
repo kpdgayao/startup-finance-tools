@@ -1,11 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
-  BASE_DAY_RATE,
   MINIMUM_ENGAGEMENT_FEE,
+  MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
   REVENUE_SHARE_FLOOR,
+  complexityTierFor,
 } from "@/lib/speaking/rate-card";
+
+// The rate is set by the topic, so the fixtures name the two ends of the
+// ladder rather than a single anchor.
+const ROUTINE_RATE = complexityTierFor("routine").dayRate;
+const FRONTIER_RATE = complexityTierFor("frontier").dayRate;
 
 // 2026-04-15 is a Wednesday and not a Philippine holiday; every fixture builds
 // from it so a test that means to isolate one factor is not silently also
@@ -29,7 +35,9 @@ function input(overrides: Partial<QuotationInput> = {}): QuotationInput {
     today: TODAY,
     startDate: WEDNESDAY,
     // Neutral baseline: every factor at 1.0 so a test can move exactly one.
-    complexity: "existing",
+    // The topic tier is the cheapest rung, so a test that does not mention the
+    // topic is reading the routine day rate.
+    complexity: "routine",
     organizerType: "government",
     audienceSize: 20,
     region: "baguio",
@@ -39,41 +47,64 @@ function input(overrides: Partial<QuotationInput> = {}): QuotationInput {
 }
 
 describe("base fee", () => {
-  it("prices a full day at the standard day rate when every factor is neutral", () => {
+  it("prices a full day at the topic's day rate when every factor is neutral", () => {
     const quote = buildQuotation(input({ format: "full-day", sessions: 1 }));
-    expect(quote.professionalFee).toBe(BASE_DAY_RATE);
-    expect(quote.effectiveDayRate).toBe(BASE_DAY_RATE);
+    expect(quote.professionalFee).toBe(ROUTINE_RATE);
+    expect(quote.effectiveDayRate).toBe(ROUTINE_RATE);
+    expect(quote.dayRate).toBe(ROUTINE_RATE);
+  });
+
+  it("prices the same day higher when the topic needs research", () => {
+    const routine = buildQuotation(input({ format: "full-day", complexity: "routine" }));
+    const frontier = buildQuotation(input({ format: "full-day", complexity: "frontier" }));
+    expect(routine.professionalFee).toBe(ROUTINE_RATE);
+    expect(frontier.professionalFee).toBe(FRONTIER_RATE);
   });
 
   it("scales linearly with session count", () => {
     const quote = buildQuotation(input({ format: "full-day", sessions: 2 }));
     expect(quote.dayEquivalents).toBe(2);
-    expect(quote.professionalFee).toBe(BASE_DAY_RATE * 2);
+    expect(quote.professionalFee).toBe(ROUTINE_RATE * 2);
   });
 
   // The engagement this whole tool exists to price correctly: a two-day
   // "bookkeeping for non-accountants" workshop that was offered ₱10,000.
-  it("quotes a two-day custom workshop far above a five-figure honorarium", () => {
+  // Bookkeeping is a core catalogue topic, so it prices at the routine rate —
+  // the gap to ₱10,000 comes from counting two days honestly, not from
+  // classifying a basic subject as difficult.
+  it("quotes the two-day bookkeeping workshop far above the honorarium offered", () => {
     const quote = buildQuotation(
       input({
         format: "full-day",
         sessions: 2,
-        complexity: "custom",
-        audienceSize: 40,
+        complexity: "routine",
+        audienceSize: 45,
         organizerType: "corporate",
-        region: "metro-manila",
+        region: "north-luzon",
         earlyStart: true,
       })
     );
-    expect(quote.professionalFee).toBeGreaterThan(80_000);
-    expect(quote.effectiveDayRate).toBeGreaterThanOrEqual(BASE_DAY_RATE);
+    expect(quote.professionalFee).toBeGreaterThan(40_000);
+    expect(quote.professionalFee).toBeGreaterThan(10_000 * 4);
   });
 
   it("never quotes below the minimum engagement fee", () => {
     const quote = buildQuotation(input({ format: "panel", sessions: 1 }));
-    // A panel is 0.4 of a day — ₱10,000 — which the floor lifts.
+    // A panel on a routine topic is 0.4 of a ₱15,000 day — ₱6,000 — which the
+    // floor lifts.
     expect(quote.professionalFee).toBe(MINIMUM_ENGAGEMENT_FEE);
     expect(quote.lines.some((l) => l.id === "minimum")).toBe(true);
+  });
+
+  // The floor must sit BELOW the cheapest day rate, or every format on a core
+  // topic collapses to the same number and the format dropdown stops meaning
+  // anything.
+  it("keeps the format ladder intact on a routine topic", () => {
+    const fees = (["panel", "keynote", "half-day", "full-day"] as const).map(
+      (format) => buildQuotation(input({ format })).professionalFee
+    );
+    expect(new Set(fees).size).toBeGreaterThan(1);
+    expect(fees[fees.length - 1]).toBeGreaterThan(fees[0]);
   });
 });
 
@@ -81,16 +112,12 @@ describe("factors", () => {
   it("lists every factor, including the ones that changed nothing", () => {
     const quote = buildQuotation(input());
     const factorIds = quote.lines.filter((l) => l.kind === "factor").map((l) => l.id);
-    expect(factorIds).toEqual([
-      "complexity",
-      "audience",
-      "schedule",
-      "lead-time",
-      "organizer",
-    ]);
+    // No "complexity" line: the topic sets the base rate, so it is named on the
+    // base line rather than charged as a premium on top of one.
+    expect(factorIds).toEqual(["audience", "schedule", "lead-time", "organizer"]);
     // A neutral factor is present at zero pesos rather than omitted: the
     // breakdown should read as a rate card, not as a list of surcharges.
-    expect(quote.lines.find((l) => l.id === "complexity")?.amount).toBe(0);
+    expect(quote.lines.find((l) => l.id === "audience")?.amount).toBe(0);
   });
 
   it("charges a weekend premium", () => {
@@ -119,10 +146,19 @@ describe("factors", () => {
     expect(rush.daysOfNotice).toBe(3);
   });
 
-  it("compounds complexity onto the base rather than replacing it", () => {
-    const existing = buildQuotation(input({ complexity: "existing" }));
-    const technical = buildQuotation(input({ complexity: "technical" }));
-    expect(technical.professionalFee).toBe(toPeso(existing.professionalFee * 1.55));
+  it("names the topic tier on the base line and charges no separate premium", () => {
+    const quote = buildQuotation(input({ complexity: "frontier" }));
+    const base = quote.lines.find((l) => l.id === "base");
+    expect(base?.amount).toBe(FRONTIER_RATE);
+    expect(base?.detail).toContain(FRONTIER_RATE.toLocaleString("en-PH"));
+    expect(quote.topicTier).toBe(complexityTierFor("frontier").label);
+  });
+
+  it("applies the remaining factors on top of whichever rate the topic set", () => {
+    const routine = buildQuotation(input({ complexity: "routine", organizerType: "corporate" }));
+    const frontier = buildQuotation(input({ complexity: "frontier", organizerType: "corporate" }));
+    expect(routine.professionalFee).toBe(toPeso(ROUTINE_RATE * 1.15));
+    expect(frontier.professionalFee).toBe(toPeso(FRONTIER_RATE * 1.15));
   });
 });
 
@@ -135,10 +171,11 @@ describe("mission tier", () => {
   });
 
   it("stops the discount at the concessionary floor", () => {
-    // A neutral full day is ₱25,000; −20% is ₱20,000, above the ₱18,000 floor.
-    // Stacking nothing else, the floor should bind only when factors are low.
+    // The floor is the routine rate less the concession, so a routine full day
+    // lands exactly on it and no tier can fall through it.
     const quote = buildQuotation(input({ organizerType: "mission", format: "full-day" }));
-    expect(quote.effectiveDayRate).toBeGreaterThanOrEqual(MISSION_FLOOR_DAY_RATE);
+    expect(quote.effectiveDayRate).toBe(MISSION_FLOOR_DAY_RATE);
+    expect(MISSION_FLOOR_DAY_RATE).toBe(ROUTINE_RATE * (1 - MISSION_DISCOUNT));
   });
 
   it("never lets the concession push the day rate under the floor", () => {
@@ -174,7 +211,7 @@ describe("revenue-share floor", () => {
     const quote = buildQuotation(
       input({ ticketed: true, participantFee: 200, expectedPaidAttendees: 30 })
     );
-    expect(quote.professionalFee).toBe(BASE_DAY_RATE);
+    expect(quote.professionalFee).toBe(ROUTINE_RATE);
     expect(quote.lines.some((l) => l.id === "revenue-share")).toBe(false);
   });
 
@@ -183,7 +220,7 @@ describe("revenue-share floor", () => {
       input({ ticketed: true, participantFee: 10_000, expectedPaidAttendees: 500 })
     );
     // A ₱5,000,000 gate would floor at ₱750,000; the cap holds it to 3×.
-    expect(quote.professionalFee).toBe(BASE_DAY_RATE * 3);
+    expect(quote.professionalFee).toBe(ROUTINE_RATE * 3);
     expect(quote.flags.some((f) => f.includes("capped"))).toBe(true);
   });
 
@@ -199,7 +236,7 @@ describe("revenue-share floor", () => {
       input({ ticketed: false, participantFee: 3_500, expectedPaidAttendees: 80 })
     );
     expect(quote.projectedGate).toBe(0);
-    expect(quote.professionalFee).toBe(BASE_DAY_RATE);
+    expect(quote.professionalFee).toBe(ROUTINE_RATE);
   });
 });
 
@@ -213,7 +250,7 @@ describe("travel and reimbursables", () => {
   it("bills travel days for an out-of-town engagement", () => {
     const quote = buildQuotation(input({ region: "visayas-mindanao" }));
     const travel = quote.lines.find((l) => l.kind === "travel");
-    expect(travel?.amount).toBe(BASE_DAY_RATE * 0.5);
+    expect(travel?.amount).toBe(ROUTINE_RATE * 0.5);
   });
 
   it("shows covered logistics at zero billed but keeps the estimate visible", () => {
@@ -296,14 +333,14 @@ describe("add-ons", () => {
     const quote = buildQuotation(
       input({ addOns: ["not-a-real-addon" as never] })
     );
-    expect(quote.professionalFee).toBe(BASE_DAY_RATE);
+    expect(quote.professionalFee).toBe(ROUTINE_RATE);
   });
 });
 
 describe("running totals and structure", () => {
   it("ends the line items on the professional fee", () => {
     const quote = buildQuotation(
-      input({ organizerType: "corporate", complexity: "custom", addOns: ["workbook"] })
+      input({ organizerType: "corporate", complexity: "applied", addOns: ["workbook"] })
     );
     expect(quote.lines[quote.lines.length - 1].runningTotal).toBe(quote.professionalFee);
   });
@@ -376,7 +413,7 @@ describe("effective day rate", () => {
   it("equals the day rate exactly when there is no travel", () => {
     const quote = buildQuotation(input({ region: "baguio", format: "full-day" }));
     expect(quote.daysCommitted).toBe(1);
-    expect(quote.effectiveDayRate).toBe(BASE_DAY_RATE);
+    expect(quote.effectiveDayRate).toBe(ROUTINE_RATE);
   });
 
   it("commits no travel days to an online session", () => {
@@ -394,7 +431,7 @@ describe("floor interactions", () => {
     const quote = buildQuotation(
       input({ organizerType: "mission", format: "panel", audienceSize: 10 })
     );
-    expect(quote.professionalFee).toBe(MINIMUM_ENGAGEMENT_FEE * (1 - 0.2));
+    expect(quote.professionalFee).toBe(MINIMUM_ENGAGEMENT_FEE * (1 - MISSION_DISCOUNT));
   });
 
   it("keeps a mission concession from ever falling below that", () => {
@@ -403,7 +440,7 @@ describe("floor interactions", () => {
       expect(
         quote.professionalFee,
         `${format} fell below the mission minimum`
-      ).toBeGreaterThanOrEqual(MINIMUM_ENGAGEMENT_FEE * (1 - 0.2));
+      ).toBeGreaterThanOrEqual(MINIMUM_ENGAGEMENT_FEE * (1 - MISSION_DISCOUNT));
     }
   });
 });

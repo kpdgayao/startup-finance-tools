@@ -17,33 +17,42 @@
 // Anchors
 // ---------------------------------------------------------------------------
 
-/** Professional fee for one full engagement day, before any factor. */
-export const BASE_DAY_RATE = 25_000;
+/**
+ * There is no single day rate. The rate is set by the TOPIC — see
+ * COMPLEXITY_TIERS below, which carries a day rate per tier rather than a
+ * multiplier on a shared anchor.
+ *
+ * The reasoning: what a day costs is decided by what has to happen before it.
+ * Basic accounting is ground already covered many times over, so the day is
+ * mostly delivery. A topic sitting outside that ground — AI applied to
+ * accounting, a standard that has just changed — costs days of reading and
+ * testing before a single slide exists, and none of that work is visible to
+ * the organiser. Pricing it as a premium on a flat rate hid that; pricing the
+ * topic directly does not.
+ *
+ * DAY_RATE_MIN and DAY_RATE_MAX are derived from the tiers so copy elsewhere
+ * cannot quote a rate the card no longer offers.
+ */
+export const TRAVEL_DAY_FACTOR = 0.5;
 
 /**
  * No engagement is quoted below this, however short. Below it the preparation,
- * the correspondence and the day itself stop paying for themselves — a 45
- * minute keynote still costs a working day once prep and travel are counted.
+ * the correspondence and the slot itself stop paying for themselves.
  *
- * This floor is applied BEFORE the mission concession, so a mission-tier quote
- * can land at MINIMUM_ENGAGEMENT_FEE × (1 − MISSION_DISCOUNT) — ₱12,000 — and
- * no lower. That is deliberate: the concession applies to the whole fee, the
- * minimum included, rather than being clawed back by a floor the discounted
- * organiser never qualified for.
+ * Deliberately below the lowest day rate: a floor set AT the routine day rate
+ * would price a 45-minute panel and a full-day workshop identically for every
+ * core topic, which collapses the format ladder into a single number.
+ *
+ * Applied BEFORE the mission concession, so a mission-tier quote can land at
+ * MINIMUM_ENGAGEMENT_FEE × (1 − MISSION_DISCOUNT) and no lower. That is
+ * deliberate: the concession applies to the whole fee, the minimum included,
+ * rather than being clawed back by a floor the discounted organiser never
+ * qualified for.
  */
-export const MINIMUM_ENGAGEMENT_FEE = 15_000;
-
-/** A travel day is paid at half the day rate. It is a day that cannot be sold. */
-export const TRAVEL_DAY_FACTOR = 0.5;
+export const MINIMUM_ENGAGEMENT_FEE = 10_000;
 
 /** Concessionary discount for the mission tier (see ORGANIZER_TYPES). */
 export const MISSION_DISCOUNT = 0.2;
-
-/**
- * Hard floor under the mission discount. The discount is a concession, not an
- * open-ended negotiation — it stops here regardless of what the multipliers do.
- */
-export const MISSION_FLOOR_DAY_RATE = 18_000;
 
 /**
  * If the organizer sells tickets, the speaker fee is floored at this share of
@@ -133,41 +142,75 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
 // Preparation load
 // ---------------------------------------------------------------------------
 
-export type ComplexityId = "existing" | "tailored" | "custom" | "technical";
+export type ComplexityId = "routine" | "tailored" | "applied" | "frontier";
 
 export interface ComplexityTier {
   id: ComplexityId;
   label: string;
   detail: string;
-  factor: number;
+  /**
+   * The professional fee for one full engagement day on a topic at this tier.
+   * This IS the base rate — there is no separate anchor it multiplies.
+   */
+  dayRate: number;
 }
 
+/**
+ * The rate ladder, cheapest first.
+ *
+ * The two ends are the real anchors: a routine topic is a ₱15,000 day, and a
+ * topic needing substantial research beyond core expertise is a ₱24,000 day.
+ * The two middle tiers interpolate between them, so an engagement that is
+ * neither purely delivery nor a research project does not have to be rounded
+ * to whichever end is nearer.
+ */
 export const COMPLEXITY_TIERS: ComplexityTier[] = [
   {
-    id: "existing",
-    label: "A topic already in the catalogue",
-    detail: "Delivered as it stands — valuation, cash flow, pricing, SAFEs, compliance",
-    factor: 1,
+    id: "routine",
+    label: "Core topic, already in the catalogue",
+    detail:
+      "Basic accounting, bookkeeping, cash flow, pricing, valuation — taught many times, delivered as it stands",
+    dayRate: 15_000,
   },
   {
     id: "tailored",
-    label: "Catalogue topic, tailored to your sector",
-    detail: "Same frame, rebuilt examples and cases using your industry's numbers",
-    factor: 1.15,
+    label: "Core topic, rebuilt around your sector",
+    detail: "The same ground, with examples and worked figures redrawn from your industry",
+    dayRate: 18_000,
   },
   {
-    id: "custom",
-    label: "New curriculum built for this event",
-    detail: "Written from scratch — outline, deck, worked examples, exercises",
-    factor: 1.35,
+    id: "applied",
+    label: "New curriculum, inside core expertise",
+    detail:
+      "Written from scratch — outline, deck, exercises, assessment — but on familiar ground",
+    dayRate: 21_000,
   },
   {
-    id: "technical",
-    label: "New curriculum with technical or regulatory depth",
-    detail: "Built from scratch and tied to PFRS, BIR or board-exam standards, with assessment",
-    factor: 1.55,
+    id: "frontier",
+    label: "Beyond core expertise, needs substantial research",
+    detail:
+      "AI applied to accounting, a standard that has just changed, an unfamiliar domain — days of reading and testing before any of it can be taught",
+    dayRate: 24_000,
   },
 ];
+
+/** The cheapest and dearest day rates on offer. Derived so copy cannot drift. */
+export const DAY_RATE_MIN = Math.min(...COMPLEXITY_TIERS.map((t) => t.dayRate));
+export const DAY_RATE_MAX = Math.max(...COMPLEXITY_TIERS.map((t) => t.dayRate));
+
+export function complexityTierFor(id: ComplexityId): ComplexityTier {
+  return COMPLEXITY_TIERS.find((t) => t.id === id) ?? COMPLEXITY_TIERS[0];
+}
+
+/**
+ * Hard floor under the mission discount, expressed as a day rate.
+ *
+ * Derived rather than typed: it is exactly the routine rate less the
+ * concession, so the discount reaches its floor precisely at the cheapest tier
+ * and never bites into the dearer ones. A typed literal here drifted below the
+ * rate card the moment the rates moved.
+ */
+export const MISSION_FLOOR_DAY_RATE = Math.round(DAY_RATE_MIN * (1 - MISSION_DISCOUNT));
 
 // ---------------------------------------------------------------------------
 // Audience size
