@@ -17,6 +17,10 @@ import type { AvailabilityReport } from "./availability";
  */
 
 export interface IntakeDraft {
+  engagementType?: string;
+  facilitationScope?: string;
+  preparation?: string;
+  output?: string;
   format?: string;
   sessions?: number;
   complexity?: string;

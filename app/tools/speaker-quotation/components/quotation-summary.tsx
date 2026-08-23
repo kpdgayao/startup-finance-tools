@@ -30,16 +30,23 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
         <ResultCard
           label="Professional fee"
           value={formatPHP(quote.professionalFee)}
-          sublabel={`${quote.dayEquivalents} engagement ${
-            quote.dayEquivalents === 1 ? "day" : "days"
-          }`}
+          // Naming the desk days here is the point of itemising them: a
+          // facilitation fee covering five days of work should not sit under a
+          // label saying "2 engagement days".
+          sublabel={
+            quote.deskDays > 0
+              ? `${quote.dayEquivalents} in the room · ${quote.deskDays} preparing and writing up`
+              : `${quote.dayEquivalents} engagement ${
+                  quote.dayEquivalents === 1 ? "day" : "days"
+                }`
+          }
         />
         <ResultCard
           label="Cost per day"
           value={formatPHP(quote.effectiveDayRate)}
           sublabel={`Across ${quote.daysCommitted} ${
             quote.daysCommitted === 1 ? "day" : "days"
-          } of delivery and travel`}
+          } of work in total`}
         />
         <ResultCard
           label="Billed logistics"

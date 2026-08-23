@@ -124,6 +124,190 @@ export const DATE_HOLD_DAYS = 7;
 export const HOME_BASE = "Baguio City";
 
 // ---------------------------------------------------------------------------
+// Engagement type
+// ---------------------------------------------------------------------------
+
+export type EngagementTypeId = "speaking" | "facilitation" | "team-building";
+
+export interface EngagementType {
+  id: EngagementTypeId;
+  label: string;
+  detail: string;
+}
+
+/**
+ * What kind of work this is. It decides where the day rate comes from, and
+ * which questions the form asks at all.
+ *
+ * These are not variations on one service. A talk is prepared once and
+ * delivered; facilitation is designed for one specific room, and the day in
+ * that room is often HALF the engagement — the interviews before it and the
+ * written plan after it are the rest, and they are exactly the parts that get
+ * absorbed for free when everything is priced as "a day". So facilitation
+ * carries its own rate ladder and its own pre-work and output lines, rather
+ * than borrowing the subject-complexity ladder, which cannot apply to work
+ * that is bespoke by definition.
+ */
+export const ENGAGEMENT_TYPES: EngagementType[] = [
+  {
+    id: "speaking",
+    label: "Talk, workshop or training",
+    detail: "You want a subject taught — a keynote, a session, a multi-day course",
+    },
+  {
+    id: "facilitation",
+    label: "Planning facilitation",
+    detail:
+      "Strategic or business planning, a board retreat — you want a room guided to a decision, not a lecture",
+  },
+  {
+    id: "team-building",
+    label: "Team building",
+    detail: "Designed activities and facilitation, built around what the group actually needs",
+  },
+];
+
+export function engagementTypeFor(id: EngagementTypeId): EngagementType {
+  return ENGAGEMENT_TYPES.find((t) => t.id === id) ?? ENGAGEMENT_TYPES[0];
+}
+
+// ---------------------------------------------------------------------------
+// Facilitation
+// ---------------------------------------------------------------------------
+
+export type FacilitationScopeId = "team" | "organisation" | "board";
+
+export interface FacilitationScope {
+  id: FacilitationScopeId;
+  label: string;
+  detail: string;
+  dayRate: number;
+}
+
+/**
+ * Facilitation rates. Above every speaking tier, because facilitation is
+ * bespoke by definition — nothing is reusable, the process is designed for one
+ * room, and the facilitator carries the outcome rather than the content.
+ *
+ * The ladder is about how many principals have to be reconciled, which is what
+ * actually makes a room hard to run.
+ */
+export const FACILITATION_SCOPES: FacilitationScope[] = [
+  {
+    id: "team",
+    label: "One team or department",
+    detail: "A single planning session, clear scope, one set of decision-makers",
+    dayRate: 25_000,
+  },
+  {
+    id: "organisation",
+    label: "A whole organisation or cooperative",
+    detail:
+      "Several departments or member groups whose priorities have to be reconciled in the room",
+    dayRate: 28_000,
+  },
+  {
+    id: "board",
+    label: "A board, or several entities at once",
+    detail:
+      "Governance-level decisions with competing principals, where the facilitator carries the outcome",
+    dayRate: 30_000,
+  },
+];
+
+export function facilitationScopeFor(id: FacilitationScopeId): FacilitationScope {
+  return FACILITATION_SCOPES.find((f) => f.id === id) ?? FACILITATION_SCOPES[0];
+}
+
+/**
+ * Day rate for team building.
+ *
+ * CONFIRM THIS NUMBER. It is the one figure on this card that was not set
+ * directly: it sits above the speaking ladder because activity design and a
+ * room on its feet are more work than a lecture, and below planning
+ * facilitation because less rests on the outcome. Group size is already priced
+ * by AUDIENCE_BANDS, so it is not doubled up here.
+ */
+export const TEAM_BUILDING_DAY_RATE = 22_000;
+
+/**
+ * Desk days — interviews, document review, writing up — bill at this share of
+ * the room day rate.
+ *
+ * Not the full rate: time in the room is the premium, and quoting a day of
+ * writing at the same price as a day of facilitating is the kind of line an
+ * organiser is right to query. Not zero either, which is what happens when
+ * pre-work and write-ups are folded into "the day" and quietly absorbed.
+ */
+export const DESK_DAY_FACTOR = 0.7;
+
+export interface FacilitationStage {
+  id: string;
+  label: string;
+  detail: string;
+  /** Desk days this implies, billed at DESK_DAY_FACTOR of the day rate. */
+  days: number;
+}
+
+/** What happens before the room — the invisible half of a planning engagement. */
+export const PREPARATION_OPTIONS: FacilitationStage[] = [
+  {
+    id: "none",
+    label: "None — we will brief you on a call",
+    detail: "You arrive with what we send you and we start from there",
+    days: 0,
+  },
+  {
+    id: "review",
+    label: "Read our documents beforehand",
+    detail: "Financial statements, the previous plan, board papers, an organisation chart",
+    days: 0.5,
+  },
+  {
+    id: "interviews",
+    label: "Interview up to five of our people first",
+    detail: "Short one-to-one conversations, so the session opens with the real disagreements",
+    days: 1,
+  },
+  {
+    id: "deep",
+    label: "Interview six to twelve, and read the documents",
+    detail: "Enough groundwork to design the session around what is actually contested",
+    days: 2,
+  },
+];
+
+/** What happens after the room. */
+export const OUTPUT_OPTIONS: FacilitationStage[] = [
+  {
+    id: "none",
+    label: "None — we will write it up ourselves",
+    detail: "You leave with the outputs from the room, photographed and handed over",
+    days: 0,
+  },
+  {
+    id: "summary",
+    label: "A facilitator's summary",
+    detail: "What was decided, what was left open, and the agreed priorities in order",
+    days: 0.5,
+  },
+  {
+    id: "plan",
+    label: "The written plan itself",
+    detail: "The full document, drafted and formatted, ready to circulate or present",
+    days: 2,
+  },
+];
+
+export function preparationOptionFor(id: string): FacilitationStage {
+  return PREPARATION_OPTIONS.find((o) => o.id === id) ?? PREPARATION_OPTIONS[0];
+}
+
+export function outputOptionFor(id: string): FacilitationStage {
+  return OUTPUT_OPTIONS.find((o) => o.id === id) ?? OUTPUT_OPTIONS[0];
+}
+
+// ---------------------------------------------------------------------------
 // Engagement format
 // ---------------------------------------------------------------------------
 
@@ -142,6 +326,14 @@ export interface EngagementFormat {
   dayEquivalent: number;
   /** True when the format is delivered online and never incurs travel. */
   remote: boolean;
+  /** Engagement types this format is offered for. A keynote is not a retreat. */
+  types: EngagementTypeId[];
+  /**
+   * Per-type wording. "Full-day workshop" is the right name for a training day
+   * and the wrong one for a board retreat, and the label is what appears on the
+   * quote's base line.
+   */
+  altLabels?: Partial<Record<EngagementTypeId, string>>;
 }
 
 export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
@@ -151,6 +343,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 90 minutes, single delivery, Q&A included",
     dayEquivalent: 0.5,
     remote: false,
+    types: ["speaking"],
   },
   {
     id: "panel",
@@ -158,6 +351,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 90 minutes, shared stage, light preparation",
     dayEquivalent: 0.4,
     remote: false,
+    types: ["speaking"],
   },
   {
     id: "webinar",
@@ -165,6 +359,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 2 hours delivered over video, no travel",
     dayEquivalent: 0.45,
     remote: true,
+    types: ["speaking", "facilitation"],
   },
   {
     id: "half-day",
@@ -172,6 +367,8 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 4 hours, exercises and facilitation included",
     dayEquivalent: 0.6,
     remote: false,
+    altLabels: { facilitation: "Half-day session", "team-building": "Half-day programme" },
+    types: ["speaking", "facilitation", "team-building"],
   },
   {
     id: "full-day",
@@ -179,6 +376,8 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "6 to 8 hours, hands-on, materials and facilitation included",
     dayEquivalent: 1,
     remote: false,
+    altLabels: { facilitation: "Full-day session", "team-building": "Full-day programme" },
+    types: ["speaking", "facilitation", "team-building"],
   },
 ];
 
@@ -633,4 +832,15 @@ export const REGIONS: Region[] = [
 
 export function regionFor(id: RegionId): Region {
   return REGIONS.find((r) => r.id === id) ?? REGIONS[0];
+}
+
+
+/** The format's name for the engagement type it is being used in. */
+export function formatLabel(format: EngagementFormat, type: EngagementTypeId): string {
+  return format.altLabels?.[type] ?? format.label;
+}
+
+/** The formats offered for one engagement type. */
+export function formatsFor(type: EngagementTypeId): EngagementFormat[] {
+  return ENGAGEMENT_FORMATS.filter((f) => f.types.includes(type));
 }

@@ -26,6 +26,7 @@ import {
   ADD_ONS,
   AUDIENCE_BANDS,
   DATE_HOLD_DAYS,
+  DESK_DAY_FACTOR,
   ENGAGEMENT_FORMATS,
   EWT_RATE,
   EWT_RATE_FIRM,
@@ -40,15 +41,23 @@ import {
   SCHEDULE_FACTORS,
   TRAVEL_DAY_FACTOR,
   addOnFor,
+  TEAM_BUILDING_DAY_RATE,
   audienceBandFor,
   audienceProfileFor,
+  engagementTypeFor,
+  facilitationScopeFor,
+  formatLabel,
   leadTimeBandFor,
+  outputOptionFor,
+  preparationOptionFor,
   organizerTypeFor,
   regionFor,
   type AddOnId,
   type AudienceProfileId,
   type ComplexityId,
   type EngagementFormatId,
+  type EngagementTypeId,
+  type FacilitationScopeId,
   type OrganizerTypeId,
   type RegionId,
   type ScheduleFactorId,
@@ -68,10 +77,19 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface QuotationInput {
+  /** What kind of work this is. Decides where the day rate comes from. */
+  engagementType: EngagementTypeId;
   format: EngagementFormatId;
   /** Number of sessions or engagement days, consecutive from `startDate`. */
   sessions: number;
+  /** Speaking only: how much new ground the subject covers. */
   complexity: ComplexityId;
+  /** Facilitation only: how many principals have to be reconciled. */
+  facilitationScope: FacilitationScopeId;
+  /** Facilitation only: interviews and reading before the room. */
+  preparation: string;
+  /** Facilitation only: what gets written afterwards. */
+  output: string;
   audienceSize: number;
   /** Who is in the room. Priced separately from how many — see AUDIENCE_PROFILES. */
   audienceProfile: AudienceProfileId;
@@ -109,9 +127,13 @@ export interface QuotationInput {
 }
 
 export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
+  engagementType: "speaking",
   format: "full-day",
   sessions: 1,
   complexity: "tailored",
+  facilitationScope: "organisation",
+  preparation: "none",
+  output: "none",
   audienceSize: 40,
   audienceProfile: "non-specialist",
   organizerType: "corporate",
@@ -169,8 +191,13 @@ export interface QuotationDateNote {
 export interface Quotation {
   /** Deterministic reference derived from the inputs — no clock, no random. */
   reference: string;
-  /** The day rate the topic tier set. The number effectiveDayRate is judged against. */
+  /** What kind of work this is. */
+  engagementType: EngagementTypeId;
+  engagementTypeLabel: string;
+  /** The day rate this engagement's type and scope set. */
   dayRate: number;
+  /** Desk days before and after the room. Facilitation only; zero otherwise. */
+  deskDays: number;
   /** The tier's label, so the summary can name what set the rate. */
   topicTier: string;
   dayEquivalents: number;
@@ -255,6 +282,10 @@ function referenceFor(input: QuotationInput): string {
   // an email, and the one printed on the PDF.
   const seed = [
     input.startDate,
+    input.engagementType,
+    input.facilitationScope,
+    input.preparation,
+    input.output,
     input.format,
     input.sessions,
     input.complexity,
@@ -308,11 +339,28 @@ function scheduleFor(dates: string[]): Quotation["schedule"] {
 export function buildQuotation(raw: QuotationInput): Quotation {
   const format =
     ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
+  const engagementType = engagementTypeFor(raw.engagementType);
   const complexity = complexityTierFor(raw.complexity);
-  // The topic sets the rate. Everything downstream that used to read a shared
-  // anchor — the base fee, travel days, the effective-rate comparison — reads
-  // this instead.
-  const dayRate = complexity.dayRate;
+  const facilitationScope = facilitationScopeFor(raw.facilitationScope);
+
+  // Where the day rate comes from depends on what the work IS. A talk is
+  // priced by how much new ground the subject covers; facilitation cannot be,
+  // because it is bespoke by definition and has no reusable material to be
+  // further or nearer from.
+  const dayRate =
+    engagementType.id === "facilitation"
+      ? facilitationScope.dayRate
+      : engagementType.id === "team-building"
+        ? TEAM_BUILDING_DAY_RATE
+        : complexity.dayRate;
+
+  const isFacilitation = engagementType.id === "facilitation";
+  const preparation = preparationOptionFor(raw.preparation);
+  const output = outputOptionFor(raw.output);
+  // Desk days only exist for facilitation. Speaking prep is already inside the
+  // format's day-equivalent, and team building uses the survey/report add-ons.
+  const preparationDays = isFacilitation ? preparation.days : 0;
+  const outputDays = isFacilitation ? output.days : 0;
   const organizer = organizerTypeFor(raw.organizerType);
   // An online format overrides whatever region was picked: there is no travel
   // to a webinar, and leaving a stale region selected would bill hotel nights
@@ -346,7 +394,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   push({
     id: "base",
     kind: "base",
-    label: `${format.label}${sessions > 1 ? ` × ${sessions}` : ""}`,
+    label: `${formatLabel(format, engagementType.id)}${sessions > 1 ? ` × ${sessions}` : ""}`,
     // The tier sets the rate, so it is named here rather than carried as its
     // own factor line — it is not a surcharge on a standard rate, it IS the
     // rate. Kept to a short clause: every session is adapted to the room
@@ -355,10 +403,39 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     detail: `${dayEquivalents} engagement ${
       dayEquivalents === 1 ? "day" : "days"
     } at ₱${dayRate.toLocaleString("en-PH")}/day, the rate for ${
-      complexity.id === "routine" ? "a settled subject" : complexity.label.toLowerCase()
+      isFacilitation
+        ? facilitationScope.label.toLowerCase()
+        : engagementType.id === "team-building"
+          ? "facilitated team building"
+          : complexity.id === "routine"
+            ? "a settled subject"
+            : complexity.label.toLowerCase()
     }`,
     amount: baseFee,
   });
+
+  // 1b. Desk days ---------------------------------------------------------
+  // Placed with the base fee, before any multiplier, because they are part of
+  // what is being bought rather than a premium on it. A planning engagement
+  // whose interviews and written plan are invisible is one where half the work
+  // is done for free.
+  for (const stage of [
+    { id: "preparation", stage: preparation, days: preparationDays, when: "before" },
+    { id: "output", stage: output, days: outputDays, when: "after" },
+  ]) {
+    if (stage.days <= 0) continue;
+    push({
+      id: stage.id,
+      kind: "base",
+      label: stage.stage.label,
+      detail: `${stage.days} ${stage.days === 1 ? "day" : "days"} of work ${
+        stage.when === "before" ? "before" : "after"
+      } the session, billed at ${DESK_DAY_FACTOR * 100}% of the ₱${dayRate.toLocaleString(
+        "en-PH"
+      )} day rate — ${stage.stage.detail.toLowerCase()}`,
+      amount: dayRate * DESK_DAY_FACTOR * stage.days,
+    });
+  }
 
   // 2. Multiplicative factors ---------------------------------------------
   const factors: Array<{ id: string; label: string; detail: string; factor: number }> = [
@@ -371,12 +448,21 @@ export function buildQuotation(raw: QuotationInput): Quotation {
           : "Larger rooms mean more materials, more breakout support and a heavier assessment load",
       factor: audience.factor,
     },
-    {
-      id: "audience-profile",
-      label: audienceProfile.label,
-      detail: audienceProfile.detail,
-      factor: audienceProfile.factor,
-    },
+    // Skipped entirely for team building: the profiles describe how much
+    // finance the room already knows, which changes how a session on cash flow
+    // has to be built and changes nothing at all about facilitating a day of
+    // activities. Charging for it there would be a factor with no work behind
+    // it.
+    ...(engagementType.id === "team-building"
+      ? []
+      : [
+          {
+            id: "audience-profile",
+            label: audienceProfile.label,
+            detail: audienceProfile.detail,
+            factor: audienceProfile.factor,
+          },
+        ]),
     {
       id: "schedule",
       label: schedule.label,
@@ -629,13 +715,25 @@ export function buildQuotation(raw: QuotationInput): Quotation {
       `No formal invoice was requested. Organisations of this kind almost always need one before finance can release payment — say so on the form and it is issued by ${INVOICING_ENTITY.name}, at no change to the fee.`
     );
   }
+  if (isFacilitation && outputDays === 0) {
+    flags.push(
+      "No written output was asked for, so the quote covers the room only. Groups that plan to write it up themselves very often do not — worth deciding now rather than after the session."
+    );
+  }
+  if (isFacilitation && preparationDays === 0) {
+    flags.push(
+      "No preparation was asked for. A planning session with no groundwork spends its first half discovering what the disagreements are, which is the most expensive way to find out."
+    );
+  }
   if (sessions > 1) {
     flags.push(
       "Dates are assumed consecutive. If the sessions are spread across weeks, say so — it changes the travel line, not the fee."
     );
   }
 
-  const daysCommitted = Number((dayEquivalents + region.travelDays).toFixed(3));
+  const daysCommitted = Number(
+    (dayEquivalents + region.travelDays + preparationDays + outputDays).toFixed(3)
+  );
 
   // Displayed amounts are the DIFFERENCE between consecutive rounded running
   // totals, not each raw amount rounded on its own.
@@ -654,8 +752,11 @@ export function buildQuotation(raw: QuotationInput): Quotation {
 
   return {
     reference: referenceFor(raw),
+    engagementType: engagementType.id,
+    engagementTypeLabel: engagementType.label,
     dayRate,
-    topicTier: complexity.label,
+    deskDays: preparationDays + outputDays,
+    topicTier: isFacilitation ? facilitationScope.label : complexity.label,
     dayEquivalents,
     daysCommitted,
     lines: reconciledLines,

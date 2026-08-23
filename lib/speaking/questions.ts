@@ -18,6 +18,8 @@
 
 import {
   DAY_RATE_MAX,
+  DESK_DAY_FACTOR,
+  FACILITATION_SCOPES,
   EWT_RATE,
   EWT_RATE_FIRM,
   INVOICING_ENTITY,
@@ -45,6 +47,44 @@ export interface RateQuestion {
 }
 
 export const QUESTIONS = {
+  engagementType: {
+    id: "engagementType",
+    label: "What kind of engagement is it?",
+    hint: "This decides the rest of the form, and where the day rate comes from.",
+    why: "A talk and a planning session are not variations on one service. A talk is prepared once and delivered; a facilitated session is designed for one specific room, and the day in that room is often half the work — the interviews before it and the plan written after it are the rest. Pricing them the same way means one of them is wrong.",
+    impact: `Talks and workshops are priced by how much new ground the subject covers, from ${peso(
+      DAY_RATE_MIN
+    )} a day. Facilitation starts at ${peso(
+      FACILITATION_SCOPES[0].dayRate
+    )} a day and adds its own lines for preparation and written output.`,
+  },
+  facilitationScope: {
+    id: "facilitationScope",
+    label: "Whose plan is being made?",
+    hint: "How many sets of interests have to agree by the end of the day.",
+    why: "What makes a planning room hard to run is not the subject, it is the number of principals in it. One department with a clear remit reaches a decision; a cooperative with several member groups, or a board with competing interests, has to be brought to one — and that is the work being bought, not the slides.",
+    impact: `From ${peso(FACILITATION_SCOPES[0].dayRate)} a day for a single team up to ${peso(
+      FACILITATION_SCOPES[FACILITATION_SCOPES.length - 1].dayRate
+    )} for a board or several entities at once.`,
+  },
+  preparation: {
+    id: "preparation",
+    label: "How much groundwork before the session?",
+    hint: "Reading, and conversations with your people.",
+    why: "A planning session with no groundwork spends its first half discovering what the disagreements are — which is the most expensive possible way to find that out, because it is being discovered by everyone in the room at once. Interviews beforehand mean the session opens on the real questions instead of arriving at them by lunch.",
+    impact: `Charged as days of work at ${
+      DESK_DAY_FACTOR * 100
+    }% of the day rate — nothing if you skip it, up to two days for a full round of interviews and document review.`,
+  },
+  output: {
+    id: "output",
+    label: "What should exist afterwards?",
+    hint: "Beyond the flipcharts and photographs.",
+    why: "Writing up a plan properly takes days, and it is the single most commonly absorbed piece of work in this business: the room agrees, everyone leaves, and someone is expected to produce the document for free. Groups that intend to write it up themselves very often do not, and the session quietly stops mattering about a month later.",
+    impact: `Charged as days of work at ${
+      DESK_DAY_FACTOR * 100
+    }% of the day rate — nothing if you write it up yourselves, half a day for a summary, two days for the plan itself.`,
+  },
   format: {
     id: "format",
     label: "What kind of session is it?",

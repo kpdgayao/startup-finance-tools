@@ -92,6 +92,33 @@ clause on the fee's base line, and nowhere in the printed quotation's header.
 Classifying a client's own subject more prominently than that reads as a verdict
 on it rather than an explanation of the price.
 
+### Engagement types
+
+The tool covers three kinds of work, chosen first on the form, because they are
+not variations on one service:
+
+| Type | Day rate from | Notes |
+| --- | --- | --- |
+| Talk, workshop or training | `COMPLEXITY_TIERS`, ₱15,000–₱24,000 | Priced by how much new ground the subject covers |
+| Planning facilitation | `FACILITATION_SCOPES`, ₱25,000–₱30,000 | Above every speaking tier — bespoke by definition, nothing reusable |
+| Team building | `TEAM_BUILDING_DAY_RATE`, ₱22,000 | **Confirm this number** — it is the one rate not set directly |
+
+`ENGAGEMENT_FORMATS` are tagged with the types they belong to, so a keynote is
+never offered for a board retreat, and carry `altLabels` so the same full day
+reads as a "workshop", a "session" or a "programme" depending on the type.
+
+Facilitation adds two lines nothing else has — `PREPARATION_OPTIONS` (interviews
+and document review before) and `OUTPUT_OPTIONS` (what gets written after) —
+billed as desk days at `DESK_DAY_FACTOR` (70%) of the room rate. That factor is
+the point: time in the room is the premium, but a day of writing up a plan is
+not free either, and folding it into "the day" is how half a planning
+engagement ends up unpaid. A facilitation quote with neither raises a flag.
+
+The audience-composition factor is skipped entirely for team building: those
+profiles describe how much finance the room already knows, which changes how a
+session on cash flow is built and changes nothing about running a day of
+activities.
+
 ### Audience composition
 
 `AUDIENCE_PROFILES` prices WHO is in the room, separately from `AUDIENCE_BANDS`,

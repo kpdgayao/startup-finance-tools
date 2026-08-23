@@ -62,12 +62,18 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
           ],
           ["Participants", input.audienceSize.toLocaleString("en-PH")],
           [
-            "Engagement days",
-            `${quote.dayEquivalents} delivery${
-              quote.daysCommitted > quote.dayEquivalents
-                ? `, ${Number((quote.daysCommitted - quote.dayEquivalents).toFixed(3))} travel`
-                : ""
-            }`,
+            "Days of work",
+            [
+              `${quote.dayEquivalents} in the room`,
+              quote.deskDays > 0 ? `${quote.deskDays} preparing and writing up` : "",
+              quote.daysCommitted - quote.dayEquivalents - quote.deskDays > 0
+                ? `${Number(
+                    (quote.daysCommitted - quote.dayEquivalents - quote.deskDays).toFixed(3)
+                  )} travelling`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(", "),
           ],
         ]
       )
@@ -80,7 +86,7 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
       `<div class="summary-grid">
         ${summaryCard("Professional fee", formatPHP(quote.professionalFee))}
         ${summaryCard("Cost per day", formatPHP(quote.effectiveDayRate), {
-          sublabel: `Across ${quote.daysCommitted} day(s) of delivery and travel`,
+          sublabel: `Across ${quote.daysCommitted} day(s) of work in total`,
         })}
         ${summaryCard("Billed logistics", formatPHP(quote.reimbursablesBilled), {
           sublabel:

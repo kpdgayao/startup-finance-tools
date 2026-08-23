@@ -5,6 +5,10 @@ import {
   ADD_ONS,
   AUDIENCE_PROFILES,
   COMPLEXITY_TIERS,
+  ENGAGEMENT_TYPES,
+  FACILITATION_SCOPES,
+  OUTPUT_OPTIONS,
+  PREPARATION_OPTIONS,
   ENGAGEMENT_FORMATS,
   ORGANIZER_TYPES,
   REGIONS,
@@ -38,6 +42,10 @@ const draftTool = {
   input_schema: {
     type: "object" as const,
     properties: {
+      engagementType: { type: "string", enum: ids(ENGAGEMENT_TYPES) },
+      facilitationScope: { type: "string", enum: ids(FACILITATION_SCOPES) },
+      preparation: { type: "string", enum: ids(PREPARATION_OPTIONS) },
+      output: { type: "string", enum: ids(OUTPUT_OPTIONS) },
       format: { type: "string", enum: ids(ENGAGEMENT_FORMATS) },
       sessions: { type: "integer", minimum: 1, maximum: 30 },
       complexity: { type: "string", enum: ids(COMPLEXITY_TIERS) },
@@ -78,6 +86,10 @@ const draftTool = {
 };
 
 const draftSchema = z.object({
+  engagementType: z.enum(ids(ENGAGEMENT_TYPES) as [string, ...string[]]).optional(),
+  facilitationScope: z.enum(ids(FACILITATION_SCOPES) as [string, ...string[]]).optional(),
+  preparation: z.enum(ids(PREPARATION_OPTIONS) as [string, ...string[]]).optional(),
+  output: z.enum(ids(OUTPUT_OPTIONS) as [string, ...string[]]).optional(),
   format: z.enum(ids(ENGAGEMENT_FORMATS) as [string, ...string[]]).optional(),
   sessions: z.number().int().min(1).max(30).optional(),
   complexity: z.enum(ids(COMPLEXITY_TIERS) as [string, ...string[]]).optional(),
@@ -109,7 +121,9 @@ Today is ${today}. Resolve relative dates ("next month", "the second week of Mar
 RULES
 - Extract what is stated. Infer only what is strongly implied, and list every inference in "assumptions".
 - Leave a field out entirely rather than guessing it. An omitted field keeps the form's default; a wrong one becomes a wrong price the organiser then has to argue about.
-- "complexity" is how much NEW GROUND the subject covers, and it sets the day rate. Judge it by the subject, never by how the organiser describes their budget. Every session is adapted to the audience regardless, so adaptation alone never raises the tier.
+- "engagementType" comes first and changes what else matters. "speaking" is a talk, workshop or training course — someone teaches a subject. "facilitation" is a planning session, strategy workshop, board retreat or business planning offsite — a room is guided to its own decisions rather than taught. "team-building" is designed activities. If the description says "strategic planning", "planning session", "offsite" or "retreat", it is facilitation, not speaking.
+- "facilitationScope", "preparation" and "output" apply to facilitation only. Leave them out for a talk. "output" is what the organiser wants in writing afterwards — a plan document, a summary, or nothing. "preparation" is interviews or document review beforehand. Only set them when the description actually says.
+- "complexity" applies to speaking only, and is how much NEW GROUND the subject covers, and it sets the day rate. Judge it by the subject, never by how the organiser describes their budget. Every session is adapted to the audience regardless, so adaptation alone never raises the tier.
   - "routine": settled subjects — bookkeeping, accounting, cash flow, pricing, valuation, SAFEs, compliance — however specific the title. "Bookkeeping for non-accountants" is routine.
   - "tailored": one of those subjects rebuilt around a named industry's own cases and figures.
   - "applied": a new programme, still within accounting, finance or startup practice.
