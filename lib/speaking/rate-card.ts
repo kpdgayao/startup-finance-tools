@@ -137,6 +137,24 @@ export const INVOICING_ENTITY = {
   vatRate: 0.12,
 } as const;
 
+/**
+ * What a Philippine public body can pay a resource person as an HONORARIUM,
+ * per day, under DBM Budget Circular 2007-1.
+ *
+ * The circular pays twice the hourly rate of the salary grade the speaker is
+ * pegged to, for delivery hours plus an equal number of preparation hours —
+ * roughly ₱18,700 to ₱21,200 a day at SG-24 to SG-25 on the 2026 table. This
+ * is the round figure at the top of that band.
+ *
+ * It is a real constraint on one payment ROUTE, not on the work: a public body
+ * that needs a service the honorarium rules cannot buy procures it as a
+ * consultancy or service contract instead. The card quotes above this ceiling
+ * in two places — the top of the subject ladder, and all of facilitation — and
+ * the quote raises a flag when it does, because a procurement officer who
+ * discovers it after the fact loses weeks, not pesos.
+ */
+export const HONORARIUM_DAY_CEILING = 21_000;
+
 /** Quote validity, and how long the requested date is held without a deposit. */
 export const QUOTE_VALID_DAYS = 30;
 export const DATE_HOLD_DAYS = 7;
@@ -206,22 +224,31 @@ export interface FacilitationScope {
 }
 
 /**
- * Facilitation rates, at PUBLIC-SECTOR level like every other ladder here —
- * the sector multiplier scales them from there.
+ * Facilitation rates, at PUBLIC-SECTOR level like every other ladder here.
+ * The sector scales them by its OWN facilitation multiplier, not by the
+ * speaking one — see OrganizerType.facilitationMultiplier.
  *
  * Two caveats worth knowing, because this ladder rests on the weakest evidence
- * on the card. First, the corporate facilitation rate it produces (about
- * ₱90,000 a day) is extrapolated from international facilitation day rates of
- * roughly ₱70,000–440,000; no reliable Philippine figure was found. Treat it
- * as a hypothesis to test against real enquiries rather than an observed price.
+ * on the card. First, the only day rates found for comparable facilitation were
+ * international, roughly ₱70,000–440,000 a day; no reliable Philippine figure
+ * turned up. An earlier version scaled this ladder by the speaking multipliers
+ * and produced a ₱90,000 corporate day from that international range — a price
+ * imported from a market this one is not in. The corporate facilitation day is
+ * now ₱70,000 at the middle rung, which sits at the top of the Philippine
+ * in-house training day range rather than above it, and is a hypothesis to test
+ * against real enquiries rather than an observed price.
  * Second, these sit above the ~₱21,000 DBM honorarium ceiling even at the
  * public rate, on the basis that a planning engagement is normally procured as
  * a consultancy contract rather than paid as a resource-person honorarium —
  * which is a different rule, not an exemption from that one.
  *
- * Above every speaking tier, because facilitation is bespoke by definition —
- * nothing is reusable, the process is designed for one room, and the
- * facilitator carries the outcome rather than the content.
+ * Above every speaking tier at the public rate, because facilitation is bespoke
+ * by definition — nothing is reusable, the process is designed for one room,
+ * and the facilitator carries the outcome rather than the content. That
+ * ordering is a property of the ladders, not of every sector: a corporate
+ * research-heavy teaching day now costs more than a corporate planning day,
+ * because teaching scales with the corporate training market and facilitation
+ * is anchored to what a facilitation day is actually worth here.
  *
  * The ladder is about how many principals have to be reconciled, which is what
  * actually makes a room hard to run.
@@ -261,6 +288,14 @@ export function facilitationScopeFor(id: FacilitationScopeId): FacilitationScope
  * a lecture, and below both the research tier (₱24,000) and all of facilitation,
  * because nothing has to be read up on first and no decision rests on the day.
  * Group size is already priced by AUDIENCE_BANDS, so it is not doubled up here.
+ *
+ * The sector scales it by `facilitationMultiplier`, not the speaking one, even
+ * though the base rate is set inside the speaking range. Team building is
+ * facilitated room work: what it sells is a designed day and a room on its
+ * feet, not a subject taught, so it does not track the corporate TRAINING
+ * budget the way a technical workshop does. Scaling it by the speaking
+ * multiplier put a corporate team-building day at ₱70,000 — above a corporate
+ * one-team planning day at ₱63,000, which contradicts every word above.
  */
 export const TEAM_BUILDING_DAY_RATE = 22_000;
 
@@ -634,6 +669,7 @@ export function leadTimeBandFor(daysOfNotice: number): LeadTimeBand {
 export type OrganizerTypeId =
   | "corporate"
   | "association"
+  | "cooperative"
   | "government"
   | "academic"
   | "mission";
@@ -660,8 +696,32 @@ export interface OrganizerType {
    * session costs at the very bottom of the market, for two days of work.
    */
   rateMultiplier: number;
+  /**
+   * The same idea for FACILITATED work — a planning session or a team-building
+   * day — which is a different market with a different ceiling and so needs
+   * its own scaling.
+   *
+   * Teaching scales with the corporate TRAINING budget, which is large and
+   * well evidenced here. Facilitation does not: the only comparable day rates
+   * found were international, and scaling the facilitation ladder by the
+   * speaking multiplier imported that range wholesale — a corporate planning
+   * day came out at ₱90,000, above what any Philippine training day was
+   * observed to cost, on the strength of no Philippine evidence at all.
+   * Splitting the two lets the teaching ladder track its market without
+   * dragging facilitation somewhere its own market does not support.
+   */
+  facilitationMultiplier: number;
   /** Short noun for the fee's base line — "the corporate rate for …". */
   sectorLabel: string;
+  /**
+   * Paid under the DBM honorarium rules — see HONORARIUM_DAY_CEILING.
+   *
+   * Its own field rather than an inference from `sectorLabel`: the engine used
+   * to decide this by matching that label's text, so renaming a display string
+   * would have silently switched off a flag a procurement officer depends on.
+   * A new tier has to answer the question rather than inherit an answer.
+   */
+  honorariumRules: boolean;
   /** Eligible for the concessionary mission discount. */
   mission: boolean;
   /** Ordinarily withholds creditable tax on professional fees. */
@@ -681,10 +741,14 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   {
     id: "corporate",
     label: "Company or corporate in-house training",
-    detail: "Private firm, bank, cooperative bank, or a commercial training provider",
+    detail: "Private firm, bank, or a commercial training provider",
     // Benchmarked against Philippine in-house corporate training: ₱40,000–280,000 a session, ₱100,000–500,000 for a two-day programme.
     rateMultiplier: 3.2,
+    // 28,000 × 2.5 = ₱70,000 at the middle rung — the top of the observed
+    // Philippine training-day range rather than above it.
+    facilitationMultiplier: 2.5,
     sectorLabel: "corporate",
+    honorariumRules: false,
     mission: false,
     withholds: true,
   },
@@ -694,7 +758,28 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "Chamber, professional body, or a conference that sells seats",
     // Between the public and corporate rate — a chamber or a ticketed conference sells seats, but rarely on a corporate training budget.
     rateMultiplier: 2.5,
+    facilitationMultiplier: 1.9,
     sectorLabel: "association",
+    honorariumRules: false,
+    mission: false,
+    withholds: true,
+  },
+  {
+    id: "cooperative",
+    label: "Cooperative or cooperative federation",
+    detail: "A co-op, union or federation — larger cooperative banks are usually the corporate rate",
+    // Between a private school and a chamber, for a specific reason: a
+    // cooperative has a STATUTORY training budget. RA 9520 requires up to 10%
+    // of net surplus to go to the cooperative education and training fund,
+    // half of it spent by the co-op itself on education and training. So this
+    // is not an organisation asking to be treated as a charity — the money is
+    // already ring-fenced for exactly this. It sits below the association and
+    // corporate rates because the surplus funding it is members' own, not
+    // profit, and a co-op is answerable to those members for how it is spent.
+    rateMultiplier: 2,
+    facilitationMultiplier: 1.6,
+    sectorLabel: "cooperative",
+    honorariumRules: false,
     mission: false,
     withholds: true,
   },
@@ -704,7 +789,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "Has a budget line and a procurement process",
     // The public-sector rate the ladders are written in. Capped by DBM BC 2007-1 at roughly ₱21,000 a day, so there is no room above it.
     rateMultiplier: 1,
+    facilitationMultiplier: 1,
     sectorLabel: "public-sector",
+    honorariumRules: true,
     mission: false,
     withholds: true,
   },
@@ -714,7 +801,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "Faculty development, student congress, graduate programme",
     // Private schools and universities have a training budget, but not a corporate one.
     rateMultiplier: 1.6,
+    facilitationMultiplier: 1.4,
     sectorLabel: "private-academic",
+    honorariumRules: false,
     mission: false,
     withholds: true,
   },
@@ -724,7 +813,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "No ticket revenue and no training budget — qualifies for the concessionary rate",
     // The public rate, before the concession below.
     rateMultiplier: 1,
+    facilitationMultiplier: 1,
     sectorLabel: "public-sector",
+    honorariumRules: true,
     mission: true,
     // True, despite the concession. Public schools, SUCs and registered NGOs
     // are withholding agents exactly as government offices are; marking the
@@ -742,6 +833,29 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
 export const TOP_SECTOR_MULTIPLIER = Math.max(
   ...ORGANIZER_TYPES.map((o) => o.rateMultiplier)
 );
+
+/** The same, for the facilitation ladder, which the sectors scale differently. */
+export const TOP_SECTOR_FACILITATION_MULTIPLIER = Math.max(
+  ...ORGANIZER_TYPES.map((o) => o.facilitationMultiplier)
+);
+
+/**
+ * Which of a sector's two multipliers applies.
+ *
+ * The split is teaching versus facilitated room work, not "facilitation versus
+ * everything else". Teaching a subject is bought out of a training budget and
+ * scales with it. Facilitated work — a planning session, a team-building day —
+ * is bought as a facilitator's time, a market that does not widen between
+ * sectors nearly as far.
+ *
+ * Every surface that shows a day rate — the form's chips, the "why we ask"
+ * copy, the printed quote — resolves it through here rather than reaching for
+ * a multiplier field directly, so the two ladders cannot drift apart on one
+ * screen.
+ */
+export function sectorMultiplier(organizer: OrganizerType, type: EngagementTypeId): number {
+  return type === "speaking" ? organizer.rateMultiplier : organizer.facilitationMultiplier;
+}
 
 export function organizerTypeFor(id: OrganizerTypeId): OrganizerType {
   return ORGANIZER_TYPES.find((o) => o.id === id) ?? ORGANIZER_TYPES[0];

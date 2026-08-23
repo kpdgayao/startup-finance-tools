@@ -19,6 +19,7 @@ import {
   facilitationScopeFor,
   formatsFor,
   organizerTypeFor,
+  sectorMultiplier,
 } from "@/lib/speaking/rate-card";
 
 // The rate is set by the topic, so the fixtures name the two ends of the
@@ -980,5 +981,329 @@ describe("expected paid seats keeps zero as its default", () => {
       input({ ticketed: true, participantFee: 1_000, audienceSize: 60, expectedPaidAttendees: 0 })
     );
     expect(quote.projectedGate).toBe(60_000);
+  });
+});
+
+describe("sector rates", () => {
+  it("prices a corporate planning day at ₱70,000 at the middle rung", () => {
+    // The number this ladder was rebuilt around. Scaled by the speaking
+    // multiplier it came out at ₱90,000, a figure extrapolated from
+    // international facilitation rates and above any observed Philippine
+    // training day.
+    const quote = buildQuotation(
+      input({
+        engagementType: "facilitation",
+        facilitationScope: "organisation",
+        organizerType: "corporate",
+        format: "full-day",
+      })
+    );
+    expect(quote.dayRate).toBe(70_000);
+  });
+
+  it("leaves the corporate teaching ladder where it was", () => {
+    // The facilitation change must not touch it: the two ladders are scaled
+    // separately precisely so one can move without the other.
+    const quote = buildQuotation(input({ organizerType: "corporate", complexity: "routine" }));
+    expect(quote.dayRate).toBe(deriveDayRate(ROUTINE_RATE, 3.2));
+  });
+
+  it("prices a cooperative between a private school and a chamber", () => {
+    const rate = (organizerType: QuotationInput["organizerType"]) =>
+      buildQuotation(input({ organizerType, complexity: "routine" })).dayRate;
+
+    expect(rate("cooperative")).toBeGreaterThan(rate("academic"));
+    expect(rate("cooperative")).toBeLessThan(rate("association"));
+    expect(rate("cooperative")).toBe(
+      deriveDayRate(ROUTINE_RATE, organizerTypeFor("cooperative").rateMultiplier)
+    );
+  });
+
+  it("charges a cooperative the standard rate, not the concessionary one", () => {
+    // A co-op has a statutory education and training fund, so it is not a
+    // mission organiser — marking it one would have quietly discounted every
+    // cooperative enquiry by a further 20%.
+    const quote = buildQuotation(input({ organizerType: "cooperative" }));
+    expect(quote.lines.some((l) => l.id === "mission-discount")).toBe(false);
+    expect(quote.withholding.applies).toBe(true);
+  });
+
+  it("tells a cooperative that one rate cannot fit the whole sector", () => {
+    // Co-ops run from a village store to a multi-billion-peso bank. The flag
+    // is the honest alternative to a rate card that silently prices them all
+    // the same and loses the small ones without ever hearing from them.
+    const quote = buildQuotation(input({ organizerType: "cooperative" }));
+    const flag = quote.flags.find((f) => f.includes("cooperative rate"));
+    expect(flag).toBeDefined();
+    expect(flag).toContain("small primary co-op");
+    // And nobody else is told about it.
+    expect(
+      buildQuotation(input({ organizerType: "corporate" })).flags.some((f) =>
+        f.includes("cooperative rate")
+      )
+    ).toBe(false);
+  });
+
+  it("prices a corporate team-building day as facilitated work", () => {
+    // ₱55,000, not the ₱70,000 the speaking multiplier produced — which was
+    // above a corporate one-team planning day and so contradicted the ladder.
+    const teamBuilding = buildQuotation(
+      input({ engagementType: "team-building", organizerType: "corporate" })
+    );
+    const planning = buildQuotation(
+      input({ engagementType: "facilitation", facilitationScope: "team", organizerType: "corporate" })
+    );
+    expect(teamBuilding.dayRate).toBe(55_000);
+    expect(teamBuilding.dayRate).toBeLessThan(planning.dayRate);
+  });
+
+  it("names the cooperative sector on the base line", () => {
+    const quote = buildQuotation(input({ organizerType: "cooperative" }));
+    expect(quote.lines[0].detail).toContain("cooperative rate");
+  });
+
+  it("resolves the facilitation multiplier for every sector", () => {
+    for (const organizer of ["government", "academic", "cooperative", "association", "corporate"] as const) {
+      const quote = buildQuotation(
+        input({ engagementType: "facilitation", facilitationScope: "team", organizerType: organizer })
+      );
+      expect(quote.dayRate, organizer).toBe(
+        deriveDayRate(
+          facilitationScopeFor("team").dayRate,
+          sectorMultiplier(organizerTypeFor(organizer), "facilitation")
+        )
+      );
+    }
+  });
+});
+
+describe("the honorarium ceiling", () => {
+  // The card quotes above the DBM ceiling in two places — the top of the
+  // subject ladder and all of facilitation — on the basis that work at that
+  // level is procured as a service contract rather than paid as an honorarium.
+  // That is a different rule, not an exemption, so the quote has to say it.
+  const ceilingFlag = (quote: ReturnType<typeof buildQuotation>) =>
+    quote.flags.find((f) => f.includes("honorarium"));
+
+  it("warns a government organiser quoted above it", () => {
+    const quote = buildQuotation(input({ organizerType: "government", complexity: "frontier" }));
+    expect(quote.dayRate).toBe(FRONTIER_RATE);
+    expect(ceilingFlag(quote)).toContain("procured as a service or consultancy contract");
+  });
+
+  it("says nothing when the public rate stays under it", () => {
+    expect(ceilingFlag(buildQuotation(input({ organizerType: "government" })))).toBeUndefined();
+  });
+
+  it("warns on public-sector facilitation, which always clears it", () => {
+    const quote = buildQuotation(
+      input({ organizerType: "government", engagementType: "facilitation" })
+    );
+    expect(ceilingFlag(quote)).toBeDefined();
+  });
+
+  it("compares the concessionary rate for a mission organiser, not the list one", () => {
+    // ₱24,000 less the 20% concession is ₱19,200, under the ceiling. Comparing
+    // the pre-concession rate would warn about a price never being asked for.
+    const quote = buildQuotation(input({ organizerType: "mission", complexity: "frontier" }));
+    expect(ceilingFlag(quote)).toBeUndefined();
+  });
+
+  it("says nothing to an organiser the circular does not govern", () => {
+    for (const organizerType of ["corporate", "association", "cooperative", "academic"] as const) {
+      const quote = buildQuotation(input({ organizerType, complexity: "frontier" }));
+      expect(ceilingFlag(quote), organizerType).toBeUndefined();
+    }
+  });
+});
+
+describe("budget", () => {
+  // A corporate two-day workshop with the logistics billed and an add-on on
+  // top: comfortably above a ₱60,000 budget, and carrying several levers.
+  const overBudget = () =>
+    input({
+      organizerType: "corporate",
+      complexity: "routine",
+      sessions: 2,
+      region: "metro-manila",
+      travelCovered: false,
+      accommodationCovered: false,
+      addOns: ["workbook"],
+      budget: 60_000,
+    });
+
+  it("reports nothing when no budget was given", () => {
+    expect(buildQuotation(input()).budgetFit).toBeNull();
+    expect(buildQuotation(input({ budget: 0 })).budgetFit).toBeNull();
+  });
+
+  it("ignores a negative or nonsensical budget", () => {
+    expect(buildQuotation(input({ budget: -50_000 })).budgetFit).toBeNull();
+    expect(buildQuotation(input({ budget: Number.NaN })).budgetFit).toBeNull();
+  });
+
+  it("never moves the fee, whatever the organiser says they have", () => {
+    // The whole point. A fee that bends to a stated budget makes the rate card
+    // fiction and punishes the organiser who answered honestly.
+    const base = buildQuotation(input());
+    for (const budget of [1, 5_000, 50_000, 5_000_000]) {
+      const quoted = buildQuotation(input({ budget }));
+      expect(quoted.professionalFee, `budget ${budget}`).toBe(base.professionalFee);
+      expect(quoted.total, `budget ${budget}`).toBe(base.total);
+    }
+  });
+
+  it("keeps the same reference, since the quote itself is unchanged", () => {
+    expect(buildQuotation(input({ budget: 40_000 })).reference).toBe(
+      buildQuotation(input()).reference
+    );
+  });
+
+  it("says so plainly when the quote already fits", () => {
+    const base = buildQuotation(input());
+    const fit = buildQuotation(input({ budget: base.total + 25_000 })).budgetFit!;
+    expect(fit.withinBudget).toBe(true);
+    expect(fit.difference).toBe(25_000);
+    expect(fit.levers).toEqual([]);
+    expect(fit.reachable).toBe(true);
+  });
+
+  it("treats a budget exactly equal to the total as fitting", () => {
+    const base = buildQuotation(input());
+    const fit = buildQuotation(input({ budget: base.total })).budgetFit!;
+    expect(fit.withinBudget).toBe(true);
+    expect(fit.difference).toBe(0);
+  });
+
+  it("lists what could change when the quote is above it", () => {
+    const fit = buildQuotation(overBudget()).budgetFit!;
+    expect(fit.withinBudget).toBe(false);
+    expect(fit.difference).toBe(fit.total - fit.budget);
+    expect(fit.levers.length).toBeGreaterThan(1);
+    for (const lever of fit.levers) {
+      expect(lever.saving, lever.id).toBeGreaterThan(0);
+      expect(lever.total, lever.id).toBe(fit.total - lever.saving);
+    }
+  });
+
+  it("orders the levers by what they save", () => {
+    const savings = buildQuotation(overBudget()).budgetFit!.levers.map((l) => l.saving);
+    expect([...savings].sort((a, b) => b - a)).toEqual(savings);
+  });
+
+  it("states a saving the form actually reproduces", () => {
+    // The property that makes this panel worth having: pulling a lever on the
+    // real form has to land on the total the lever promised. An estimated
+    // saving that turns out wrong is worse than no lever at all.
+    const raw = overBudget();
+    const fit = buildQuotation(raw).budgetFit!;
+
+    const logistics = fit.levers.find((l) => l.id === "logistics")!;
+    expect(logistics.total).toBe(
+      buildQuotation({ ...raw, travelCovered: true, accommodationCovered: true }).total
+    );
+
+    const addOns = fit.levers.find((l) => l.id === "add-ons")!;
+    expect(addOns.total).toBe(buildQuotation({ ...raw, addOns: [] }).total);
+
+    const sessions = fit.levers.find((l) => l.id === "sessions")!;
+    expect(sessions.total).toBe(buildQuotation({ ...raw, sessions: 1 }).total);
+  });
+
+  it("offers the online lever only where an online format exists", () => {
+    const speaking = buildQuotation(overBudget()).budgetFit!;
+    expect(speaking.levers.some((l) => l.id === "online")).toBe(true);
+
+    // Team building has no online format on the card, so proposing one would
+    // be proposing an engagement that cannot be booked.
+    const teamBuilding = buildQuotation(
+      input({
+        engagementType: "team-building",
+        organizerType: "corporate",
+        region: "metro-manila",
+        travelCovered: false,
+        budget: 10_000,
+      })
+    ).budgetFit!;
+    expect(teamBuilding.levers.some((l) => l.id === "online")).toBe(false);
+  });
+
+  it("offers the facilitation levers only for facilitation", () => {
+    const fit = buildQuotation(
+      input({
+        engagementType: "facilitation",
+        organizerType: "corporate",
+        preparation: "deep",
+        output: "plan",
+        budget: 50_000,
+      })
+    ).budgetFit!;
+    expect(fit.levers.map((l) => l.id)).toEqual(
+      expect.arrayContaining(["preparation", "output"])
+    );
+
+    const speaking = buildQuotation(overBudget()).budgetFit!;
+    expect(speaking.levers.some((l) => l.id === "preparation" || l.id === "output")).toBe(false);
+  });
+
+  it("offers a better date only when the current one carries a premium", () => {
+    const weekday = buildQuotation(overBudget()).budgetFit!;
+    expect(weekday.levers.some((l) => l.id === "date")).toBe(false);
+
+    const weekend = buildQuotation({ ...overBudget(), startDate: SATURDAY }).budgetFit!;
+    const dateLever = weekend.levers.find((l) => l.id === "date")!;
+    expect(dateLever).toBeDefined();
+    // The proposed date is carried as data, not parsed back out of the label —
+    // the label is prose, in the same form as every other date on the quote.
+    expect(dateLever.label).toContain("Move it to");
+    expect(dateLever.startDate).toBeDefined();
+    expect(dateLever.total).toBe(
+      buildQuotation({ ...overBudget(), startDate: dateLever.startDate! }).total
+    );
+  });
+
+  it("counts only one of two alternatives in the floor", () => {
+    // A shorter format and an online one both rewrite the same field, so a
+    // floor claiming both would state a total the form cannot produce — and
+    // the copy reads off `combined`, so it would say "all of these" untruthfully.
+    const fit = buildQuotation(overBudget()).budgetFit!;
+    expect(fit.levers.some((l) => l.id === "online")).toBe(true);
+    expect(fit.levers.some((l) => l.id === "shorter-format")).toBe(true);
+    expect(fit.combined).toContain("online");
+    expect(fit.combined).not.toContain("shorter-format");
+    expect(fit.combined.length).toBeLessThan(fit.levers.length);
+  });
+
+  it("prices the floor as a real quote rather than a sum of savings", () => {
+    // Levers interact — dropping a session also drops a hotel night — and two
+    // of them rewrite the same field. Summing them would state a total the
+    // form can never produce.
+    const fit = buildQuotation(overBudget()).budgetFit!;
+    const cheapestLever = Math.min(...fit.levers.map((l) => l.total));
+    expect(fit.floor).toBeLessThanOrEqual(cheapestLever);
+    expect(fit.reachable).toBe(fit.floor <= fit.budget);
+  });
+
+  it("admits when a budget cannot be reached at all", () => {
+    const fit = buildQuotation({ ...overBudget(), budget: 5_000 }).budgetFit!;
+    expect(fit.reachable).toBe(false);
+    expect(fit.floor).toBeGreaterThan(fit.budget);
+  });
+
+  it("has nothing to offer on an engagement already at its smallest", () => {
+    const fit = buildQuotation(
+      input({
+        organizerType: "government",
+        complexity: "routine",
+        format: "panel",
+        sessions: 1,
+        region: "baguio",
+        addOns: [],
+        budget: 1_000,
+      })
+    ).budgetFit!;
+    expect(fit.levers).toEqual([]);
+    expect(fit.floor).toBe(fit.total);
+    expect(fit.reachable).toBe(false);
   });
 });

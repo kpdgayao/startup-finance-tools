@@ -99,6 +99,58 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
     )
   );
 
+  // The budget comparison is printed too. A forwarded PDF is what circulates
+  // internally, and the levers are precisely the part the person holding the
+  // budget needs to see — omitting them would leave them with a total they can
+  // only accept or refuse.
+  if (quote.budgetFit) {
+    const fit = quote.budgetFit;
+    parts.push(
+      section(
+        fit.withinBudget ? "Against your budget" : "Above your budget",
+        table(
+          ["Detail", "Value"],
+          [
+            ["Budget stated", formatPHP(fit.budget)],
+            ["Quoted total", formatPHP(fit.total)],
+            [fit.withinBudget ? "To spare" : "Difference", formatPHP(fit.difference)],
+          ]
+        ) +
+          (fit.withinBudget
+            ? `<p class="note">The quotation is within the stated budget. Nothing needs to change.</p>`
+            : (fit.levers.length > 0
+                ? table(
+                    ["What could change", "Saving", "Leaves"],
+                    fit.levers.map((lever) => [
+                      `<strong>${esc(lever.label)}</strong><br><span class="muted">${esc(
+                        lever.detail
+                      )}</span>`,
+                      `−${formatPHP(lever.saving)}`,
+                      formatPHP(lever.total),
+                    ])
+                  )
+                : "") +
+              `<p class="note">${
+                fit.levers.length === 0
+                  ? "This is already the smallest version of the engagement described, so there is nothing further to remove."
+                  : `${
+                      // Where two levers are alternatives — a shorter session
+                      // and an online one both rewrite the format — the floor
+                      // counts only the better of them, so this cannot say
+                      // "all of these".
+                      fit.combined.length === 1
+                        ? "The largest of these on its own brings"
+                        : fit.combined.length === fit.levers.length
+                          ? "Taken together these bring"
+                          : "Combined, taking the better of the alternatives above, these bring"
+                    } the total to ${formatPHP(fit.floor)}, ${
+                      fit.reachable ? "within" : "still above"
+                    } the stated budget. Each is a change of scope, not a discount — the rate is unchanged.`
+              }</p>`)
+      )
+    );
+  }
+
   parts.push(
     section(
       "How the fee was built",
