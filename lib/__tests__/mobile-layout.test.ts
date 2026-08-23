@@ -131,17 +131,28 @@ describe("whole-number fields can be cleared", () => {
   // to put the caret before the stubborn 1 and type — giving 13. An organiser
   // reported exactly that. IntegerInput holds a draft string instead.
   it("uses IntegerInput rather than a self-resetting handler", () => {
-    const RESETTING = /Math\.max\(\s*1\s*,\s*(?:Number|parseInt)\([^)]*\)\s*\|\|\s*1\s*\)/;
+    // Catches both shapes. `|| 1` is the one that was reported — clearing the
+    // field refills it and typing appends. `|| 0` is milder but the same bug:
+    // the field cannot be left empty either. `parseFloat` handlers are out of
+    // scope; those are decimal fields and IntegerInput is the wrong control.
+    const RESETTING = /(?:Number|parseInt)\(\s*e\.target\.value\s*\)\s*\|\|\s*\d/;
+
+    // IntegerInput's own documentation quotes the broken handler it replaces,
+    // so it matches its own guard. Excluded by full path rather than basename,
+    // and rather than rewording working documentation to dodge a regex — the
+    // same approach design-tokens.test.ts takes with itself.
+    const SELF = "components/shared/integer-input.tsx";
     const offenders: string[] = [];
 
-    for (const rel of walkTsx(join(ROOT, "app"))) {
-      const src = readFileSync(rel, "utf8");
-      if (RESETTING.test(src)) offenders.push(relative(ROOT, rel).replace(/\\/g, "/"));
+    for (const rel of [...walkTsx(join(ROOT, "app")), ...walkTsx(join(ROOT, "components"))]) {
+      const path = relative(ROOT, rel).replace(/\\/g, "/");
+      if (path === SELF) continue;
+      if (RESETTING.test(readFileSync(rel, "utf8"))) offenders.push(path);
     }
 
     expect(
       offenders,
-      "these number fields snap back to 1 the moment they are cleared — " +
+      "these whole-number fields refill themselves the moment they are cleared — " +
         "use <IntegerInput>, which lets the field hold an empty draft while editing"
     ).toEqual([]);
   });

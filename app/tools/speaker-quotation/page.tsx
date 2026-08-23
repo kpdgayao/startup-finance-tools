@@ -448,7 +448,13 @@ export default function SpeakerQuotationPage() {
               min={1}
               max={30}
               value={input.sessions}
-              onChange={(v) => set("sessions", v)}
+              onChange={(v) => {
+                set("sessions", v);
+                // The session count decides how many dates the engagement
+                // spans, so an existing check no longer covers it. Leaving it
+                // on screen showed a one-date "Open" beside a three-date quote.
+                availability.reset();
+              }}
             />
           </RateFactorField>
 
