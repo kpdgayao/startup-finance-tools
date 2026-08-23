@@ -112,7 +112,7 @@ export function RateFactorField({
         className="-my-0.5 mt-1.5 inline-flex items-center gap-1.5 py-2 pr-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground"
       >
         <HelpCircle className="h-3 w-3" />
-        Why we ask
+        Why I ask
         <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
       </button>
 
@@ -124,7 +124,7 @@ export function RateFactorField({
           <p>{question.why}</p>
           <p className="mt-2 font-sans text-[12.5px] text-muted-foreground">
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ochre-deep dark:text-ochre">
-              Effect on the quote
+              What it does to your quote
             </span>
             <br />
             {question.impact}

@@ -83,3 +83,41 @@ describe("action rows wrap", () => {
     ).toEqual([]);
   });
 });
+
+describe("the form asks a manageable number of questions up front", () => {
+  // A real organiser said the form was too long. Completion falls measurably
+  // with each field a person has to consider past roughly eight, and what
+  // counts is fields considered rather than screens they are spread over — so
+  // the questions that do not move the number live behind one disclosure with
+  // sensible defaults, rather than being spread across more steps.
+  it("keeps the optional questions behind a disclosure", () => {
+    const src = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
+    expect(src, "the optional questions should sit inside a DetailSection").toMatch(
+      /<DetailSection/
+    );
+
+    // Everything in the collapsed group must come after the quote-critical
+    // questions, or the disclosure is hiding something load-bearing.
+    const detailIndex = src.indexOf("<DetailSection");
+    for (const critical of ["QUESTIONS.engagementType", "QUESTIONS.startDate", "QUESTIONS.region"]) {
+      expect(src.indexOf(critical), `${critical} must stay outside the disclosure`).toBeLessThan(
+        detailIndex
+      );
+    }
+  });
+
+  // The page is read by someone deciding whether to book a person, and it is
+  // that person's own rate card. An institutional register read as distancing
+  // to the organiser who reviewed it.
+  it("speaks in the first person rather than about 'the speaker'", () => {
+    const src = readFileSync(join(ROOT, "lib/speaking/questions.ts"), "utf8");
+    const bodies = src.match(/why: "[^"]+"/g) ?? [];
+    expect(bodies.length).toBeGreaterThan(8);
+
+    const firstPerson = bodies.filter((b) => /\b(I|me|my)\b/.test(b));
+    expect(
+      firstPerson.length / bodies.length,
+      "most rationales should be written in the first person"
+    ).toBeGreaterThan(0.5);
+  });
+});

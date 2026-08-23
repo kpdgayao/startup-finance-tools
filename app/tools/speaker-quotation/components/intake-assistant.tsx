@@ -46,7 +46,7 @@ export function IntakeAssistant({
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-sm font-medium text-ochre-deep dark:text-ochre">
           <Sparkles className="h-4 w-4" />
-          Start by describing the event
+          Tell me about your event
         </p>
         <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           Optional
@@ -54,8 +54,8 @@ export function IntakeAssistant({
       </div>
 
       <p className="mt-1.5 text-xs text-muted-foreground">
-        Or skip this and fill in the form below yourself. Nothing here is sent anywhere until you
-        press the button.
+        Paste the invitation or write it in your own words, and I will fill the form in for you.
+        Or skip it and answer the questions yourself — either way, nothing is sent until you say so.
       </p>
 
       <Textarea

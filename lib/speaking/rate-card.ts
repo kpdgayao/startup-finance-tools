@@ -43,16 +43,37 @@ export const TRAVEL_DAY_FACTOR = 0.5;
  * would price a 45-minute panel and a full-day workshop identically for every
  * core topic, which collapses the format ladder into a single number.
  *
- * Applied BEFORE the mission concession, so a mission-tier quote can land at
- * MINIMUM_ENGAGEMENT_FEE × (1 − MISSION_DISCOUNT) and no lower. That is
- * deliberate: the concession applies to the whole fee, the minimum included,
- * rather than being clawed back by a floor the discounted organiser never
- * qualified for.
+ * Applied BEFORE any concession: they apply to the whole fee, the minimum
+ * included, rather than being clawed back by a floor the discounted organiser
+ * never qualified for. ABSOLUTE_MINIMUM_FEE is what catches the bottom once
+ * the concessions have compounded.
  */
 export const MINIMUM_ENGAGEMENT_FEE = 10_000;
 
 /** Concessionary discount for the mission tier (see ORGANIZER_TYPES). */
 export const MISSION_DISCOUNT = 0.2;
+
+/**
+ * The lowest a quote can go after every concession, whatever they combine to.
+ *
+ * The mission floor is expressed as a DAY RATE, so on a short format it stops
+ * binding — a 0.4-day panel floors at ₱4,800, well under the minimum
+ * engagement fee. Once a second concession existed, mission and returning
+ * client compounded past the documented "minimum less the concession" and a
+ * panel quoted ₱7,600. This is the answer to "how low can this possibly go",
+ * in one number, checked last.
+ */
+export const ABSOLUTE_MINIMUM_FEE = Math.round(MINIMUM_ENGAGEMENT_FEE * (1 - MISSION_DISCOUNT));
+
+/**
+ * Recognition for an organiser who has booked before.
+ *
+ * A real saving rather than a loyalty gimmick: the discovery is already done.
+ * Their sector, their constraints, what landed last time and what did not — all
+ * of it is known, so the preparation genuinely costs less. Small on purpose. A
+ * large returning-client discount says the first quote was padded.
+ */
+export const RETURNING_CLIENT_DISCOUNT = 0.05;
 
 /**
  * If the organizer sells tickets, the speaker fee is floored at this share of

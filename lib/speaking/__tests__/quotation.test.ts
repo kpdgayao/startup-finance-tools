@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
+  ABSOLUTE_MINIMUM_FEE,
   COMPLEXITY_TIERS,
   DESK_DAY_FACTOR,
   EWT_RATE,
@@ -8,6 +9,7 @@ import {
   INVOICING_ENTITY,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
+  RETURNING_CLIENT_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
   REVENUE_SHARE_FLOOR,
   FACILITATION_SCOPES,
@@ -378,7 +380,9 @@ describe("running totals and structure", () => {
 
   it("reports withholding as informational, not deducted from the total", () => {
     const quote = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
-    expect(quote.withholding.amount).toBe(toPeso(quote.professionalFee * EWT_RATE));
+    // To the nearest peso, not the nearest hundred: a tax is arithmetic the
+    // reader can check against the rate printed beside it.
+    expect(quote.withholding.amount).toBe(Math.round(quote.professionalFee * EWT_RATE));
     expect(quote.withholding.net).toBe(quote.professionalFee - quote.withholding.amount);
     expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
   });
@@ -872,6 +876,97 @@ describe("the day rate a quote reports", () => {
       expect(quote.lines.find((l) => l.kind === "travel")?.amount, engagementType).toBe(
         toPeso(expected * 0.5)
       );
+    }
+  });
+});
+
+
+describe("returning clients", () => {
+  it("costs nothing to answer no", () => {
+    const first = buildQuotation(input({ returningClient: false }));
+    expect(first.professionalFee).toBe(ROUTINE_RATE);
+    expect(first.lines.some((l) => l.id === "returning-client")).toBe(false);
+  });
+
+  it("recognises a returning client with a modest reduction", () => {
+    const first = buildQuotation(input({ returningClient: false }));
+    const again = buildQuotation(input({ returningClient: true }));
+    expect(again.professionalFee).toBe(
+      toPeso(first.professionalFee * (1 - RETURNING_CLIENT_DISCOUNT))
+    );
+  });
+
+  // Small on purpose: a large returning-client discount only says the first
+  // quote was padded.
+  it("stays small enough to be a thank-you rather than a correction", () => {
+    expect(RETURNING_CLIENT_DISCOUNT).toBeGreaterThan(0);
+    expect(RETURNING_CLIENT_DISCOUNT).toBeLessThanOrEqual(0.1);
+  });
+
+  // Applied before the mission concession so the concessionary floor, which is
+  // checked afterwards, is still the last word on how low a quote can go.
+  it("cannot combine with the mission rate to breach the concessionary floor", () => {
+    for (const format of ["panel", "keynote", "half-day", "full-day"] as const) {
+      const quote = buildQuotation(
+        input({ organizerType: "mission", returningClient: true, format, audienceSize: 8 })
+      );
+      expect(quote.professionalFee, format).toBeGreaterThanOrEqual(ABSOLUTE_MINIMUM_FEE);
+    }
+  });
+
+  it("keeps the breakdown reconciling", () => {
+    const quote = buildQuotation(
+      input({ returningClient: true, organizerType: "corporate", addOns: ["workbook"] })
+    );
+    const sum = quote.lines.reduce((total, line) => total + line.amount, 0);
+    expect(sum).toBe(quote.professionalFee);
+  });
+
+  it("changes the reference", () => {
+    expect(buildQuotation(input({ returningClient: true })).reference).not.toBe(
+      buildQuotation(input({ returningClient: false })).reference
+    );
+  });
+});
+
+
+describe("tax figures are exact", () => {
+  // "withheld at 2% — ₱200 here" against a ₱8,000 fee is a quote contradicting
+  // itself in one sentence, on a page whose entire argument is that the
+  // numbers add up. Fees round to ₱100; taxes round to ₱1.
+  it("matches the rate printed beside it", () => {
+    const quote = buildQuotation(
+      input({
+        organizerType: "mission",
+        returningClient: true,
+        format: "panel",
+        audienceSize: 8,
+        region: "baguio",
+      })
+    );
+    expect(quote.withholding.amount).toBe(
+      Math.round(quote.professionalFee * quote.withholding.rate)
+    );
+    expect(quote.invoicing.percentageTax).toBe(Math.round(quote.professionalFee * 0.03));
+    expect(quote.withholding.net).toBe(quote.professionalFee - quote.withholding.amount);
+  });
+
+  it("holds across every organiser tier", () => {
+    for (const organizerType of [
+      "corporate",
+      "association",
+      "government",
+      "academic",
+      "mission",
+    ] as const) {
+      for (const invoiceRequired of [true, false]) {
+        const quote = buildQuotation(input({ organizerType, invoiceRequired }));
+        expect(quote.withholding.amount, `${organizerType}/${invoiceRequired}`).toBe(
+          quote.withholding.applies
+            ? Math.round(quote.professionalFee * quote.withholding.rate)
+            : 0
+        );
+      }
     }
   });
 });

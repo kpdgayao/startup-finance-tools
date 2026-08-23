@@ -145,11 +145,24 @@ The two ends are the real anchors; the middle two interpolate so an engagement
 that is neither pure delivery nor a research project need not round to whichever
 end is nearer.
 
-Two floors are derived from `DAY_RATE_MIN` and must stay below it:
-`MISSION_FLOOR_DAY_RATE` (₱12,000, exactly the routine rate less the 20%
-concession) and `MINIMUM_ENGAGEMENT_FEE` (₱10,000). If the minimum ever reaches
-the routine rate, every format on a core topic prices identically and the format
-dropdown stops meaning anything — there is a test for it.
+Three floors, checked in this order:
+
+- `MINIMUM_ENGAGEMENT_FEE` (₱10,000) — before concessions, so they apply to the
+  whole fee. Must stay below `DAY_RATE_MIN`, or every format on a core subject
+  prices identically and the format dropdown stops meaning anything.
+- `MISSION_FLOOR_DAY_RATE` (₱12,000/day) — the concessionary rate cannot go
+  below this per day. Expressed as a day rate, so on short formats it does not
+  bind.
+- `ABSOLUTE_MINIMUM_FEE` (₱8,000) — last, after every concession has compounded.
+  This one exists because the mission floor is a day rate: mission plus
+  returning-client took a 0.4-day panel to ₱7,600 while the card promised no
+  lower than ₱8,000. It is the answer to "how low can this possibly go".
+
+Concessions themselves are the 20% mission rate and the 5%
+`RETURNING_CLIENT_DISCOUNT`, which is a real saving rather than a loyalty
+gimmick — the discovery is already done, so the preparation genuinely costs
+less. Small on purpose: a large returning-client discount only says the first
+quote was padded.
 
 **The tier prices the subject, not the audience or the buyer.** Bookkeeping for
 non-accountants is `routine` even when the deck is written from scratch, because
@@ -209,16 +222,34 @@ release funds without one and finding out afterwards is a delayed payment.
 The tool is checked at 320, 375 and 390px. Two traps are worth knowing about,
 because both are invisible to a naive overflow check:
 
-- **`#main-content` is its own scroll container** (`overflow-auto` in
-  `app/tools/layout.tsx`). Content wider than the viewport therefore scrolls
-  *main* rather than the document, so `document.scrollWidth` stays clean while
-  the page slides sideways. Any overflow audit has to measure
-  `main.scrollWidth - main.clientWidth` as well.
+- **`#main-content` used to be its own scroll container** (`overflow-auto`),
+  which meant content wider than the viewport scrolled *main* rather than the
+  document: `document.scrollWidth` stayed clean while the page slid sideways,
+  and an overflow audit reported the page as fine. It now uses `min-w-0`, which
+  keeps the flex item shrinkable without swallowing the evidence, and
+  `lib/__tests__/mobile-layout.test.ts` fails if `overflow-auto` returns. An
+  audit should still measure `main.scrollWidth - main.clientWidth` as well as
+  the document — cheap, and it catches the same class of bug elsewhere.
 - **shadcn's `SelectTrigger` is `w-fit`.** Radix mirrors the selected item's
   markup into the trigger, so a long option label stretches it without limit —
   one measured 805px on a 375px phone. Every trigger here passes `w-full` and an
   explicit `<SelectValue>{label}</SelectValue>`, and the option's explanation
   lives in a wrapping second line inside the dropdown rather than in the trigger.
+
+## Length and voice
+
+The form asks nine questions before showing a number; everything else lives in
+one collapsed `DetailSection` with sensible defaults. This is deliberate and
+worth preserving: completion falls with each field a person has to consider
+past roughly eight, and the count that matters is fields considered, not screens
+they are spread over — so spreading the same questions across more steps is not
+a substitute. Anything moved out of the disclosure should be something that
+genuinely moves the number, and a test asserts the quote-critical questions stay
+outside it.
+
+The copy is first person throughout, because it is one person's rate card and a
+neutral institutional register read as distancing to the organiser who reviewed
+it. A test asserts most rationales stay that way.
 
 ## What the tool does not do
 
