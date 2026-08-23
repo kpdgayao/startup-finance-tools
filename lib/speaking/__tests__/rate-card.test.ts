@@ -129,6 +129,17 @@ describe("rate card integrity", () => {
   it("gives exactly one organiser type the concessionary rate", () => {
     expect(ORGANIZER_TYPES.filter((o) => o.mission)).toHaveLength(1);
   });
+
+  it("marks the tiers the honorarium circular actually governs", () => {
+    // Its own field rather than an inference from the sector label, so that
+    // renaming a display string cannot silently switch off the flag a
+    // procurement officer depends on.
+    const governed = ORGANIZER_TYPES.filter((o) => o.honorariumRules).map((o) => o.id);
+    expect(governed.sort()).toEqual(["government", "mission"]);
+    for (const type of ORGANIZER_TYPES) {
+      expect(type.honorariumRules, type.id).toBe(type.sectorLabel === "public-sector");
+    }
+  });
 });
 
 describe("why-we-ask copy", () => {

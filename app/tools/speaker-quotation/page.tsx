@@ -800,6 +800,10 @@ export default function SpeakerQuotationPage() {
               value={input.budget}
               onChange={(v) => set("budget", v)}
               min={0}
+              // Matched to the engine's own clamp. Without it a typed
+              // ₱9,999,999,999 would be clamped out of sight and the panel
+              // would quote a budget back that nobody had entered.
+              max={1_000_000_000}
               placeholder="Leave blank if you would rather not say"
             />
           </RateFactorField>

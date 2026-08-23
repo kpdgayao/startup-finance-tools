@@ -800,7 +800,34 @@ function priceEngagement(raw: QuotationInput): Quotation {
   const total = professionalFee + reimbursablesBilled + vat;
 
   // Flags ------------------------------------------------------------------
+  // Ordered by how much they change what the organiser has to DO. The first
+  // two go to whether this can be bought at all on the route they are on,
+  // which outranks anything about the number.
   const flags: string[] = [];
+
+  // A public body reading a rate above the honorarium ceiling needs to know
+  // before it reaches their procurement unit, not after. The concession is
+  // applied to the comparison because a mission organiser is never actually
+  // asked for the pre-concession rate.
+  const payableDayRate = organizer.mission ? dayRate * (1 - MISSION_DISCOUNT) : dayRate;
+  if (organizer.honorariumRules && payableDayRate > HONORARIUM_DAY_CEILING) {
+    flags.push(
+      `At ₱${Math.round(payableDayRate).toLocaleString(
+        "en-PH"
+      )} a day this sits above the roughly ₱${HONORARIUM_DAY_CEILING.toLocaleString(
+        "en-PH"
+      )} a resource person can be paid as an honorarium under DBM BC 2007-1. Work at this level is normally procured as a service or consultancy contract instead, which is a different route with different paperwork — worth raising with your procurement unit before this goes any further.`
+    );
+  }
+
+  // Cooperatives span four orders of magnitude, and one rate cannot fit them
+  // all. Said openly rather than left for the small co-op to discover.
+  if (organizer.id === "cooperative") {
+    flags.push(
+      "The cooperative rate is pitched at a co-op with staff and an education and training fund it actually spends. If you are a large cooperative bank or a federation, the corporate rate is the honest one; if you are a small primary co-op, say so in the enquiry rather than walking away — the rate card has one cooperative rate and your situation may not be it."
+    );
+  }
+
   if (region.custom) {
     flags.push(
       "International engagements need a separate travel quote — airfare, visa and per diem are not estimated here."
@@ -846,29 +873,6 @@ function priceEngagement(raw: QuotationInput): Quotation {
       "No preparation was asked for. A planning session with no groundwork spends its first half discovering what the disagreements are, which is the most expensive way to find out."
     );
   }
-  // A public body reading a rate above the honorarium ceiling needs to know
-  // before it reaches their procurement unit, not after. The concession is
-  // applied to the comparison because a mission organiser is never actually
-  // asked for the pre-concession rate.
-  const payableDayRate = organizer.mission ? dayRate * (1 - MISSION_DISCOUNT) : dayRate;
-  if (organizer.sectorLabel === "public-sector" && payableDayRate > HONORARIUM_DAY_CEILING) {
-    flags.push(
-      `At ₱${Math.round(payableDayRate).toLocaleString(
-        "en-PH"
-      )} a day this sits above the roughly ₱${HONORARIUM_DAY_CEILING.toLocaleString(
-        "en-PH"
-      )} a resource person can be paid as an honorarium under DBM BC 2007-1. Work at this level is normally procured as a service or consultancy contract instead, which is a different route with different paperwork — worth raising with your procurement unit before this goes any further.`
-    );
-  }
-
-  // Cooperatives span four orders of magnitude, and one rate cannot fit them
-  // all. Said openly rather than left for the small co-op to discover.
-  if (organizer.id === "cooperative") {
-    flags.push(
-      "The cooperative rate is pitched at a co-op with staff and an education and training fund it actually spends. If you are a large cooperative bank or a federation, the corporate rate is the honest one; if you are a small primary co-op, say so in the enquiry rather than walking away — the rate card has one cooperative rate and your situation may not be it."
-    );
-  }
-
   if (sessions > 1) {
     flags.push(
       "Dates are assumed consecutive. If the sessions are spread across weeks, say so — it changes the travel line, not the fee."

@@ -713,6 +713,15 @@ export interface OrganizerType {
   facilitationMultiplier: number;
   /** Short noun for the fee's base line — "the corporate rate for …". */
   sectorLabel: string;
+  /**
+   * Paid under the DBM honorarium rules — see HONORARIUM_DAY_CEILING.
+   *
+   * Its own field rather than an inference from `sectorLabel`: the engine used
+   * to decide this by matching that label's text, so renaming a display string
+   * would have silently switched off a flag a procurement officer depends on.
+   * A new tier has to answer the question rather than inherit an answer.
+   */
+  honorariumRules: boolean;
   /** Eligible for the concessionary mission discount. */
   mission: boolean;
   /** Ordinarily withholds creditable tax on professional fees. */
@@ -739,6 +748,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     // Philippine training-day range rather than above it.
     facilitationMultiplier: 2.5,
     sectorLabel: "corporate",
+    honorariumRules: false,
     mission: false,
     withholds: true,
   },
@@ -750,6 +760,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     rateMultiplier: 2.5,
     facilitationMultiplier: 1.9,
     sectorLabel: "association",
+    honorariumRules: false,
     mission: false,
     withholds: true,
   },
@@ -768,6 +779,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     rateMultiplier: 2,
     facilitationMultiplier: 1.6,
     sectorLabel: "cooperative",
+    honorariumRules: false,
     mission: false,
     withholds: true,
   },
@@ -779,6 +791,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     rateMultiplier: 1,
     facilitationMultiplier: 1,
     sectorLabel: "public-sector",
+    honorariumRules: true,
     mission: false,
     withholds: true,
   },
@@ -790,6 +803,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     rateMultiplier: 1.6,
     facilitationMultiplier: 1.4,
     sectorLabel: "private-academic",
+    honorariumRules: false,
     mission: false,
     withholds: true,
   },
@@ -801,6 +815,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     rateMultiplier: 1,
     facilitationMultiplier: 1,
     sectorLabel: "public-sector",
+    honorariumRules: true,
     mission: true,
     // True, despite the concession. Public schools, SUCs and registered NGOs
     // are withholding agents exactly as government offices are; marking the

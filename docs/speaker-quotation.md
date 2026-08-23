@@ -143,6 +143,12 @@ procurement officer who discovers the mismatch after the fact loses weeks, not
 pesos. The comparison uses the concessionary rate for mission organisers, since
 they are never asked for the list rate.
 
+Which tiers the circular governs is its own field, `honorariumRules`, rather
+than an inference from `sectorLabel`. The engine used to decide it by matching
+that label's text, so renaming a display string would have silently switched off
+a flag a procurement officer depends on; a new tier now has to answer the
+question rather than inherit an answer.
+
 Researched August 2026 against the DBM circular and the 2026 salary table
 (firm), Philippine corporate training price guides (reasonably firm), and the
 widely cited PAPS speaker range of ₱15,000–120,000 (softer — no primary
