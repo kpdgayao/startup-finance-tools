@@ -420,11 +420,11 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     id: "base",
     kind: "base",
     label: `${formatLabel(format, engagementType.id)}${sessions > 1 ? ` × ${sessions}` : ""}`,
-    // The tier sets the rate, so it is named here rather than carried as its
-    // own factor line — it is not a surcharge on a standard rate, it IS the
-    // rate. Kept to a short clause: every session is adapted to the room
-    // whatever the tier, and a longer classification of the client's own
-    // subject reads as a verdict on it rather than an explanation of the price.
+    // Names the SECTOR that set the rate, not the subject tier. Both feed the
+    // number, but only one of them is worth printing: the sector explains why
+    // this reader's rate differs from someone else's, whereas classifying the
+    // client's own subject reads as a verdict on it. The tier still reaches the
+    // AI explanation via `topicTier`, where it has room to be explained.
     detail: `${dayEquivalents} engagement ${
       dayEquivalents === 1 ? "day" : "days"
     } at ₱${dayRate.toLocaleString("en-PH")}/day — the ${organizer.sectorLabel} rate for ${

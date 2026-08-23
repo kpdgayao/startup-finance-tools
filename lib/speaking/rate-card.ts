@@ -735,6 +735,14 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   },
 ];
 
+/**
+ * The dearest sector's scaling, so copy can quote the full spread a reader
+ * might be quoted rather than only the public-sector end of it.
+ */
+export const TOP_SECTOR_MULTIPLIER = Math.max(
+  ...ORGANIZER_TYPES.map((o) => o.rateMultiplier)
+);
+
 export function organizerTypeFor(id: OrganizerTypeId): OrganizerType {
   return ORGANIZER_TYPES.find((o) => o.id === id) ?? ORGANIZER_TYPES[0];
 }

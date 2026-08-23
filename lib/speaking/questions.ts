@@ -19,6 +19,8 @@
 import {
   DAY_RATE_MAX,
   DESK_DAY_FACTOR,
+  TOP_SECTOR_MULTIPLIER,
+  deriveDayRate,
   FACILITATION_SCOPES,
   EWT_RATE,
   EWT_RATE_FIRM,
@@ -55,18 +57,23 @@ export const QUESTIONS = {
     why: "A talk and a planning session are not variations on one service. I prepare a talk once and deliver it; a facilitated session I design for one specific room, and the day in that room is often half the work — the interviews before it and the plan I write afterwards are the rest. Pricing them the same way would mean one of them is wrong.",
     impact: `Talks and workshops are priced by how much new ground the subject covers, from ${peso(
       DAY_RATE_MIN
-    )} a day. Facilitation starts at ${peso(
-      FACILITATION_SCOPES[0].dayRate
-    )} a day and adds its own lines for preparation and written output.`,
+    )} a day for public-sector work up to ${peso(
+      deriveDayRate(DAY_RATE_MAX, TOP_SECTOR_MULTIPLIER)
+    )} for a company. Facilitation starts higher and adds its own lines for preparation and written output.`,
   },
   facilitationScope: {
     id: "facilitationScope",
     label: "Whose plan is being made?",
     hint: "How many sets of interests have to agree by the end of the day.",
     why: "What makes a planning room hard for me to run is not the subject, it is the number of principals in it. One department with a clear remit reaches a decision on its own; a cooperative with several member groups, or a board with competing interests, has to be brought to one. That is the work you are buying, not my slides.",
-    impact: `From ${peso(FACILITATION_SCOPES[0].dayRate)} a day for a single team up to ${peso(
-      FACILITATION_SCOPES[FACILITATION_SCOPES.length - 1].dayRate
-    )} for a board or several entities at once.`,
+    impact: `From ${peso(
+      FACILITATION_SCOPES[0].dayRate
+    )} a day for a single team at public-sector rates, up to ${peso(
+      deriveDayRate(
+        FACILITATION_SCOPES[FACILITATION_SCOPES.length - 1].dayRate,
+        TOP_SECTOR_MULTIPLIER
+      )
+    )} for a corporate board. Your sector sets which end applies.`,
   },
   preparation: {
     id: "preparation",
@@ -91,11 +98,11 @@ export const QUESTIONS = {
     label: "What kind of session is it?",
     hint: "A keynote and a full-day workshop are different pieces of work.",
     why: "The hours on stage are the smaller half. A 90-minute keynote still costs me most of a working day once the deck, the rehearsal and the travel window are in — which is why I price the shortest formats at half a day rather than by the hour.",
-    impact: `Sets the base fee as a share of your topic's day rate (${peso(
+    impact: `Sets the base fee as a share of your day rate — from 0.4 of a day for a panel to a full day for a workshop. That rate runs ${peso(
       DAY_RATE_MIN
-    )}–${peso(
-      DAY_RATE_MAX
-    )}) — from 0.4 of a day for a panel to a full day for a workshop. Nothing is quoted below ${peso(
+    )} to ${peso(
+      deriveDayRate(DAY_RATE_MAX, TOP_SECTOR_MULTIPLIER)
+    )} depending on the subject and your sector. Nothing is quoted below ${peso(
       MINIMUM_ENGAGEMENT_FEE
     )}.`,
   },
@@ -104,20 +111,22 @@ export const QUESTIONS = {
     label: "How many days or sessions?",
     hint: "I will assume they are consecutive — tell me if they are spread out.",
     why: "Multi-day programmes are the ones I see underpriced most often. Two days of workshop is two days of delivery plus the preparation behind them, and with travel it takes most of my week.",
-    impact: `Multiplies the base fee directly. Two full days on a core topic is ${peso(
+    impact: `Multiplies the base fee directly. Two full days on a settled subject is ${peso(
       DAY_RATE_MIN * 2
-    )} before any other factor; on a research-heavy one, ${peso(DAY_RATE_MAX * 2)}.`,
+    )} at public-sector rates and ${peso(
+      deriveDayRate(DAY_RATE_MIN, TOP_SECTOR_MULTIPLIER) * 2
+    )} for a company, before any other factor.`,
   },
   complexity: {
     id: "complexity",
     label: "How much new ground does the subject cover?",
     hint: "This sets the day rate — it is the single biggest lever on the price.",
     why: "I adapt every session to the room — the examples, the figures and the exercises are built around your people whatever the subject. What changes my rate is how much of the SUBJECT is new ground. Bookkeeping and cash flow are settled; I have taught them many times and the work is in fitting them to you. Something outside that, like AI applied to accounting, costs me days of reading before I can write a single slide.",
-    impact: `Sets the day rate: from ${peso(
+    impact: `Sets the day rate, together with your sector: ${peso(
       DAY_RATE_MIN
-    )} a day for a settled subject up to ${peso(
-      DAY_RATE_MAX
-    )} for one needing fresh research, at public-sector rates. Your sector scales it from there.`,
+    )} a day for a settled subject at public-sector rates, up to ${peso(
+      deriveDayRate(DAY_RATE_MAX, TOP_SECTOR_MULTIPLIER)
+    )} for research-heavy work quoted to a company.`,
   },
   audienceSize: {
     id: "audienceSize",

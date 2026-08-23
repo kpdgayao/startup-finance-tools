@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CurrencyInput } from "@/components/shared/currency-input";
+import { IntegerInput } from "@/components/shared/integer-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { MarginNote } from "@/components/shared/margin-note";
@@ -193,15 +194,10 @@ export default function UnitEconomicsPage() {
               <label className="text-sm font-medium">
                 New Customers per Month
               </label>
-              <input
-                type="number"
+              <IntegerInput
                 min={0}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                value={newCustomersPerMonth || ""}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setNewCustomersPerMonth(isNaN(val) ? 0 : Math.max(0, val));
-                }}
+                value={newCustomersPerMonth}
+                onChange={setNewCustomersPerMonth}
                 onBlur={() => markTouched("newCustomersPerMonth")}
                 placeholder="0"
               />

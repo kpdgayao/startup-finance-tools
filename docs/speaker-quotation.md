@@ -119,10 +119,13 @@ delivered as it stands" — untrue, and it told a paying organiser they were
 booking a canned talk. A test in `lib/speaking/__tests__/quotation.test.ts`
 fails on that vocabulary reappearing, on the tier copy or on the quote itself.
 
-The tier is deliberately understated in the output: it appears once, as a short
-clause on the fee's base line, and nowhere in the printed quotation's header.
-Classifying a client's own subject more prominently than that reads as a verdict
-on it rather than an explanation of the price.
+The tier is deliberately understated in the output. Since sector pricing landed
+it no longer appears on the quote at all — the base line names the *sector* that
+set the rate, because that is what explains why this reader's number differs
+from someone else's. The tier still reaches the AI explanation through
+`quote.topicTier`, where there is room to explain it. Classifying a client's own
+subject on the face of their quote reads as a verdict on it rather than an
+explanation of the price.
 
 ### Engagement types
 

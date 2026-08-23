@@ -381,11 +381,14 @@ export default function SpeakerQuotationPage() {
           <RateFactorField
             question={QUESTIONS.engagementType}
             impact={`from ${formatPHP(
-              engagementType.id === "facilitation"
-                ? FACILITATION_SCOPES[0].dayRate
-                : engagementType.id === "team-building"
-                  ? TEAM_BUILDING_DAY_RATE
-                  : DAY_RATE_MIN
+              deriveDayRate(
+                engagementType.id === "facilitation"
+                  ? FACILITATION_SCOPES[0].dayRate
+                  : engagementType.id === "team-building"
+                    ? TEAM_BUILDING_DAY_RATE
+                    : DAY_RATE_MIN,
+                organizer.rateMultiplier
+              )
             )}/day`}
             active
           >
