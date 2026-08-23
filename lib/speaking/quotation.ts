@@ -214,6 +214,10 @@ function clampAmount(value: number, min: number, max: number): number {
  * make the reference useless as a shared handle.
  */
 function referenceFor(input: QuotationInput): string {
+  // Every input that can move the total belongs in the seed. Omitting the
+  // add-ons and the travel arrangements let two quotes ₱22,800 apart share a
+  // reference — and the reference is the handle the organiser quotes back in
+  // an email, and the one printed on the PDF.
   const seed = [
     input.startDate,
     input.format,
@@ -222,6 +226,13 @@ function referenceFor(input: QuotationInput): string {
     input.organizerType,
     input.region,
     input.audienceSize,
+    input.ticketed ? "T" : "F",
+    input.participantFee,
+    input.expectedPaidAttendees,
+    input.travelCovered ? "T" : "F",
+    input.accommodationCovered ? "T" : "F",
+    input.earlyStart ? "T" : "F",
+    [...input.addOns].sort().join(","),
     input.organizationName ?? "",
   ].join("|");
 
@@ -547,13 +558,28 @@ export function buildQuotation(raw: QuotationInput): Quotation {
 
   const daysCommitted = Number((dayEquivalents + region.travelDays).toFixed(3));
 
+  // Displayed amounts are the DIFFERENCE between consecutive rounded running
+  // totals, not each raw amount rounded on its own.
+  //
+  // Rounding the two columns independently let them disagree: a quote whose
+  // lines read +₱18,000, +₱1,400, +₱2,900, +₱9,000 summed to ₱31,300 while
+  // stating a fee of ₱31,400, on screen and in the exported PDF. An organiser
+  // checking the arithmetic finds the error before you do. Deriving one column
+  // from the other makes the sum exact by construction.
+  let previousTotal = 0;
+  const reconciledLines = lines.map((line) => {
+    const amount = line.runningTotal - previousTotal;
+    previousTotal = line.runningTotal;
+    return { ...line, amount };
+  });
+
   return {
     reference: referenceFor(raw),
     dayRate,
     topicTier: complexity.label,
     dayEquivalents,
     daysCommitted,
-    lines: lines.map((l) => ({ ...l, amount: roundPeso(l.amount) })),
+    lines: reconciledLines,
     professionalFee,
     reimbursables,
     reimbursablesBilled,

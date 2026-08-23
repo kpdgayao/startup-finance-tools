@@ -39,17 +39,36 @@ function unfold(text: string): string[] {
   return out;
 }
 
+/** The Philippines is UTC+8 year round and observes no daylight saving. */
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
 /**
- * Read the date out of a DTSTART/DTEND value, as `YYYY-MM-DD`.
+ * Read the date out of a DTSTART/DTEND value, as `YYYY-MM-DD` in Manila time.
  *
  * Both forms appear in a Google export: `VALUE=DATE:20260415` for all-day
- * events and `20260415T013000Z` for timed ones. The timed form is deliberately
- * NOT converted to Philippine local time — a UTC instant is truncated to its
- * date as written. The error that introduces is at most a few hours at the
- * edges of a day, against a booking calendar whose entries are day-shaped; a
- * timezone conversion, done wrong, would shift every event by a whole day.
+ * events, and an instant like `20260415T230000Z` for timed ones.
+ *
+ * A `Z` instant is shifted into Manila time before its date is taken. Reading
+ * it as written put any morning engagement — anything before 08:00 Manila,
+ * which is 16:00Z the day before — on the wrong day, so the real day reported
+ * free and the day before reported busy. A fixed offset is exact here
+ * precisely because there is no DST to track.
+ *
+ * A floating or TZID-qualified value is taken as written: it is already local
+ * to whoever wrote it, and for this calendar that is Manila.
  */
 function readDate(value: string): string | null {
+  const instant = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  if (instant) {
+    const [, y, mo, d, h, mi, sec] = instant.map(Number) as unknown as number[];
+    const shifted = new Date(Date.UTC(y, mo - 1, d, h, mi, sec) + MANILA_OFFSET_MS);
+    if (!Number.isFinite(shifted.getTime())) return null;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(
+      shifted.getUTCDate()
+    )}`;
+  }
+
   const match = value.match(/(\d{4})(\d{2})(\d{2})/);
   if (!match) return null;
   const [, y, m, d] = match;
@@ -204,8 +223,17 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 
 export interface CalendarResult {
   busy: Set<string>;
-  /** False when no feed is configured or the fetch failed. */
+  /** True when these dates came from the calendar at all, fresh or cached. */
   live: boolean;
+  /**
+   * True when the fetch failed and this is a cached copy.
+   *
+   * Kept separate from `live` because the two answer different questions: the
+   * dates ARE the calendar's, but they may be up to a session old. Folding
+   * them into one flag made the panel tell the organiser "checked against the
+   * live calendar" over a cache of unknown age.
+   */
+  stale: boolean;
 }
 
 /**
@@ -216,10 +244,10 @@ export interface CalendarResult {
  * when the calendar was unreachable is a smaller error than refusing to quote.
  */
 export async function fetchBusyDates(icsUrl: string | undefined): Promise<CalendarResult> {
-  if (!icsUrl) return { busy: new Set(), live: false };
+  if (!icsUrl) return { busy: new Set(), live: false, stale: false };
 
   if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
-    return { busy: cache.dates, live: true };
+    return { busy: cache.dates, live: true, stale: false };
   }
 
   try {
@@ -232,16 +260,18 @@ export async function fetchBusyDates(icsUrl: string | undefined): Promise<Calend
     });
     clearTimeout(timeout);
 
-    if (!response.ok) return { busy: cache?.dates ?? new Set(), live: Boolean(cache) };
+    if (!response.ok) {
+      return { busy: cache?.dates ?? new Set(), live: Boolean(cache), stale: Boolean(cache) };
+    }
 
     const text = await response.text();
     const dates = busyDatesFromICS(text);
     cache = { dates, fetchedAt: Date.now() };
-    return { busy: dates, live: true };
+    return { busy: dates, live: true, stale: false };
   } catch {
-    // Serve a stale cache rather than nothing — a 10-minute-old calendar is
-    // still a better answer than "unknown".
-    return { busy: cache?.dates ?? new Set(), live: Boolean(cache) };
+    // Serve a stale cache rather than nothing — an old calendar is still a
+    // better answer than "unknown" — but say that it is old.
+    return { busy: cache?.dates ?? new Set(), live: Boolean(cache), stale: Boolean(cache) };
   }
 }
 

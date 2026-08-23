@@ -335,7 +335,12 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "No ticket revenue and no training budget — qualifies for the concessionary rate",
     factor: 1,
     mission: true,
-    withholds: false,
+    // True, despite the concession. Public schools, SUCs and registered NGOs
+    // are withholding agents exactly as government offices are; marking the
+    // tier exempt suppressed the withholding note and left the speaker short
+    // at payout with no warning on the quote. An organiser that is not a
+    // withholding agent simply pays the gross, which the note already allows for.
+    withholds: true,
   },
 ];
 

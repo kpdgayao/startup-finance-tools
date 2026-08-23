@@ -234,7 +234,11 @@ export function assessDates(dates: string[], options: AssessOptions): Availabili
       };
     }
 
-    const neighbourBusy = busyDates.has(addDays(date, -1)) || busyDates.has(addDays(date, 1));
+    // Manually held dates count as neighbours too. Checking only the calendar
+    // meant a date sitting beside a hand-entered commitment reported as freely
+    // open, which is the one case the blackout list exists to catch.
+    const committed = (day: string) => busyDates.has(day) || blackouts.has(day);
+    const neighbourBusy = committed(addDays(date, -1)) || committed(addDays(date, 1));
     if (neighbourBusy) {
       return {
         ...base,

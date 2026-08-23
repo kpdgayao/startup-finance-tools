@@ -120,6 +120,8 @@ export default function SpeakerQuotationPage() {
   const isRemote = format.remote;
 
   const ready = Boolean(now) && isValidISODate(startDate);
+  // Shown before a quote exists, so it cannot read quote.dayEquivalents.
+  const dayEquivalentsPreview = Number((format.dayEquivalent * input.sessions).toFixed(3));
   const quote = useMemo(() => (ready ? buildQuotation(input) : null), [input, ready]);
 
   const handleReset = () => {
@@ -272,8 +274,10 @@ export default function SpeakerQuotationPage() {
 
           <RateFactorField
             question={QUESTIONS.sessions}
-            impact={`${format.dayEquivalent * input.sessions} engagement day${
-              format.dayEquivalent * input.sessions === 1 ? "" : "s"
+            // Rounded the way the engine rounds it: 0.6 × 3 in raw float is
+            // 1.7999999999999998, which rendered verbatim in the chip.
+            impact={`${dayEquivalentsPreview} engagement day${
+              dayEquivalentsPreview === 1 ? "" : "s"
             }`}
             active={input.sessions > 1}
           >
@@ -283,7 +287,13 @@ export default function SpeakerQuotationPage() {
               min={1}
               max={30}
               value={input.sessions}
-              onChange={(e) => set("sessions", Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+              onChange={(e) => {
+                set("sessions", Math.max(1, Math.min(30, Number(e.target.value) || 1)));
+                // The session count decides how many dates the engagement
+                // spans, so an existing check no longer covers it. Leaving it
+                // on screen showed a one-date "Open" beside a three-date quote.
+                availability.reset();
+              }}
             />
           </RateFactorField>
 
@@ -681,7 +691,10 @@ export default function SpeakerQuotationPage() {
             complexity: `${complexity.label} (₱${complexity.dayRate.toLocaleString("en-PH")}/day)`,
             audienceSize: input.audienceSize,
             organizerType: organizer.label,
-            region: region.label,
+            // The engine forces "online" for a remote format, so sending the
+            // stale dropdown value had the model explaining flights and hotel
+            // nights that are not on the quote.
+            region: isRemote ? "Online — no travel" : region.label,
             dates: quote.dates.map((d) => `${d.weekday} ${d.date}`),
             daysOfNotice: quote.daysOfNotice,
             lines: quote.lines.map((l) => ({

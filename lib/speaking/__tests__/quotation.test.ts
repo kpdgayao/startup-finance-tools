@@ -185,8 +185,11 @@ describe("mission tier", () => {
     expect(quote.effectiveDayRate).toBeGreaterThanOrEqual(MISSION_FLOOR_DAY_RATE);
   });
 
-  it("does not withhold tax for a mission organiser", () => {
-    expect(buildQuotation(input({ organizerType: "mission" })).withholding.applies).toBe(false);
+  // Public schools, SUCs and registered NGOs are withholding agents just as
+  // government offices are. Marking the tier exempt suppressed the note on the
+  // quote and left the speaker short at payout with no warning.
+  it("still shows withholding for a mission organiser", () => {
+    expect(buildQuotation(input({ organizerType: "mission" })).withholding.applies).toBe(true);
     expect(buildQuotation(input({ organizerType: "corporate" })).withholding.applies).toBe(true);
   });
 });
@@ -442,5 +445,69 @@ describe("floor interactions", () => {
         `${format} fell below the mission minimum`
       ).toBeGreaterThanOrEqual(MINIMUM_ENGAGEMENT_FEE * (1 - MISSION_DISCOUNT));
     }
+  });
+});
+
+
+describe("the breakdown reconciles", () => {
+  // Rounding each line independently of its running total let the two columns
+  // disagree — lines summing to ₱31,300 under a stated fee of ₱31,400, on
+  // screen and in the exported PDF. An organiser checking the arithmetic finds
+  // that before you do.
+  it("sums the effect column exactly to the professional fee", () => {
+    const cases: Partial<QuotationInput>[] = [
+      {},
+      { organizerType: "corporate", region: "metro-manila", audienceSize: 45 },
+      { complexity: "frontier", sessions: 3, audienceSize: 200, startDate: SATURDAY },
+      { addOns: ["recording-internal", "workbook", "clinic"], organizerType: "association" },
+      { organizerType: "mission", format: "keynote" },
+      { ticketed: true, participantFee: 3_500, expectedPaidAttendees: 300, format: "keynote" },
+      { region: "visayas-mindanao", sessions: 2, today: "2026-04-12" },
+    ];
+
+    for (const overrides of cases) {
+      const quote = buildQuotation(input(overrides));
+      const sum = quote.lines.reduce((total, line) => total + line.amount, 0);
+      expect(sum, `lines do not sum to the fee for ${JSON.stringify(overrides)}`).toBe(
+        quote.professionalFee
+      );
+    }
+  });
+
+  it("keeps every line's running total equal to the lines before it", () => {
+    const quote = buildQuotation(
+      input({ organizerType: "corporate", region: "metro-manila", addOns: ["workbook"] })
+    );
+    let running = 0;
+    for (const line of quote.lines) {
+      running += line.amount;
+      expect(line.runningTotal, `${line.label} breaks the running total`).toBe(running);
+    }
+  });
+});
+
+describe("quotation reference", () => {
+  // Two quotes ₱22,800 apart shared SFT-261015-5H9RQ before the seed covered
+  // the add-ons and the travel arrangements. The reference is the handle the
+  // organiser quotes back by email and the one printed on the PDF.
+  it("distinguishes quotes that differ only in what is bundled", () => {
+    const base = input();
+    const references = new Set(
+      [
+        base,
+        { ...base, addOns: ["recording-public" as const] },
+        { ...base, travelCovered: false },
+        { ...base, accommodationCovered: false },
+        { ...base, earlyStart: !base.earlyStart },
+        { ...base, ticketed: true, participantFee: 3_500, expectedPaidAttendees: 80 },
+      ].map((i) => buildQuotation(i).reference)
+    );
+    expect(references.size).toBe(6);
+  });
+
+  it("does not depend on the order add-ons were ticked", () => {
+    const a = buildQuotation(input({ addOns: ["workbook", "clinic"] }));
+    const b = buildQuotation(input({ addOns: ["clinic", "workbook"] }));
+    expect(a.reference).toBe(b.reference);
   });
 });

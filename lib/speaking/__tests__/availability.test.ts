@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  BLACKOUT_DATES,
   addDays,
   assessDates,
   daysBetween,
@@ -218,5 +219,118 @@ describe("ICS parsing", () => {
     );
     expect(busy.size).toBeLessThanOrEqual(501);
     expect(busy.size).toBeGreaterThan(1);
+  });
+});
+
+
+describe("ICS timezone handling", () => {
+  const wrap = (body: string) =>
+    `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${body}\r\nEND:VCALENDAR`;
+
+  // A UTC instant read as written put every morning engagement on the previous
+  // day: 08:00 Manila is 00:00Z the same day, but 07:00 Manila is 23:00Z the
+  // day BEFORE. The real day then reported free.
+  it("places an early-morning Manila engagement on its own day", () => {
+    // 23:00Z on 14 April is 07:00 on 15 April in Manila.
+    const busy = busyDatesFromICS(
+      wrap("BEGIN:VEVENT\r\nDTSTART:20260414T230000Z\r\nDTEND:20260415T060000Z\r\nEND:VEVENT")
+    );
+    expect(busy.has("2026-04-15")).toBe(true);
+    expect(busy.has("2026-04-14")).toBe(false);
+  });
+
+  it("keeps a mid-morning engagement on the day it is written", () => {
+    // 01:00Z is 09:00 Manila, same date.
+    const busy = busyDatesFromICS(
+      wrap("BEGIN:VEVENT\r\nDTSTART:20260415T010000Z\r\nDTEND:20260415T090000Z\r\nEND:VEVENT")
+    );
+    expect(busy.has("2026-04-15")).toBe(true);
+    expect(busy.has("2026-04-16")).toBe(false);
+  });
+
+  it("rolls a late-evening Manila engagement forward, not back", () => {
+    // 14:00Z is 22:00 Manila the same day.
+    const busy = busyDatesFromICS(
+      wrap("BEGIN:VEVENT\r\nDTSTART:20260415T140000Z\r\nEND:VEVENT")
+    );
+    expect(busy.has("2026-04-15")).toBe(true);
+  });
+
+  it("leaves an all-day event untouched by the offset", () => {
+    const busy = busyDatesFromICS(
+      wrap("BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20260415\r\nDTEND;VALUE=DATE:20260416\r\nEND:VEVENT")
+    );
+    expect(busy.has("2026-04-15")).toBe(true);
+    expect(busy.has("2026-04-14")).toBe(false);
+    expect(busy.has("2026-04-16")).toBe(false);
+  });
+});
+
+
+describe("manually held dates", () => {
+  const today = "2026-01-15";
+
+  // BLACKOUT_DATES ships empty, so nothing else in the suite exercises this
+  // path. Entries are pushed and popped around each case rather than the
+  // module being mocked: assessDates reads the exported array directly, and a
+  // mock would test the mock rather than the expansion logic.
+  function withBlackouts<T>(entries: typeof BLACKOUT_DATES, run: () => T): T {
+    const restore = BLACKOUT_DATES.length;
+    BLACKOUT_DATES.push(...entries);
+    try {
+      return run();
+    } finally {
+      BLACKOUT_DATES.length = restore;
+    }
+  }
+
+  it("marks a hand-held date booked", () => {
+    withBlackouts([{ from: "2026-04-15", reason: "private" }], () => {
+      const report = assessDates(["2026-04-15"], { today });
+      expect(report.dates[0].status).toBe("booked");
+    });
+  });
+
+  it("expands an inclusive range", () => {
+    withBlackouts([{ from: "2026-04-15", to: "2026-04-17", reason: "private" }], () => {
+      const report = assessDates(["2026-04-15", "2026-04-17", "2026-04-18"], { today });
+      expect(report.dates.map((d) => d.status)).toEqual(["booked", "booked", "tentative"]);
+    });
+  });
+
+  it("marks a provisional hold tentative rather than booked", () => {
+    withBlackouts([{ from: "2026-04-15", reason: "private", tentative: true }], () => {
+      expect(assessDates(["2026-04-15"], { today }).dates[0].status).toBe("tentative");
+    });
+  });
+
+  // The adjacency check consulted only the calendar, so a date sitting beside
+  // a hand-entered commitment reported as freely open — the one case the
+  // blackout list exists to catch.
+  it("treats a hand-held date as a neighbour", () => {
+    withBlackouts([{ from: "2026-04-16", reason: "private" }], () => {
+      const report = assessDates(["2026-04-15"], { today });
+      expect(report.dates[0].status).toBe("tentative");
+      expect(report.dates[0].note).toContain("beside it");
+    });
+  });
+
+  it("never leaks the reason a date is held", () => {
+    withBlackouts([{ from: "2026-04-15", reason: "SUPER SECRET CLIENT", tentative: true }], () => {
+      const report = assessDates(["2026-04-15"], { today });
+      expect(JSON.stringify(report)).not.toContain("SECRET");
+    });
+  });
+
+  it("ignores a malformed or reversed entry instead of throwing", () => {
+    withBlackouts(
+      [
+        { from: "not-a-date", reason: "typo" },
+        { from: "2026-05-10", to: "2026-05-01", reason: "reversed" },
+      ],
+      () => {
+        expect(assessDates(["2026-05-05"], { today }).dates[0].status).toBe("available");
+      }
+    );
   });
 });

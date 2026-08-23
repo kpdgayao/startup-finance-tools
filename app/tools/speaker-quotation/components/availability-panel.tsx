@@ -83,11 +83,13 @@ export function AvailabilityPanel({
           <p className="mt-3 border-t border-rule pt-2.5 text-xs text-muted-foreground">
             {report.daysOfNotice} {report.daysOfNotice === 1 ? "day" : "days"} of notice —{" "}
             {report.leadTime.label.toLowerCase()}.{" "}
-            {report.source === "calendar"
+            {report.source === "calendar" && !report.degraded
               ? "Checked against the live calendar."
-              : report.degraded
-                ? "The calendar could not be reached, so only manually held dates were checked. Confirm by email."
-                : "Checked against manually held dates only."}{" "}
+              : report.source === "calendar"
+                ? "The calendar could not be reached just now, so this is a cached copy. Worth confirming by email."
+                : report.degraded
+                  ? "The calendar could not be reached, so only manually held dates were checked. Confirm by email."
+                  : "Checked against manually held dates only."}{" "}
             Availability is confirmed on booking, not by this page.
           </p>
         </>

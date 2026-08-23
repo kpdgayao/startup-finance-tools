@@ -57,13 +57,16 @@ export async function POST(request: Request) {
   const { startDate, sessions } = parsed.data;
   const dates = engagementDates(startDate, sessions);
 
-  const { busy, live } = await fetchBusyDates(process.env.SPEAKER_CALENDAR_ICS_URL);
+  const { busy, live, stale } = await fetchBusyDates(process.env.SPEAKER_CALENDAR_ICS_URL);
 
   const report = assessDates(dates, {
     today: todayInManila(),
     busyDates: busy,
     source: live ? "calendar" : "manual",
-    degraded: Boolean(process.env.SPEAKER_CALENDAR_ICS_URL) && !live,
+    // Degraded covers both ways the answer can be weaker than it looks: the
+    // feed was configured but unreachable with nothing cached, or it was
+    // unreachable and these dates came from a cache of unknown age.
+    degraded: stale || (Boolean(process.env.SPEAKER_CALENDAR_ICS_URL) && !live),
   });
 
   // The response carries dates and statuses only. `assessDates` never sees an
