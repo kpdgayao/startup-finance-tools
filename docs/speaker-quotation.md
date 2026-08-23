@@ -360,11 +360,53 @@ A quote for any organiser outside the mission tier that does *not* request an
 invoice raises a flag, because those payors cannot
 release funds without one and finding out afterwards is a delayed payment.
 
+## Leading with the right number
+
+Two presentation rules, both learned from a reader balking at a figure that was
+perfectly defensible.
+
+**Ask who is asking, first.** The sector question sits at the top of the first
+card, above everything. It used to sit two cards down, which meant the first
+number a visitor met was the DEAREST sector's day rate — quoted before they had
+said a word about themselves, so a school or an NGO had to read the corporate
+figure and work downwards. Every rate on the page below that question is now
+already the reader's own.
+
+**Seats are the unit, not days.** The summary leads with cost per participant,
+and the same figure is restated inline the moment the day rate first appears.
+A day rate is the most alarming way to state a fee — it invites "for ONE day?"
+— and it is also the least useful, because nobody is buying a day. The same
+corporate two-day workshop is ₱127,700, or ₱1,600 a head, which is below the
+₱2,500–15,000 per participant per day that an open programme charges for the
+same seat. Both numbers are true; the second is the one an organiser can take
+to whoever holds the budget.
+
+The day rate is not hidden — it is on the fee's base line in the breakdown,
+where its reasoning is attached to it. It is just no longer the headline.
+
+Facilitation is the exception on both counts: nobody in a planning room is a
+seat, and dividing a strategy engagement by heads produces a number that means
+nothing, so those quotes keep cost-per-day. `quote.engagementType` is what the
+screen and the print check.
+
+The intro paragraph carries one sentence of framing — that a day here is not a
+day of talking, and the preparation is the larger half. It is the cheapest
+possible defence against a day rate being read as an hourly wage, and it is said
+once, before the number, rather than argued for afterwards against a figure the
+reader has already balked at.
+
 ## Mobile
 
 The tool is checked at 320, 375 and 390px. Two traps are worth knowing about,
 because both are invisible to a naive overflow check:
 
+- **A full-width trigger can still clip its own label.** `w-full` stops the
+  trigger stretching the page; it does not stop the value inside being cut off
+  mid-word. The trigger is `whitespace-nowrap` and its value is a flex item,
+  which will not shrink below its content without `min-w-0` — so "Company or
+  corporate in-house training" rendered as "…in-house trainin", with no ellipsis
+  to show anything had been cut. `SELECT_TRIGGER` carries both classes and a
+  guard test pins them.
 - **`#main-content` used to be its own scroll container** (`overflow-auto`),
   which meant content wider than the viewport scrolled *main* rather than the
   document: `document.scrollWidth` stayed clean while the page slid sideways,

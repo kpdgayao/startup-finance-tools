@@ -114,6 +114,18 @@ const serverToday = () => "";
 const SELECT_CONTENT = "max-w-[calc(100vw-2rem)]";
 
 /**
+ * Triggers are full-width, and their value shrinks rather than being clipped.
+ *
+ * `w-full` alone is not enough. The trigger sets `whitespace-nowrap` and its
+ * value is a flex item, which by default will not shrink below its content —
+ * so a long option was cut off mid-word with no ellipsis ("Company or
+ * corporate in-house trainin"), reading as a typo rather than as a label too
+ * long for the box. `min-w-0` lets it shrink so the existing `line-clamp-1`
+ * can do its job.
+ */
+const SELECT_TRIGGER = "w-full *:data-[slot=select-value]:min-w-0";
+
+/**
  * An option rendered as a stacked label and explanation rather than one long
  * line, so it wraps and stays readable on a phone. `whitespace-normal` is
  * required: the trigger sets `whitespace-nowrap` and the item inherits it.
@@ -342,6 +354,22 @@ export default function SpeakerQuotationPage() {
   );
   const region = REGIONS.find((r) => r.id === input.region) ?? REGIONS[0];
   const budgetFit = quote?.budgetFit ?? null;
+  /**
+   * The day rate restated per person, shown beside the sector question.
+   *
+   * Read off the quote rather than recomputed, so it cannot disagree with the
+   * summary. Withheld for facilitation, where nobody in the room is a seat and
+   * dividing a planning engagement by heads produces a number that means
+   * nothing.
+   */
+  const perHeadLine =
+    quote && !isFacilitation && quote.perParticipant > 0
+      ? `For ${input.audienceSize.toLocaleString("en-PH")} ${
+          input.audienceSize === 1 ? "person" : "people"
+        }, everything on this quote works out at about ${formatPHP(
+          quote.perParticipant
+        )} each.`
+      : null;
   const leadFactor = quote?.lines.find((l) => l.id === "lead-time")?.factor ?? 1;
 
   return (
@@ -360,12 +388,16 @@ export default function SpeakerQuotationPage() {
       </div>
 
       <div className="border-y border-rule py-4 font-serif text-[15px] leading-[1.55] text-ink-2">
+        {/* The second sentence earns its place: a day rate read as a day's
+            talking is the single most alarming way to meet this page, and the
+            preparation really is the larger half. Said once, here, rather than
+            argued for later against a number the reader has already balked at. */}
         <p>
-          I would rather you saw the arithmetic than a number I made up on a call. My rate moves
-          with how much of the work is new, where it is, and which sector you are in — public
-          bodies pay what their own rules allow, companies pay the corporate rate — and every
-          question below tells you what it does to the total before you answer it. Nothing is sent
-          to me until you decide to send it.
+          I would rather you saw the arithmetic than a number I made up on a call. A day here is
+          not a day of talking — most of it is preparation you never see — and the rate moves with
+          how much of that work is new, where it is, and which sector you are in. Every question
+          tells you what it does to the total before you answer it, and nothing is sent to me until
+          you decide to send it.
         </p>
       </div>
 
@@ -380,10 +412,61 @@ export default function SpeakerQuotationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>What are you planning?</CardTitle>
-          <CardDescription>The four answers that move the number most.</CardDescription>
+          <CardTitle>Who is asking, and what for?</CardTitle>
+          <CardDescription>
+            These are the answers that set the rate. Everything after them only adjusts it.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* First, before any rate is shown anywhere on the page.
+              It used to sit two cards further down, which meant the first
+              number a visitor met was the DEAREST sector's day rate, quoted
+              before they had said a word about themselves — a school or an
+              NGO had to read the corporate number and then work downwards.
+              Asking who is asking first means every figure below is already
+              the reader's own. */}
+          <RateFactorField
+            question={QUESTIONS.organizerType}
+            // The sector sets the rate rather than adding to it, so the chip
+            // shows the resulting day rate — the number the quote will use —
+            // instead of a ratio the reader would only try to negotiate down.
+            impact={
+              organizer.mission
+                ? "Concessionary rate"
+                : `${formatPHP(activeDayRate)}/day`
+            }
+            active
+          >
+            <Select
+              value={input.organizerType}
+              onValueChange={(v) => set("organizerType", v as OrganizerTypeId)}
+            >
+              <SelectTrigger id={QUESTIONS.organizerType.id} className={SELECT_TRIGGER}>
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{organizer.label}</SelectValue>
+              </SelectTrigger>
+              <SelectContent className={SELECT_CONTENT}>
+                {ORGANIZER_TYPES.map((option) => (
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* The day rate, restated as what it costs per person.
+                Both numbers are true, and this is the one the reader can take
+                to whoever holds the budget: a day rate invites "for ONE day?",
+                where a per-head figure invites a comparison with what a seat
+                at an open programme costs. Placed here rather than in the
+                results because this is where the day rate first appears, and
+                so this is where it first needs the context. */}
+            {perHeadLine && <p className="mt-1.5 text-xs text-muted-foreground">{perHeadLine}</p>}
+          </RateFactorField>
+
           <RateFactorField
             question={QUESTIONS.engagementType}
             impact={`from ${formatPHP(
@@ -405,7 +488,7 @@ export default function SpeakerQuotationPage() {
               value={input.engagementType}
               onValueChange={(v) => setEngagementType(v as EngagementTypeId)}
             >
-              <SelectTrigger id={QUESTIONS.engagementType.id} className="w-full">
+              <SelectTrigger id={QUESTIONS.engagementType.id} className={SELECT_TRIGGER}>
                 <SelectValue>{engagementType.label}</SelectValue>
               </SelectTrigger>
               <SelectContent className={SELECT_CONTENT}>
@@ -427,7 +510,7 @@ export default function SpeakerQuotationPage() {
               value={input.format}
               onValueChange={(v) => set("format", v as EngagementFormatId)}
             >
-              <SelectTrigger id={QUESTIONS.format.id} className="w-full">
+              <SelectTrigger id={QUESTIONS.format.id} className={SELECT_TRIGGER}>
                 {/* Explicit children: without them Radix mirrors the item's
                     full markup into the trigger, and the trigger is `w-fit`,
                     so a long option stretched it to 805px — pushing <main>
@@ -486,7 +569,7 @@ export default function SpeakerQuotationPage() {
               value={input.complexity}
               onValueChange={(v) => set("complexity", v as ComplexityId)}
             >
-              <SelectTrigger id={QUESTIONS.complexity.id} className="w-full">
+              <SelectTrigger id={QUESTIONS.complexity.id} className={SELECT_TRIGGER}>
                 {/* Explicit children: without them Radix mirrors the item's
                     full markup into the trigger, and the trigger is `w-fit`,
                     so a long option stretched it to 805px — pushing <main>
@@ -520,7 +603,7 @@ export default function SpeakerQuotationPage() {
                   value={input.facilitationScope}
                   onValueChange={(v) => set("facilitationScope", v as FacilitationScopeId)}
                 >
-                  <SelectTrigger id={QUESTIONS.facilitationScope.id} className="w-full">
+                  <SelectTrigger id={QUESTIONS.facilitationScope.id} className={SELECT_TRIGGER}>
                     <SelectValue>{facilitationScope.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent className={SELECT_CONTENT}>
@@ -543,7 +626,7 @@ export default function SpeakerQuotationPage() {
                 active={preparationOption.days > 0}
               >
                 <Select value={input.preparation} onValueChange={(v) => set("preparation", v)}>
-                  <SelectTrigger id={QUESTIONS.preparation.id} className="w-full">
+                  <SelectTrigger id={QUESTIONS.preparation.id} className={SELECT_TRIGGER}>
                     <SelectValue>{preparationOption.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent className={SELECT_CONTENT}>
@@ -562,7 +645,7 @@ export default function SpeakerQuotationPage() {
                 active={outputOption.days > 0}
               >
                 <Select value={input.output} onValueChange={(v) => set("output", v)}>
-                  <SelectTrigger id={QUESTIONS.output.id} className="w-full">
+                  <SelectTrigger id={QUESTIONS.output.id} className={SELECT_TRIGGER}>
                     <SelectValue>{outputOption.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent className={SELECT_CONTENT}>
@@ -642,7 +725,7 @@ export default function SpeakerQuotationPage() {
               onValueChange={(v) => set("region", v as RegionId)}
               disabled={isRemote}
             >
-              <SelectTrigger id={QUESTIONS.region.id} className="w-full">
+              <SelectTrigger id={QUESTIONS.region.id} className={SELECT_TRIGGER}>
                 {/* Explicit children: without them Radix mirrors the item's
                     full markup into the trigger, and the trigger is `w-fit`,
                     so a long option stretched it to 805px — pushing <main>
@@ -671,47 +754,12 @@ export default function SpeakerQuotationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>And about you</CardTitle>
+          <CardTitle>And a little more about you</CardTitle>
           <CardDescription>
-            Which rate applies, whether we have met before, and what you have to work with.
+            Whether we have met before, whether you sell seats, and what you have to work with.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RateFactorField
-            question={QUESTIONS.organizerType}
-            // The sector sets the rate rather than adding to it, so the chip
-            // shows the resulting day rate — the number the quote will use —
-            // instead of a ratio the reader would only try to negotiate down.
-            impact={
-              organizer.mission
-                ? "Concessionary rate"
-                : `${formatPHP(activeDayRate)}/day`
-            }
-            active
-          >
-            <Select
-              value={input.organizerType}
-              onValueChange={(v) => set("organizerType", v as OrganizerTypeId)}
-            >
-              <SelectTrigger id={QUESTIONS.organizerType.id} className="w-full">
-                {/* Explicit children: without them Radix mirrors the item's
-                    full markup into the trigger, and the trigger is `w-fit`,
-                    so a long option stretched it to 805px — pushing <main>
-                    to 896px inside a 375px viewport and giving the whole page
-                    an invisible sideways scroll. */}
-                <SelectValue>{organizer.label}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className={SELECT_CONTENT}>
-                {ORGANIZER_TYPES.map((option) => (
-                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                    <OptionText label={option.label} detail={option.detail} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </RateFactorField>
-
-
           <RateFactorField
             question={QUESTIONS.returningClient}
             impact={input.returningClient ? `−${RETURNING_CLIENT_DISCOUNT * 100}%` : "No change"}
@@ -837,7 +885,7 @@ export default function SpeakerQuotationPage() {
                 value={input.audienceProfile}
                 onValueChange={(v) => set("audienceProfile", v as AudienceProfileId)}
               >
-                <SelectTrigger id={QUESTIONS.audienceProfile.id} className="w-full">
+                <SelectTrigger id={QUESTIONS.audienceProfile.id} className={SELECT_TRIGGER}>
                   <SelectValue>{audienceProfile.label}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className={SELECT_CONTENT}>

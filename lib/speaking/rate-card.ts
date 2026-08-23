@@ -740,7 +740,7 @@ export function deriveDayRate(base: number, multiplier: number): number {
 export const ORGANIZER_TYPES: OrganizerType[] = [
   {
     id: "corporate",
-    label: "Company or corporate in-house training",
+    label: "Company or corporation",
     detail: "Private firm, bank, or a commercial training provider",
     // Benchmarked against Philippine in-house corporate training: ₱40,000–280,000 a session, ₱100,000–500,000 for a two-day programme.
     rateMultiplier: 3.2,
@@ -754,7 +754,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   },
   {
     id: "association",
-    label: "Industry association or ticketed conference",
+    label: "Industry association or conference",
     detail: "Chamber, professional body, or a conference that sells seats",
     // Between the public and corporate rate — a chamber or a ticketed conference sells seats, but rarely on a corporate training budget.
     rateMultiplier: 2.5,
@@ -766,7 +766,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   },
   {
     id: "cooperative",
-    label: "Cooperative or cooperative federation",
+    label: "Cooperative or federation",
     detail: "A co-op, union or federation — larger cooperative banks are usually the corporate rate",
     // Between a private school and a chamber, for a specific reason: a
     // cooperative has a STATUTORY training budget. RA 9520 requires up to 10%
@@ -785,7 +785,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   },
   {
     id: "government",
-    label: "Government agency, LGU or state university",
+    label: "Government, LGU or state university",
     detail: "Has a budget line and a procurement process",
     // The public-sector rate the ladders are written in. Capped by DBM BC 2007-1 at roughly ₱21,000 a day, so there is no room above it.
     rateMultiplier: 1,
@@ -809,8 +809,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   },
   {
     id: "mission",
-    label: "Public school, student org, NGO or startup community",
-    detail: "No ticket revenue and no training budget — qualifies for the concessionary rate",
+    label: "Public school, student org or NGO",
+    detail:
+      "Student orgs, NGOs and startup communities with no ticket revenue and no training budget — the concessionary rate",
     // The public rate, before the concession below.
     rateMultiplier: 1,
     facilitationMultiplier: 1,

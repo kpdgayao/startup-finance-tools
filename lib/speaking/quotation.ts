@@ -287,6 +287,23 @@ export interface Quotation {
   total: number;
   /** Fee ÷ days committed. The number to compare against the topic's day rate. */
   effectiveDayRate: number;
+  /** Participants the quote was built for. Named so the summary can say it. */
+  audienceSize: number;
+  /**
+   * Total ÷ participants.
+   *
+   * The unit an organiser can actually defend internally. A day rate is the
+   * most alarming way to state a fee — it invites "for ONE day?" — and it is
+   * also the least useful, because nobody is buying a day. ₱127,700 for two
+   * days reads as a lot; the same quote at ₱1,600 a head reads as less than
+   * the ₱2,500–15,000 a day the same participant would cost at an open
+   * programme. Both numbers are true and the second is the one that answers
+   * the question the reader is actually asking.
+   *
+   * Meaningless for facilitation, where nobody is buying seats, so the
+   * surfaces that show it check the engagement type first.
+   */
+  perParticipant: number;
   /** Projected gross gate, when the event is ticketed. */
   projectedGate: number;
   /** Fee as a share of the gate, 0 when the event is not ticketed. */
@@ -914,6 +931,11 @@ function priceEngagement(raw: QuotationInput): Quotation {
     reimbursablesCovered,
     total,
     effectiveDayRate: daysCommitted > 0 ? roundPeso(professionalFee / daysCommitted) : 0,
+    audienceSize,
+    // To the peso, not the hundred: a ₱169 per-head figure rounded to ₱200 is
+    // a fifth out, on the one number a reader is most likely to multiply back
+    // up and check.
+    perParticipant: audienceSize > 0 ? roundToPeso(total / audienceSize) : 0,
     projectedGate: roundPeso(projectedGate),
     gateShare: projectedGate > 0 ? (professionalFee / projectedGate) * 100 : 0,
     withholding: {

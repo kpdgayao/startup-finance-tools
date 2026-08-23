@@ -184,13 +184,33 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                 }`
           }
         />
-        <ResultCard
-          label="Cost per day"
-          value={formatPHP(quote.effectiveDayRate)}
-          sublabel={`Across ${quote.daysCommitted} ${
-            quote.daysCommitted === 1 ? "day" : "days"
-          } of work in total`}
-        />
+        {/* Per participant, not per day, wherever seats are what is being
+            bought. A day rate is the most alarming way to state a fee and the
+            least useful — nobody is buying a day, and the reader's real
+            question is what this costs for the people they are responsible
+            for. The day rate is still on the fee's base line below, where its
+            reasoning is attached to it.
+
+            Facilitation is the exception: nobody in a planning room is a seat,
+            and dividing a strategy engagement by heads produces a number that
+            means nothing. */}
+        {quote.engagementType === "facilitation" ? (
+          <ResultCard
+            label="Cost per day"
+            value={formatPHP(quote.effectiveDayRate)}
+            sublabel={`Across ${quote.daysCommitted} ${
+              quote.daysCommitted === 1 ? "day" : "days"
+            } of work in total`}
+          />
+        ) : (
+          <ResultCard
+            label="Per participant"
+            value={formatPHP(quote.perParticipant)}
+            sublabel={`Everything below, across ${quote.audienceSize.toLocaleString(
+              "en-PH"
+            )} ${quote.audienceSize === 1 ? "person" : "people"}`}
+          />
+        )}
         <ResultCard
           label="Billed logistics"
           value={formatPHP(quote.reimbursablesBilled)}
