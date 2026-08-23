@@ -30,6 +30,7 @@ export interface IntakeDraft {
   ticketed?: boolean;
   participantFee?: number;
   expectedPaidAttendees?: number;
+  budget?: number;
   region?: string;
   startDate?: string;
   earlyStart?: boolean;

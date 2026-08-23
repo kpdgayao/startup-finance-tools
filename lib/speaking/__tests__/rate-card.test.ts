@@ -8,6 +8,10 @@ import {
   FACILITATION_SCOPES,
   TEAM_BUILDING_DAY_RATE,
   TOP_SECTOR_MULTIPLIER,
+  TOP_SECTOR_FACILITATION_MULTIPLIER,
+  facilitationScopeFor,
+  organizerTypeFor,
+  sectorMultiplier,
   DAY_RATE_MIN,
   deriveDayRate,
   ENGAGEMENT_FORMATS,
@@ -162,6 +166,16 @@ describe("why-we-ask copy", () => {
     expect(QUESTIONS.organizerType.impact).toContain(
       MISSION_FLOOR_DAY_RATE.toLocaleString("en-PH")
     );
+
+    // The facilitation copy has to quote the facilitation scaling. Quoting the
+    // speaking one told a corporate reader their board retreat topped out at
+    // ₱96,000 a day, against a page that would have quoted them ₱75,000.
+    expect(QUESTIONS.facilitationScope.impact).toContain(
+      deriveDayRate(
+        FACILITATION_SCOPES[FACILITATION_SCOPES.length - 1].dayRate,
+        TOP_SECTOR_FACILITATION_MULTIPLIER
+      ).toLocaleString("en-PH")
+    );
   });
 
   // The margin notes are held to the same rule (see lib/__tests__/margin-notes
@@ -215,6 +229,20 @@ describe("sector rates against the market benchmarks", () => {
   const dayRate = (organizer: string, base: number) =>
     deriveDayRate(base, ORGANIZER_TYPES.find((o) => o.id === organizer)!.rateMultiplier);
 
+  // Cheapest sector first. A cooperative sits between a private school and a
+  // chamber: RA 9520 already reserves part of its net surplus for members'
+  // education and training, so the budget exists, but it is members' money
+  // rather than corporate profit.
+  const SECTOR_ORDER = ["government", "academic", "cooperative", "association", "corporate"];
+
+  /** Every base rate on the card, paired with the multiplier that prices it. */
+  const ladderRates = (type: (typeof ORGANIZER_TYPES)[number]) =>
+    [
+      ...COMPLEXITY_TIERS.map((t) => [t.id, t.dayRate, type.rateMultiplier] as const),
+      ...FACILITATION_SCOPES.map((f) => [f.id, f.dayRate, type.facilitationMultiplier] as const),
+      ["team-building", TEAM_BUILDING_DAY_RATE, type.rateMultiplier] as const,
+    ] as const;
+
   it("leaves the public sector at the ladder, which is where its ceiling is", () => {
     for (const id of ["government", "mission"]) {
       expect(dayRate(id, DAY_RATE_MIN), id).toBe(DAY_RATE_MIN);
@@ -232,10 +260,8 @@ describe("sector rates against the market benchmarks", () => {
     expect(dayRate("corporate", DAY_RATE_MAX)).toBeLessThan(120_000);
   });
 
-  it("orders the sectors public < academic < association < corporate", () => {
-    const order = ["government", "academic", "association", "corporate"].map((id) =>
-      dayRate(id, DAY_RATE_MIN)
-    );
+  it("orders the sectors public < academic < cooperative < association < corporate", () => {
+    const order = SECTOR_ORDER.map((id) => dayRate(id, DAY_RATE_MIN));
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(new Set(order).size).toBe(order.length);
   });
@@ -251,16 +277,13 @@ describe("sector rates against the market benchmarks", () => {
   // rate enough to matter, across EVERY ladder — including facilitation and
   // team building, which the first version of this test skipped.
   it("rounds without moving a rate more than half a thousand", () => {
-    const ladders = [
-      ...COMPLEXITY_TIERS.map((t) => [t.id, t.dayRate] as const),
-      ...FACILITATION_SCOPES.map((f) => [f.id, f.dayRate] as const),
-      ["team-building", TEAM_BUILDING_DAY_RATE] as const,
-    ];
-
+    // Each ladder is paired with the multiplier that actually prices it —
+    // facilitation has its own, and checking it against the speaking one would
+    // pin a number no quote can produce.
     for (const type of ORGANIZER_TYPES) {
-      for (const [id, base] of ladders) {
-        const exact = base * type.rateMultiplier;
-        const rounded = deriveDayRate(base, type.rateMultiplier);
+      for (const [id, base, multiplier] of ladderRates(type)) {
+        const exact = base * multiplier;
+        const rounded = deriveDayRate(base, multiplier);
         expect(Math.abs(rounded - exact), `${type.id}/${id}`).toBeLessThanOrEqual(500);
         expect(rounded, `${type.id}/${id}`).toBeGreaterThan(0);
       }
@@ -270,17 +293,76 @@ describe("sector rates against the market benchmarks", () => {
   it("keeps every ladder's sector ordering intact after rounding", () => {
     // Rounding could in principle collapse two adjacent sectors onto the same
     // figure, which would make the sector question look like it did nothing.
-    const ordered = ["government", "academic", "association", "corporate"];
-    for (const base of [
-      ...COMPLEXITY_TIERS.map((t) => t.dayRate),
-      ...FACILITATION_SCOPES.map((f) => f.dayRate),
-      TEAM_BUILDING_DAY_RATE,
-    ]) {
-      const rates = ordered.map((id) =>
-        deriveDayRate(base, ORGANIZER_TYPES.find((o) => o.id === id)!.rateMultiplier)
+    const ladders: Array<[string, number, "speaking" | "facilitation"]> = [
+      ...COMPLEXITY_TIERS.map((t) => [t.id, t.dayRate, "speaking"] as [string, number, "speaking"]),
+      ...FACILITATION_SCOPES.map(
+        (f) => [f.id, f.dayRate, "facilitation"] as [string, number, "facilitation"]
+      ),
+      ["team-building", TEAM_BUILDING_DAY_RATE, "speaking"],
+    ];
+
+    for (const [id, base, type] of ladders) {
+      const rates = SECTOR_ORDER.map((sector) =>
+        deriveDayRate(base, sectorMultiplier(organizerTypeFor(sector as never), type))
       );
-      expect(new Set(rates).size, `base ${base}`).toBe(rates.length);
-      expect([...rates].sort((a, b) => a - b), `base ${base}`).toEqual(rates);
+      expect(new Set(rates).size, `${id} collapses two sectors onto one rate`).toBe(rates.length);
+      expect([...rates].sort((a, b) => a - b), id).toEqual(rates);
+    }
+  });
+});
+
+describe("facilitation is scaled by its own sector multipliers", () => {
+  // The two ladders track different markets. Teaching scales with the
+  // corporate training budget, which is well evidenced here; facilitation had
+  // only international comparables, and scaling it by the speaking multiplier
+  // imported that range wholesale — a ₱90,000 corporate planning day, above
+  // any observed Philippine training day, on no Philippine evidence.
+  it("prices a corporate planning day at ₱70,000 at the middle rung", () => {
+    expect(
+      deriveDayRate(
+        facilitationScopeFor("organisation").dayRate,
+        sectorMultiplier(organizerTypeFor("corporate"), "facilitation")
+      )
+    ).toBe(70_000);
+  });
+
+  it("keeps the top corporate facilitation day inside the training-day market", () => {
+    const top = deriveDayRate(
+      Math.max(...FACILITATION_SCOPES.map((f) => f.dayRate)),
+      TOP_SECTOR_FACILITATION_MULTIPLIER
+    );
+    expect(top).toBeLessThanOrEqual(80_000);
+    expect(top).toBeGreaterThan(deriveDayRate(FACILITATION_SCOPES[0].dayRate, 1));
+  });
+
+  it("never scales facilitation below the public rate, or above the speaking scaling", () => {
+    for (const type of ORGANIZER_TYPES) {
+      expect(type.facilitationMultiplier, type.id).toBeGreaterThanOrEqual(1);
+      expect(type.facilitationMultiplier, type.id).toBeLessThanOrEqual(type.rateMultiplier);
+    }
+  });
+
+  it("keeps facilitation above every speaking tier at the public rate", () => {
+    // The ordering that justifies a separate ladder at all. It is deliberately
+    // asserted at the PUBLIC rate only: at the corporate end a research-heavy
+    // teaching day now costs more than a planning day, which is the intended
+    // consequence of pricing the two markets separately.
+    const publicSector = organizerTypeFor("government");
+    const cheapestFacilitation = deriveDayRate(
+      Math.min(...FACILITATION_SCOPES.map((f) => f.dayRate)),
+      sectorMultiplier(publicSector, "facilitation")
+    );
+    expect(cheapestFacilitation).toBeGreaterThan(
+      deriveDayRate(DAY_RATE_MAX, sectorMultiplier(publicSector, "speaking"))
+    );
+  });
+
+  it("prices team building off the speaking ladder, not the facilitation one", () => {
+    // Team building's rate is set inside the speaking range on purpose. Moving
+    // it onto the facilitation multipliers would drop its corporate rate by
+    // ₱15,000 a day as a side effect of a change that was never about it.
+    for (const type of ORGANIZER_TYPES) {
+      expect(sectorMultiplier(type, "team-building"), type.id).toBe(type.rateMultiplier);
     }
   });
 });

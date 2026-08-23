@@ -206,22 +206,31 @@ export interface FacilitationScope {
 }
 
 /**
- * Facilitation rates, at PUBLIC-SECTOR level like every other ladder here —
- * the sector multiplier scales them from there.
+ * Facilitation rates, at PUBLIC-SECTOR level like every other ladder here.
+ * The sector scales them by its OWN facilitation multiplier, not by the
+ * speaking one — see OrganizerType.facilitationMultiplier.
  *
  * Two caveats worth knowing, because this ladder rests on the weakest evidence
- * on the card. First, the corporate facilitation rate it produces (about
- * ₱90,000 a day) is extrapolated from international facilitation day rates of
- * roughly ₱70,000–440,000; no reliable Philippine figure was found. Treat it
- * as a hypothesis to test against real enquiries rather than an observed price.
+ * on the card. First, the only day rates found for comparable facilitation were
+ * international, roughly ₱70,000–440,000 a day; no reliable Philippine figure
+ * turned up. An earlier version scaled this ladder by the speaking multipliers
+ * and produced a ₱90,000 corporate day from that international range — a price
+ * imported from a market this one is not in. The corporate facilitation day is
+ * now ₱70,000 at the middle rung, which sits at the top of the Philippine
+ * in-house training day range rather than above it, and is a hypothesis to test
+ * against real enquiries rather than an observed price.
  * Second, these sit above the ~₱21,000 DBM honorarium ceiling even at the
  * public rate, on the basis that a planning engagement is normally procured as
  * a consultancy contract rather than paid as a resource-person honorarium —
  * which is a different rule, not an exemption from that one.
  *
- * Above every speaking tier, because facilitation is bespoke by definition —
- * nothing is reusable, the process is designed for one room, and the
- * facilitator carries the outcome rather than the content.
+ * Above every speaking tier at the public rate, because facilitation is bespoke
+ * by definition — nothing is reusable, the process is designed for one room,
+ * and the facilitator carries the outcome rather than the content. That
+ * ordering is a property of the ladders, not of every sector: a corporate
+ * research-heavy teaching day now costs more than a corporate planning day,
+ * because teaching scales with the corporate training market and facilitation
+ * is anchored to what a facilitation day is actually worth here.
  *
  * The ladder is about how many principals have to be reconciled, which is what
  * actually makes a room hard to run.
@@ -634,6 +643,7 @@ export function leadTimeBandFor(daysOfNotice: number): LeadTimeBand {
 export type OrganizerTypeId =
   | "corporate"
   | "association"
+  | "cooperative"
   | "government"
   | "academic"
   | "mission";
@@ -660,6 +670,20 @@ export interface OrganizerType {
    * session costs at the very bottom of the market, for two days of work.
    */
   rateMultiplier: number;
+  /**
+   * The same idea for facilitation, which is a different market with a
+   * different ceiling and so needs its own scaling.
+   *
+   * Teaching scales with the corporate TRAINING budget, which is large and
+   * well evidenced here. Facilitation does not: the only comparable day rates
+   * found were international, and scaling the facilitation ladder by the
+   * speaking multiplier imported that range wholesale — a corporate planning
+   * day came out at ₱90,000, above what any Philippine training day was
+   * observed to cost, on the strength of no Philippine evidence at all.
+   * Splitting the two lets the teaching ladder track its market without
+   * dragging facilitation somewhere its own market does not support.
+   */
+  facilitationMultiplier: number;
   /** Short noun for the fee's base line — "the corporate rate for …". */
   sectorLabel: string;
   /** Eligible for the concessionary mission discount. */
@@ -681,9 +705,12 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   {
     id: "corporate",
     label: "Company or corporate in-house training",
-    detail: "Private firm, bank, cooperative bank, or a commercial training provider",
+    detail: "Private firm, bank, or a commercial training provider",
     // Benchmarked against Philippine in-house corporate training: ₱40,000–280,000 a session, ₱100,000–500,000 for a two-day programme.
     rateMultiplier: 3.2,
+    // 28,000 × 2.5 = ₱70,000 at the middle rung — the top of the observed
+    // Philippine training-day range rather than above it.
+    facilitationMultiplier: 2.5,
     sectorLabel: "corporate",
     mission: false,
     withholds: true,
@@ -694,7 +721,26 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "Chamber, professional body, or a conference that sells seats",
     // Between the public and corporate rate — a chamber or a ticketed conference sells seats, but rarely on a corporate training budget.
     rateMultiplier: 2.5,
+    facilitationMultiplier: 1.9,
     sectorLabel: "association",
+    mission: false,
+    withholds: true,
+  },
+  {
+    id: "cooperative",
+    label: "Cooperative or cooperative federation",
+    detail: "A co-op, union or federation — larger cooperative banks are usually the corporate rate",
+    // Between a private school and a chamber, for a specific reason: a
+    // cooperative has a STATUTORY training budget. RA 9520 requires up to 10%
+    // of net surplus to go to the cooperative education and training fund,
+    // half of it spent by the co-op itself on education and training. So this
+    // is not an organisation asking to be treated as a charity — the money is
+    // already ring-fenced for exactly this. It sits below the association and
+    // corporate rates because the surplus funding it is members' own, not
+    // profit, and a co-op is answerable to those members for how it is spent.
+    rateMultiplier: 2,
+    facilitationMultiplier: 1.6,
+    sectorLabel: "cooperative",
     mission: false,
     withholds: true,
   },
@@ -704,6 +750,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "Has a budget line and a procurement process",
     // The public-sector rate the ladders are written in. Capped by DBM BC 2007-1 at roughly ₱21,000 a day, so there is no room above it.
     rateMultiplier: 1,
+    facilitationMultiplier: 1,
     sectorLabel: "public-sector",
     mission: false,
     withholds: true,
@@ -714,6 +761,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "Faculty development, student congress, graduate programme",
     // Private schools and universities have a training budget, but not a corporate one.
     rateMultiplier: 1.6,
+    facilitationMultiplier: 1.4,
     sectorLabel: "private-academic",
     mission: false,
     withholds: true,
@@ -724,6 +772,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     detail: "No ticket revenue and no training budget — qualifies for the concessionary rate",
     // The public rate, before the concession below.
     rateMultiplier: 1,
+    facilitationMultiplier: 1,
     sectorLabel: "public-sector",
     mission: true,
     // True, despite the concession. Public schools, SUCs and registered NGOs
@@ -742,6 +791,25 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
 export const TOP_SECTOR_MULTIPLIER = Math.max(
   ...ORGANIZER_TYPES.map((o) => o.rateMultiplier)
 );
+
+/** The same, for the facilitation ladder, which the sectors scale differently. */
+export const TOP_SECTOR_FACILITATION_MULTIPLIER = Math.max(
+  ...ORGANIZER_TYPES.map((o) => o.facilitationMultiplier)
+);
+
+/**
+ * Which of a sector's two multipliers applies.
+ *
+ * Every surface that shows a day rate — the form's chips, the "why we ask"
+ * copy, the printed quote — resolves it through here rather than reaching for
+ * `rateMultiplier` directly, so the two ladders cannot drift apart on one
+ * screen. Team building deliberately uses the SPEAKING multiplier: its rate is
+ * set inside the speaking range, and pricing it off the facilitation ladder
+ * would move a number nobody asked to move.
+ */
+export function sectorMultiplier(organizer: OrganizerType, type: EngagementTypeId): number {
+  return type === "facilitation" ? organizer.facilitationMultiplier : organizer.rateMultiplier;
+}
 
 export function organizerTypeFor(id: OrganizerTypeId): OrganizerType {
   return ORGANIZER_TYPES.find((o) => o.id === id) ?? ORGANIZER_TYPES[0];

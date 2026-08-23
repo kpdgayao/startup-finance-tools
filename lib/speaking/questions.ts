@@ -20,6 +20,7 @@ import {
   DAY_RATE_MAX,
   DESK_DAY_FACTOR,
   TOP_SECTOR_MULTIPLIER,
+  TOP_SECTOR_FACILITATION_MULTIPLIER,
   deriveDayRate,
   FACILITATION_SCOPES,
   EWT_RATE,
@@ -59,7 +60,7 @@ export const QUESTIONS = {
       DAY_RATE_MIN
     )} a day for public-sector work up to ${peso(
       deriveDayRate(DAY_RATE_MAX, TOP_SECTOR_MULTIPLIER)
-    )} for a company. Facilitation starts higher and adds its own lines for preparation and written output.`,
+    )} for a company. Facilitation is priced on its own ladder, and adds separate lines for the preparation before the room and the written output after it.`,
   },
   facilitationScope: {
     id: "facilitationScope",
@@ -71,7 +72,7 @@ export const QUESTIONS = {
     )} a day for a single team at public-sector rates, up to ${peso(
       deriveDayRate(
         FACILITATION_SCOPES[FACILITATION_SCOPES.length - 1].dayRate,
-        TOP_SECTOR_MULTIPLIER
+        TOP_SECTOR_FACILITATION_MULTIPLIER
       )
     )} for a corporate board. Your sector sets which end applies.`,
   },
@@ -149,8 +150,8 @@ export const QUESTIONS = {
     id: "organizerType",
     label: "Who is organising the event?",
     hint: "This decides which rate applies — the largest single factor after the subject.",
-    why: "This sets the rate, and it is the honest reason my quotes differ. A government agency cannot pay more than its own rules allow — the circular caps a resource person at about \u20b121,000 a day whatever I ask — so that is what public work pays. A corporate training budget is a different market entirely, and pricing both the same would mean either overcharging schools or underwriting companies out of my own time. Saying which you are gets you your sector's rate rather than an average of everyone's.",
-    impact: `Sets which day rate applies. Government and public-sector work is quoted at the ladder above; private schools, associations and companies each have their own rate, shown the moment you choose. Public schools, student organisations and NGOs get a further −${
+    why: "This sets the rate, and it is the honest reason my quotes differ. A government agency cannot pay more than its own rules allow — the circular caps a resource person at about \u20b121,000 a day whatever I ask — so that is what public work pays. A corporate training budget is a different market entirely, and a cooperative is a third thing again: the law already sets aside part of its surplus for members' education and training, so the money is there but it is the members' own. Pricing all of them the same would mean either overcharging schools or underwriting companies out of my own time. Saying which you are gets you your sector's rate rather than an average of everyone's.",
+    impact: `Sets which day rate applies. Government and public-sector work is quoted at the ladder above; private schools, cooperatives, associations and companies each have their own rate, shown the moment you choose. Public schools, student organisations and NGOs get a further −${
       MISSION_DISCOUNT * 100
     }%, floored at ${peso(MISSION_FLOOR_DAY_RATE)} per day.`,
   },
@@ -237,6 +238,14 @@ export const QUESTIONS = {
     }, and withholding follows the firm's rate of ${
       EWT_RATE_FIRM * 100
     }% instead of the ${EWT_RATE * 100}% that applies to an individual professional.`,
+  },
+  budget: {
+    id: "budget",
+    label: "Do you already have a budget set for this?",
+    hint: "Optional. The amount approved on your side — it does not change my rate.",
+    why: "Most organisers who ask me this have a number already, and hold it back in case naming it costs them something. It does not: the rate comes off a published card either way, and you can see every line of it above. What knowing it changes is what I propose for the money — whether that is a day instead of two, the write-up done in-house, or a session online. I would much rather shape the engagement around a real figure now than have us both find out at the end that it was never going to work.",
+    impact:
+      "Nothing at all to the fee. If the quote lands above your figure, you get a list of what you could change to bring it down, with the saving beside each one and the total it would leave you at.",
   },
   addOns: {
     id: "addOns",

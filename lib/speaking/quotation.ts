@@ -47,6 +47,7 @@ import {
   audienceBandFor,
   audienceProfileFor,
   deriveDayRate,
+  sectorMultiplier,
   engagementTypeFor,
   facilitationScopeFor,
   formatLabel,
@@ -122,6 +123,17 @@ export interface QuotationInput {
   invoiceRequired: boolean;
   /** They have booked before, so the discovery is already done. */
   returningClient: boolean;
+  /**
+   * A budget the organiser already has approved, or 0 when they have not said.
+   *
+   * It does NOT enter the pricing. Nothing downstream reads it except
+   * `assessBudget`, which compares it against the finished quote and works out
+   * what could be CHANGED to fit — scope to the budget, do not discount to it.
+   * A budget that moved the rate would make the rate card decorative: the same
+   * two days of work would cost whatever the organiser said they had, and the
+   * organiser who volunteered a real number would be the one who paid most.
+   */
+  budget: number;
   /** Today, `YYYY-MM-DD`. Injected rather than read from the clock. */
   today: string;
   /** Free-text, carried through to the printed quote. */
@@ -152,6 +164,7 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   addOns: [],
   invoiceRequired: true,
   returningClient: false,
+  budget: 0,
   eventTitle: "",
   organizationName: "",
   contactName: "",
@@ -192,6 +205,52 @@ export interface QuotationDateNote {
   weekday: string;
   holiday?: string;
   isWeekend: boolean;
+}
+
+/**
+ * One thing the organiser could change to bring the quote down, with what it
+ * saves and what it costs them in scope.
+ *
+ * Every saving here is computed by RE-PRICING the engagement with that one
+ * change made, not by estimating it. A lever whose stated saving does not
+ * match what the form then produces is worse than no lever at all.
+ */
+export interface BudgetLever {
+  id: string;
+  /** The change, as an instruction the organiser could act on. */
+  label: string;
+  /** What they give up, or gain, by making it. Never a sales line. */
+  detail: string;
+  /** Pesos off the total. Always positive — levers that save nothing are dropped. */
+  saving: number;
+  /** What the total becomes with this one change and nothing else. */
+  total: number;
+}
+
+export interface BudgetFit {
+  /** What the organiser said they had. */
+  budget: number;
+  /** The quoted total it is being compared against. */
+  total: number;
+  /** True when the quote already fits. */
+  withinBudget: boolean;
+  /** Budget less total when it fits; total less budget when it does not. */
+  difference: number;
+  /** Changes that would bring the total down, dearest saving first. */
+  levers: BudgetLever[];
+  /**
+   * The total with the combinable levers applied at once.
+   *
+   * Not "all of them": two levers in the same slot are alternatives, so the
+   * floor takes the better one and `combined` names exactly which levers went
+   * into it. The copy reads off that list rather than saying "all of these",
+   * which would be untrue whenever an alternative was dropped.
+   */
+  floor: number;
+  /** The lever ids the floor actually applied. */
+  combined: string[];
+  /** True when `floor` is at or under the budget. */
+  reachable: boolean;
 }
 
 export interface Quotation {
@@ -254,6 +313,8 @@ export interface Quotation {
   /** Things the organiser must decide or confirm, surfaced on the quote. */
   flags: string[];
   customQuoteRequired: boolean;
+  /** How the total sits against a stated budget. Null when none was given. */
+  budgetFit: BudgetFit | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -321,6 +382,9 @@ function referenceFor(input: QuotationInput): string {
     [...input.addOns].sort().join(","),
     input.invoiceRequired ? "INV" : "NOINV",
     input.returningClient ? "RETURNING" : "NEW",
+    // The budget is deliberately absent: it moves nothing, so two quotes that
+    // differ only in what the organiser said they could afford are the same
+    // quote and should share a reference.
     input.organizationName ?? "",
   ].join("|");
 
@@ -356,7 +420,12 @@ function scheduleFor(dates: string[]): Quotation["schedule"] {
 // Engine
 // ---------------------------------------------------------------------------
 
-export function buildQuotation(raw: QuotationInput): Quotation {
+/**
+ * Prices one engagement. Everything except the budget comparison, which needs
+ * a priced quote to compare against and re-prices variants of this same
+ * function — hence the split, which is what keeps that from recursing.
+ */
+function priceEngagement(raw: QuotationInput): Quotation {
   const format =
     ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
   const engagementType = engagementTypeFor(raw.engagementType);
@@ -372,13 +441,14 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   // This is a rate, not a surcharge — see OrganizerType.rateMultiplier. It
   // replaced a 15% premium that could not reach the corporate market and
   // priced a two-day corporate workshop at roughly what one session costs.
+  // Facilitation scales by its own multiplier: see sectorMultiplier.
   const baseDayRate =
     engagementType.id === "facilitation"
       ? facilitationScope.dayRate
       : engagementType.id === "team-building"
         ? TEAM_BUILDING_DAY_RATE
         : complexity.dayRate;
-  const dayRate = deriveDayRate(baseDayRate, organizer.rateMultiplier);
+  const dayRate = deriveDayRate(baseDayRate, sectorMultiplier(organizer, engagementType.id));
 
   const isFacilitation = engagementType.id === "facilitation";
   const preparation = preparationOptionFor(raw.preparation);
@@ -844,7 +914,246 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     daysOfNotice,
     flags,
     customQuoteRequired: Boolean(region.custom),
+    // Filled in by buildQuotation, which needs this finished quote first.
+    budgetFit: null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Budget
+// ---------------------------------------------------------------------------
+
+/**
+ * The earliest start date on or after `from` whose whole run falls on plain
+ * weekdays. Null when no such run exists inside the search window — which is
+ * the honest answer for a five-day programme, since every five consecutive
+ * days include a weekend.
+ */
+function plainWeekdayStart(from: string, sessions: number): string | null {
+  for (let offset = 0; offset < 30; offset++) {
+    const candidate = addDays(from, offset);
+    const dates = engagementDates(candidate, sessions);
+    if (dates.every((d) => !isWeekend(d) && !holidayFor(d))) return candidate;
+  }
+  return null;
+}
+
+/**
+ * A change the organiser could make, and the slot it occupies.
+ *
+ * Two levers in the same slot are alternatives, not additions — "half a day
+ * instead of a full one" and "deliver it online" both rewrite the format, so
+ * the combined floor may only count the better of them. Without slots the
+ * floor would claim a saving the form could never actually produce.
+ */
+interface LeverSpec {
+  id: string;
+  slot: string;
+  label: string;
+  detail: string;
+  change: Partial<QuotationInput>;
+}
+
+/**
+ * Compares a finished quote against a budget the organiser already has, and
+ * works out what could be CHANGED to fit inside it.
+ *
+ * The principle, and the reason this is not a discount calculator: scope to
+ * the budget, do not discount to it. A fee that bends to whatever number the
+ * organiser names teaches every future organiser to name a lower one, and it
+ * quietly makes the rate card fiction. What genuinely can move is how much
+ * work is being bought — a day instead of two, online instead of in the room,
+ * the write-up done in-house — and each of those is a real decision with a
+ * real consequence, which is what this shows them.
+ *
+ * Every saving is produced by re-pricing the engagement with that one change
+ * made, so the figure beside a lever is exactly what the form will show if
+ * they pull it.
+ */
+function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
+  const budget = clampAmount(raw.budget, 0, 1_000_000_000);
+  if (budget <= 0) return null;
+
+  const total = quote.total;
+  if (total <= budget) {
+    return {
+      budget,
+      total,
+      withinBudget: true,
+      difference: budget - total,
+      levers: [],
+      floor: total,
+      combined: [],
+      reachable: true,
+    };
+  }
+
+  const engagementType = engagementTypeFor(raw.engagementType);
+  const currentFormat =
+    ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
+  const offered = ENGAGEMENT_FORMATS.filter((f) => f.types.includes(engagementType.id));
+  const remoteFormat = offered.find((f) => f.remote);
+  const shorterFormat = offered
+    .filter((f) => !f.remote && f.dayEquivalent < currentFormat.dayEquivalent)
+    .sort((a, b) => b.dayEquivalent - a.dayEquivalent)[0];
+  const isFacilitation = engagementType.id === "facilitation";
+  const selectedAddOns = ADD_ONS.filter((a) => raw.addOns.includes(a.id));
+
+  const noticeFloor =
+    daysBetween(raw.today, raw.startDate) >= 30 ? raw.startDate : addDays(raw.today, 30);
+  const betterDate = plainWeekdayStart(noticeFloor, raw.sessions);
+
+  const specs: LeverSpec[] = [];
+
+  if (!raw.travelCovered || !raw.accommodationCovered) {
+    specs.push({
+      id: "logistics",
+      slot: "logistics",
+      label: "Book the travel and accommodation yourselves",
+      detail:
+        "Booking directly almost always costs less than reimbursing at actual cost, and it takes the logistics off the invoice entirely.",
+      change: { travelCovered: true, accommodationCovered: true },
+    });
+  }
+
+  if (selectedAddOns.length > 0) {
+    specs.push({
+      id: "add-ons",
+      slot: "add-ons",
+      label:
+        selectedAddOns.length === 1
+          ? `Leave out the ${selectedAddOns[0].label.toLowerCase()}`
+          : "Leave out the extras",
+      detail: `${selectedAddOns
+        .map((a) => a.label.toLowerCase())
+        .join(", ")} — each of these can be added later without re-quoting the session.`,
+      change: { addOns: [] },
+    });
+  }
+
+  if (raw.sessions > 1) {
+    specs.push({
+      id: "sessions",
+      slot: "sessions",
+      label: `Run it over ${raw.sessions - 1} ${raw.sessions - 1 === 1 ? "day" : "days"} instead of ${raw.sessions}`,
+      detail:
+        "A day less in the room covers less ground rather than the same ground faster, so it is worth deciding in advance what has to survive the cut.",
+      change: { sessions: raw.sessions - 1 },
+    });
+  }
+
+  if (shorterFormat) {
+    specs.push({
+      id: "shorter-format",
+      slot: "format",
+      label: `Make it a ${formatLabel(shorterFormat, engagementType.id).toLowerCase()}`,
+      detail: `${shorterFormat.detail}. Best where the group needs the essentials rather than the practice.`,
+      change: { format: shorterFormat.id },
+    });
+  }
+
+  if (remoteFormat && !currentFormat.remote) {
+    specs.push({
+      id: "online",
+      slot: "format",
+      label: "Deliver it online",
+      detail:
+        "No travel time and no logistics at all. It suits a briefing or a working session better than a hands-on workshop.",
+      change: { format: remoteFormat.id },
+    });
+  }
+
+  if (isFacilitation && raw.preparation !== "none") {
+    specs.push({
+      id: "preparation",
+      slot: "preparation",
+      label: "Skip the groundwork beforehand",
+      detail:
+        "The cheapest line to cut and the one most often regretted: without it the session spends its first part finding out where the disagreements are.",
+      change: { preparation: "none" },
+    });
+  }
+
+  if (isFacilitation && raw.output !== "none") {
+    specs.push({
+      id: "output",
+      slot: "output",
+      label: "Write the plan up yourselves",
+      detail:
+        "You leave with everything produced in the room. Worth being honest about who will actually do the writing, and by when.",
+      change: { output: "none" },
+    });
+  }
+
+  if (betterDate && betterDate !== raw.startDate) {
+    specs.push({
+      id: "date",
+      slot: "date",
+      label: `Move it to ${betterDate}`,
+      detail:
+        "Weekdays carry no schedule premium, and 30 days' notice carries no rush premium. Moving the date is usually the only lever here that costs you nothing at all.",
+      change: { startDate: betterDate },
+    });
+  }
+
+  const levers: Array<BudgetLever & { slot: string; change: Partial<QuotationInput> }> = [];
+  for (const spec of specs) {
+    const variant = priceEngagement({ ...raw, ...spec.change });
+    const saving = total - variant.total;
+    if (saving <= 0) continue;
+    levers.push({
+      id: spec.id,
+      slot: spec.slot,
+      label: spec.label,
+      detail: spec.detail,
+      saving,
+      total: variant.total,
+      change: spec.change,
+    });
+  }
+
+  levers.sort((a, b) => b.saving - a.saving);
+
+  // The floor takes the best lever from each slot — combining two that rewrite
+  // the same field would state a saving the form cannot reproduce. It is then
+  // priced as one variant rather than summed, because the levers interact:
+  // dropping a day also drops a hotel night.
+  const claimed = new Set<string>();
+  const combinedIds: string[] = [];
+  let combined: Partial<QuotationInput> = {};
+  for (const lever of levers) {
+    if (claimed.has(lever.slot)) continue;
+    claimed.add(lever.slot);
+    combinedIds.push(lever.id);
+    combined = { ...combined, ...lever.change };
+  }
+  const floor = combinedIds.length > 0 ? priceEngagement({ ...raw, ...combined }).total : total;
+
+  return {
+    budget,
+    total,
+    withinBudget: false,
+    difference: total - budget,
+    levers: levers.map(({ id, label, detail, saving, total: leverTotal }) => ({
+      id,
+      label,
+      detail,
+      saving,
+      total: leverTotal,
+    })),
+    floor,
+    combined: combinedIds,
+    reachable: floor <= budget,
+  };
+}
+
+/**
+ * Prices an engagement and, when the organiser named a budget, works out how
+ * the total sits against it.
+ */
+export function buildQuotation(raw: QuotationInput): Quotation {
+  const quote = priceEngagement(raw);
+  return { ...quote, budgetFit: assessBudget(raw, quote) };
 }
 
 /** Every add-on id, for validating client input. */

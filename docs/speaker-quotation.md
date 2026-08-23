@@ -81,16 +81,46 @@ of work.
 | Government, LGU, SUC | 1.0 | ₱15,000 | DBM BC 2007-1 caps a resource person near ₱21,000/day, so this is a ceiling rather than a discount |
 | Mission (before the −20%) | 1.0 | ₱15,000 | The public rate |
 | Private school or university | 1.6 | ₱24,000 | A training budget, but not a corporate one |
+| Cooperative or federation | 2.0 | ₱30,000 | RA 9520 reserves up to 10% of net surplus for the education and training fund, half spent by the co-op itself — a statutory budget, but members' money rather than profit |
 | Association, ticketed conference | 2.5 | ₱38,000 | Sells seats, rarely on a corporate training budget |
 | Company or corporate | 3.2 | ₱48,000 | PH in-house training runs ₱40,000–280,000 a session, ₱100,000–500,000 for two days |
+
+**Facilitation is scaled separately**, by `facilitationMultiplier` rather than
+`rateMultiplier`, because the two ladders track different markets. Teaching
+scales with the corporate training budget, which is well evidenced here.
+Facilitation had only international comparables (roughly ₱70,000–440,000 a day),
+and scaling it by the speaking multiplier imported that range wholesale: a
+corporate planning day came out at ₱90,000, above any observed Philippine
+training day, on no Philippine evidence at all.
+
+| Sector | × | Planning day, whole organisation |
+| --- | --- | --- |
+| Government, LGU, SUC, mission | 1.0 | ₱28,000 |
+| Private school or university | 1.4 | ₱39,000 |
+| Cooperative or federation | 1.6 | ₱45,000 |
+| Association, ticketed conference | 1.9 | ₱53,000 |
+| Company or corporate | 2.5 | ₱70,000 |
+
+One consequence worth knowing before someone "fixes" it: facilitation is above
+every speaking tier at the PUBLIC rate, but no longer at the corporate one — a
+corporate research-heavy teaching day is ₱77,000 against a ₱70,000 corporate
+planning day. That is the intended result of pricing two markets separately, and
+`rate-card.test.ts` asserts the ordering at the public rate only.
+
+Team building deliberately keeps the SPEAKING multiplier. Its rate sits inside
+the speaking range by design, and moving it onto the facilitation ladder would
+drop its corporate day by ₱15,000 as a side effect of a change that was never
+about it. `sectorMultiplier(organizer, type)` is the one place that decides
+which multiplier applies; every surface resolves it through there rather than
+reaching for a field, so the two ladders cannot disagree on one screen.
 
 Researched August 2026 against the DBM circular and the 2026 salary table
 (firm), Philippine corporate training price guides (reasonably firm), and the
 widely cited PAPS speaker range of ₱15,000–120,000 (softer — no primary
 schedule was reachable). Tests in `rate-card.test.ts` pin the sectors to those
 benchmarks: a corporate day may not undercut the ₱40,000 session floor, the
-ordering public < academic < association < corporate must hold, and no sector
-may fall below the public rate.
+ordering public < academic < cooperative < association < corporate must hold,
+and no sector may fall below the public rate.
 
 Derived rates round to the nearest ₱1,000. A quote that opens with "₱76,800 a
 day" invites arithmetic; ₱77,000 invites a decision.
@@ -135,7 +165,7 @@ not variations on one service:
 | Type | Day rate from | Notes |
 | --- | --- | --- |
 | Talk, workshop or training | `COMPLEXITY_TIERS`, ₱15,000–₱24,000 | Priced by how much new ground the subject covers |
-| Planning facilitation | `FACILITATION_SCOPES`, ₱25,000–₱30,000 | Above every speaking tier — bespoke by definition, nothing reusable |
+| Planning facilitation | `FACILITATION_SCOPES`, ₱25,000–₱30,000 | Above every speaking tier at the public rate — bespoke by definition, nothing reusable. Scaled by `facilitationMultiplier` |
 | Team building | `TEAM_BUILDING_DAY_RATE`, ₱22,000 | Inside the speaking range: above a settled subject, below the research tier |
 
 `ENGAGEMENT_FORMATS` are tagged with the types they belong to, so a keynote is
@@ -235,6 +265,33 @@ The order the factors apply in is fixed and documented at the top of
 Withholding tax is displayed for transparency and is not deducted: it is the
 organiser's obligation to remit.
 
+## Organisers who already have a budget
+
+The form asks for a budget, optionally, and it is the last question in its card
+on purpose: asking before the rate card has explained itself reads as "how much
+have you got", asking after reads as "tell me what to build for what you have".
+
+**The budget enters no calculation.** `buildQuotation` prices the engagement
+first and only then compares it (`assessBudget`), so the same two days of work
+cost the same whatever the organiser said they had. Anything else would make
+the rate card decorative and would punish the organiser who answered honestly.
+The quotation reference deliberately excludes the budget from its seed for the
+same reason: two quotes differing only in a stated budget are the same quote.
+
+What it produces instead is a list of **levers** — changes to what is being
+bought, each priced by re-running the engine with that one change made, so the
+saving shown is exactly what the form will produce if the organiser pulls it:
+booking the logistics themselves, dropping the extras, a day fewer, a shorter
+format, delivering it online, skipping the facilitation groundwork or the
+write-up, or moving to a plain weekday 30 days out. Levers carry a `slot`;
+where two rewrite the same field (a shorter format and an online one both do)
+the combined floor counts only the better of them, and the floor itself is
+priced as one real variant rather than summed, because the levers interact — a
+day fewer is also a hotel night fewer.
+
+The principle to keep, in the copy and in the engine: **scope to the budget,
+never discount to it.** If nothing reaches the figure, the panel says so.
+
 ## Invoicing
 
 An organiser who needs a formal invoice gets one from `INVOICING_ENTITY` in the
@@ -258,8 +315,8 @@ presentation:
   stay whole by passing it on, gross up the rate ladder rather than adding a
   surcharge line an organiser will read as a tax they are being charged.
 
-A quote for a corporate, association, government or academic organiser that
-does *not* request an invoice raises a flag, because those payors cannot
+A quote for any organiser outside the mission tier that does *not* request an
+invoice raises a flag, because those payors cannot
 release funds without one and finding out afterwards is a delayed payment.
 
 ## Mobile

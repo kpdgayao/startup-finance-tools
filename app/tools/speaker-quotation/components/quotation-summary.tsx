@@ -6,7 +6,7 @@ import { ResultCard } from "@/components/shared/result-card";
 import { cn, formatPHP, formatPercent } from "@/lib/utils";
 import { formatEngagementDate } from "@/lib/speaking/availability";
 import { HOME_BASE } from "@/lib/speaking/rate-card";
-import type { LineKind, Quotation } from "@/lib/speaking/quotation";
+import type { BudgetFit, LineKind, Quotation } from "@/lib/speaking/quotation";
 
 /**
  * How a line's `factor` is written.
@@ -18,6 +18,142 @@ import type { LineKind, Quotation } from "@/lib/speaking/quotation";
 function factorLabel(factor: number, kind: LineKind): string {
   if (kind === "addon") return `+${Math.round(factor * 100)}%`;
   return `×${factor.toFixed(2)}`;
+}
+
+/**
+ * How the quote sits against a budget the organiser already had.
+ *
+ * The rule this panel exists to hold: scope to the budget, never discount to
+ * it. So there is no "we can do it for less" anywhere here — every line is a
+ * change to WHAT is being bought, with the saving computed by re-pricing that
+ * exact change rather than estimated. If nothing gets there, it says so
+ * plainly, which is more useful to both sides than a number that quietly
+ * pretends the work costs less than it does.
+ */
+function BudgetPanel({ fit }: { fit: BudgetFit }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">
+          {fit.withinBudget ? "This fits your budget" : "This is above your budget"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Your budget
+            </p>
+            <p className="mt-1 font-medium tabular">{formatPHP(fit.budget)}</p>
+          </div>
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              This quote
+            </p>
+            <p className="mt-1 font-medium tabular">{formatPHP(fit.total)}</p>
+          </div>
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              {fit.withinBudget ? "To spare" : "Difference"}
+            </p>
+            <p
+              className={cn(
+                "mt-1 font-medium tabular",
+                fit.withinBudget ? "text-good" : "text-ochre-deep dark:text-ochre"
+              )}
+            >
+              {formatPHP(fit.difference)}
+            </p>
+          </div>
+        </div>
+
+        {/* The within-budget note points at the add-ons without listing them.
+            The list lives in the rate card, and copy that enumerated it here
+            would go stale the first time one was added or renamed. */}
+        {fit.withinBudget ? (
+          <p className="font-serif text-[15px] leading-[1.55] text-ink-2">
+            Nothing needs to change. If you would rather spend the difference than keep it, the
+            optional extras on the form are the things most often wanted afterwards — and they
+            are cheaper to agree now than to arrange on the day.
+          </p>
+        ) : (
+          <>
+            <p className="font-serif text-[15px] leading-[1.55] text-ink-2">
+              I would rather change the engagement than the rate. A rate that moves to meet a
+              budget was never a real rate, and you would be right to wonder what the first number
+              was for. What can genuinely move is how much work is in it — and each of these is
+              priced by rebuilding the quote with that one change made, so the saving is exactly
+              what you would see if you made it.
+            </p>
+
+            {fit.levers.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {fit.levers.map((lever) => (
+                      <tr key={lever.id} className="border-b border-rule/60 align-top">
+                        <td className="py-2.5 pr-2 sm:pr-3">
+                          <p className="font-medium">{lever.label}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{lever.detail}</p>
+                        </td>
+                        <td className="py-2.5 pl-3 text-right whitespace-nowrap tabular text-good">
+                          −{formatPHP(lever.saving)}
+                          <span className="block whitespace-normal text-xs font-normal text-muted-foreground">
+                            leaves {formatPHP(lever.total)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <p className="text-sm text-muted-foreground">
+              {fit.levers.length === 0 ? (
+                <>
+                  There is nothing left to take out of this one — it is already the smallest
+                  version of what you described. Tell me what you are working with and I will say
+                  honestly whether it can be done.
+                </>
+              ) : (
+                <>
+                  {/* Never "all of them": where two are alternatives — a
+                      shorter session and an online one both rewrite the
+                      format — only the better one is in this figure. Saying
+                      otherwise would overstate what is reachable. */}
+                  {fit.combined.length === 1
+                    ? `${
+                        fit.levers.length === 1 ? "That" : "The largest of these"
+                      } on its own brings it to `
+                    : null}
+                  {fit.combined.length > 1 && fit.combined.length === fit.levers.length
+                    ? "Taken together they bring it to "
+                    : null}
+                  {fit.combined.length > 1 && fit.combined.length < fit.levers.length
+                    ? "Combined — taking the better of the two alternatives above — they bring it to "
+                    : null}
+                  {formatPHP(fit.floor)}
+                  {fit.reachable ? (
+                    <>
+                      , inside your budget. Change the answers above to see where any of them
+                      lands on its own — you may not need them all.
+                    </>
+                  ) : (
+                    <>
+                      , still above your budget. That is worth knowing now rather than after we
+                      have both spent a week on it — send the enquiry anyway and say what you are
+                      working with.
+                    </>
+                  )}
+                </>
+              )}
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 interface QuotationSummaryProps {
@@ -71,6 +207,8 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
           variant="success"
         />
       </div>
+
+      {quote.budgetFit && <BudgetPanel fit={quote.budgetFit} />}
 
       {quote.flags.length > 0 && (
         <div className="rounded-md border-l-4 border-l-warn bg-warn/5 p-4">

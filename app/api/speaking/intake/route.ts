@@ -55,6 +55,12 @@ const draftTool = {
       ticketed: { type: "boolean" },
       participantFee: { type: "number", minimum: 0 },
       expectedPaidAttendees: { type: "integer", minimum: 0 },
+      budget: {
+        type: "number",
+        minimum: 0,
+        description:
+          "A budget the organiser says they already have approved, in pesos. Omit unless they state one.",
+      },
       region: { type: "string", enum: ids(REGIONS) },
       startDate: { type: "string", description: "YYYY-MM-DD. Omit if no date was given." },
       earlyStart: { type: "boolean" },
@@ -99,6 +105,7 @@ const draftSchema = z.object({
   ticketed: z.boolean().optional(),
   participantFee: z.number().min(0).max(1_000_000).optional(),
   expectedPaidAttendees: z.number().int().min(0).max(100_000).optional(),
+  budget: z.number().min(0).max(1_000_000_000).optional(),
   region: z.enum(ids(REGIONS) as [string, ...string[]]).optional(),
   startDate: z.string().refine(isValidISODate).optional(),
   earlyStart: z.boolean().optional(),
@@ -131,6 +138,7 @@ RULES
 - "region" is measured from Baguio City. Map the venue's province to the nearest option; use "online" only when the event is genuinely remote.
 - "audienceProfile" is WHO is in the room, not how many. Organisers usually say this outright ("our branch managers, none of them accountants", "the board", "our audit team"). Map it to the closest option and leave it out if the description does not say.
 - "ticketed" is true if participants or their employers pay anything to attend, including a registration fee.
+- "budget" is a figure the organiser says they have to work within ("we have 50k for this", "our budget is P80,000"). Read it as a total for the whole engagement. It changes nothing about the price — it is used only to work out what could be adjusted to fit — so never let it influence any other field, above all "complexity" and "organizerType". If they name a range, take the top of it. If they name a per-participant figure, leave it out and ask.
 - "invoiceRequired" is true when the description mentions an invoice, official receipt, purchase order, accreditation, procurement, or supplier onboarding. Leave it out if nothing suggests either way.
 - In "questions", ask only about details that would change the price. Do not ask for anything the description already answers.
 - Write "assumptions" and "questions" addressed to the organiser, in plain English, one sentence each.

@@ -42,6 +42,7 @@ import {
   audienceProfileFor,
   engagementTypeFor,
   deriveDayRate,
+  sectorMultiplier,
   facilitationScopeFor,
   formatLabel,
   outputOptionFor,
@@ -269,6 +270,7 @@ export default function SpeakerQuotationPage() {
       if (typeof draft.participantFee === "number") next.participantFee = draft.participantFee;
       if (typeof draft.expectedPaidAttendees === "number")
         next.expectedPaidAttendees = draft.expectedPaidAttendees;
+      if (typeof draft.budget === "number") next.budget = draft.budget;
       if (typeof draft.earlyStart === "boolean") next.earlyStart = draft.earlyStart;
       if (typeof draft.invoiceRequired === "boolean")
         next.invoiceRequired = draft.invoiceRequired;
@@ -334,8 +336,12 @@ export default function SpeakerQuotationPage() {
   // What this engagement will actually be quoted at, resolved the same way the
   // engine resolves it — the ladders are public-sector rates until the sector
   // scales them.
-  const activeDayRate = deriveDayRate(baseDayRate, organizer.rateMultiplier);
+  const activeDayRate = deriveDayRate(
+    baseDayRate,
+    sectorMultiplier(organizer, engagementType.id)
+  );
   const region = REGIONS.find((r) => r.id === input.region) ?? REGIONS[0];
+  const budgetFit = quote?.budgetFit ?? null;
   const leadFactor = quote?.lines.find((l) => l.id === "lead-time")?.factor ?? 1;
 
   return (
@@ -387,7 +393,10 @@ export default function SpeakerQuotationPage() {
                   : engagementType.id === "team-building"
                     ? TEAM_BUILDING_DAY_RATE
                     : DAY_RATE_MIN,
-                organizer.rateMultiplier
+                // Facilitation is scaled by its own sector multiplier, so the
+                // chip has to resolve it the way the engine does or the two
+                // ladders disagree on one screen.
+                sectorMultiplier(organizer, engagementType.id)
               )
             )}/day`}
             active
@@ -470,7 +479,7 @@ export default function SpeakerQuotationPage() {
           {!isFacilitation && !isTeamBuilding && (
           <RateFactorField
             question={QUESTIONS.complexity}
-            impact={`${formatPHP(deriveDayRate(complexity.dayRate, organizer.rateMultiplier))}/day`}
+            impact={`${formatPHP(deriveDayRate(complexity.dayRate, sectorMultiplier(organizer, "speaking")))}/day`}
             active
           >
             <Select
@@ -491,7 +500,7 @@ export default function SpeakerQuotationPage() {
                     <OptionText
                       label={tier.label}
                       detail={tier.detail}
-                      trailing={`${formatPHP(deriveDayRate(tier.dayRate, organizer.rateMultiplier))}/day`}
+                      trailing={`${formatPHP(deriveDayRate(tier.dayRate, sectorMultiplier(organizer, "speaking")))}/day`}
                     />
                   </SelectItem>
                 ))}
@@ -504,7 +513,7 @@ export default function SpeakerQuotationPage() {
             <>
               <RateFactorField
                 question={QUESTIONS.facilitationScope}
-                impact={`${formatPHP(deriveDayRate(facilitationScope.dayRate, organizer.rateMultiplier))}/day`}
+                impact={`${formatPHP(deriveDayRate(facilitationScope.dayRate, sectorMultiplier(organizer, "facilitation")))}/day`}
                 active
               >
                 <Select
@@ -520,7 +529,7 @@ export default function SpeakerQuotationPage() {
                         <OptionText
                           label={option.label}
                           detail={option.detail}
-                          trailing={`${formatPHP(deriveDayRate(option.dayRate, organizer.rateMultiplier))}/day`}
+                          trailing={`${formatPHP(deriveDayRate(option.dayRate, sectorMultiplier(organizer, "facilitation")))}/day`}
                         />
                       </SelectItem>
                     ))}
@@ -676,7 +685,7 @@ export default function SpeakerQuotationPage() {
             impact={
               organizer.mission
                 ? "Concessionary rate"
-                : `${formatPHP(deriveDayRate(baseDayRate, organizer.rateMultiplier))}/day`
+                : `${formatPHP(activeDayRate)}/day`
             }
             active
           >
@@ -768,6 +777,32 @@ export default function SpeakerQuotationPage() {
               </RateFactorField>
             </>
           )}
+
+          {/* Last in the card on purpose. Asking for a budget before the
+              organiser has seen a single number reads as "how much have you
+              got"; asking it after the rate card has explained itself reads as
+              "tell me what to build for what you have". */}
+          <RateFactorField
+            question={QUESTIONS.budget}
+            labelMode="child"
+            impact={
+              budgetFit
+                ? budgetFit.withinBudget
+                  ? `${formatPHP(budgetFit.difference)} to spare`
+                  : `${formatPHP(budgetFit.difference)} over`
+                : "Not stated"
+            }
+            active={Boolean(budgetFit && !budgetFit.withinBudget)}
+          >
+            <CurrencyInput
+              id={QUESTIONS.budget.id}
+              label={QUESTIONS.budget.label}
+              value={input.budget}
+              onChange={(v) => set("budget", v)}
+              min={0}
+              placeholder="Leave blank if you would rather not say"
+            />
+          </RateFactorField>
         </CardContent>
       </Card>
 
@@ -1045,6 +1080,25 @@ export default function SpeakerQuotationPage() {
             gateSharePercent: quote.gateShare,
             addOns: input.addOns,
             invoicedBy: quote.invoicing.entity ?? "billed personally",
+            // Sent so the explanation cannot contradict the budget panel
+            // sitting directly above it — the levers are the engine's, priced
+            // by re-quoting each change, and the model is told to use these
+            // rather than invent its own.
+            ...(budgetFit
+              ? {
+                  statedBudget: budgetFit.budget,
+                  budgetStatus: budgetFit.withinBudget
+                    ? `within budget, ${formatPHP(budgetFit.difference)} to spare`
+                    : `${formatPHP(budgetFit.difference)} above budget`,
+                  waysToFit: budgetFit.levers.map(
+                    (lever) =>
+                      `${lever.label} — saves ${formatPHP(lever.saving)}, leaves ${formatPHP(
+                        lever.total
+                      )}`
+                  ),
+                  reachableWithinBudget: budgetFit.reachable,
+                }
+              : {}),
           })
         }
         onDismiss={ai.reset}
