@@ -52,8 +52,8 @@ export function AvailabilityPanel({
 
       {!report && !error && (
         <p className="mt-3 text-sm text-muted-foreground">
-          Check the requested dates against the speaking calendar before you build the rest of
-          the quote.
+          I will check these dates against my calendar — worth doing before you build out the
+          rest.
         </p>
       )}
 
@@ -90,7 +90,7 @@ export function AvailabilityPanel({
                 : report.degraded
                   ? "The calendar could not be reached, so only manually held dates were checked. Confirm by email."
                   : "Checked against manually held dates only."}{" "}
-            Availability is confirmed on booking, not by this page.
+            I confirm availability when we book, not from this page.
           </p>
         </>
       )}
