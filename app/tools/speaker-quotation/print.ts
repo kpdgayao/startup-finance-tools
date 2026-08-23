@@ -105,9 +105,13 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
       table(
         ["Line", "Effect", "Running total"],
         quote.lines.map((line) => [
+          // An add-on's factor is a share of the fee, not a multiplier: the
+          // shared rendering printed a +20% licence as "(×0.20)".
           `<strong>${esc(line.label)}</strong>${
             line.factor !== undefined && line.factor !== 1
-              ? ` (×${line.factor.toFixed(2)})`
+              ? line.kind === "addon"
+                ? ` (+${Math.round(line.factor * 100)}%)`
+                : ` (×${line.factor.toFixed(2)})`
               : ""
           }<br><span class="muted">${esc(line.detail)}</span>`,
           line.amount === 0 ? "no change" : formatPHP(line.amount),

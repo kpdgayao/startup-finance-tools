@@ -222,11 +222,11 @@ export function facilitationScopeFor(id: FacilitationScopeId): FacilitationScope
 /**
  * Day rate for team building.
  *
- * CONFIRM THIS NUMBER. It is the one figure on this card that was not set
- * directly: it sits above the speaking ladder because activity design and a
- * room on its feet are more work than a lecture, and below planning
- * facilitation because less rests on the outcome. Group size is already priced
- * by AUDIENCE_BANDS, so it is not doubled up here.
+ * Sits inside the speaking range rather than above it — above a settled subject
+ * (₱15,000), because activity design and a room on its feet are more work than
+ * a lecture, and below both the research tier (₱24,000) and all of facilitation,
+ * because nothing has to be read up on first and no decision rests on the day.
+ * Group size is already priced by AUDIENCE_BANDS, so it is not doubled up here.
  */
 export const TEAM_BUILDING_DAY_RATE = 22_000;
 

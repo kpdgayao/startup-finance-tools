@@ -6,10 +6,17 @@ import { ResultCard } from "@/components/shared/result-card";
 import { cn, formatPHP, formatPercent } from "@/lib/utils";
 import { formatEngagementDate } from "@/lib/speaking/availability";
 import { HOME_BASE } from "@/lib/speaking/rate-card";
-import type { Quotation } from "@/lib/speaking/quotation";
+import type { LineKind, Quotation } from "@/lib/speaking/quotation";
 
-/** A factor line reads as "×1.15" rather than a peso figure it does not equal. */
-function factorLabel(factor: number): string {
+/**
+ * How a line's `factor` is written.
+ *
+ * A multiplier reads as "×1.15". An add-on's factor is a SHARE of the fee, not
+ * a multiplier, so the same rendering turned a +20% recording licence into
+ * "×0.20" — a number that looks like an 80% discount.
+ */
+function factorLabel(factor: number, kind: LineKind): string {
+  if (kind === "addon") return `+${Math.round(factor * 100)}%`;
   return `×${factor.toFixed(2)}`;
 }
 
@@ -112,7 +119,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                           {line.label}
                           {line.factor !== undefined && line.factor !== 1 && (
                             <span className="ml-2 font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
-                              {factorLabel(line.factor)}
+                              {factorLabel(line.factor, line.kind)}
                             </span>
                           )}
                         </p>

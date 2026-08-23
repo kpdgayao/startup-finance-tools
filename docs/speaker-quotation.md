@@ -101,7 +101,7 @@ not variations on one service:
 | --- | --- | --- |
 | Talk, workshop or training | `COMPLEXITY_TIERS`, ₱15,000–₱24,000 | Priced by how much new ground the subject covers |
 | Planning facilitation | `FACILITATION_SCOPES`, ₱25,000–₱30,000 | Above every speaking tier — bespoke by definition, nothing reusable |
-| Team building | `TEAM_BUILDING_DAY_RATE`, ₱22,000 | **Confirm this number** — it is the one rate not set directly |
+| Team building | `TEAM_BUILDING_DAY_RATE`, ₱22,000 | Inside the speaking range: above a settled subject, below the research tier |
 
 `ENGAGEMENT_FORMATS` are tagged with the types they belong to, so a keynote is
 never offered for a board retreat, and carry `altLabels` so the same full day

@@ -836,3 +836,42 @@ describe("facilitation desk days", () => {
     expect(references.size).toBe(4);
   });
 });
+
+describe("line factors mean different things", () => {
+  // A multiplier and an add-on's share of the fee are both stored in `factor`,
+  // and the display layer rendered both as "×n" — printing a +20% recording
+  // licence as "×0.20", which reads as an 80% discount.
+  it("keeps multiplier factors at or above one, and add-on shares below it", () => {
+    const quote = buildQuotation(
+      input({ organizerType: "corporate", addOns: ["recording-internal", "recording-public"] })
+    );
+
+    for (const line of quote.lines.filter((l) => l.kind === "factor")) {
+      expect(line.factor, line.label).toBeGreaterThanOrEqual(1);
+    }
+    for (const line of quote.lines.filter((l) => l.kind === "addon" && l.factor !== undefined)) {
+      expect(line.factor, line.label).toBeLessThan(1);
+    }
+  });
+});
+
+describe("the day rate a quote reports", () => {
+  // The form showed a travel chip computed from the speaking ladder while the
+  // engine charged the facilitation rate — ₱9,000 on screen beside a ₱15,000
+  // line on the same page.
+  it("matches the travel line the engine actually charges", () => {
+    for (const [engagementType, expected] of [
+      ["speaking", complexityTierFor("tailored").dayRate],
+      ["facilitation", facilitationScopeFor("organisation").dayRate],
+      ["team-building", TEAM_BUILDING_DAY_RATE],
+    ] as const) {
+      const quote = buildQuotation(
+        input({ engagementType, complexity: "tailored", region: "metro-manila" })
+      );
+      expect(quote.dayRate, engagementType).toBe(expected);
+      expect(quote.lines.find((l) => l.kind === "travel")?.amount, engagementType).toBe(
+        toPeso(expected * 0.5)
+      );
+    }
+  });
+});

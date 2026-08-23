@@ -12,7 +12,7 @@ import {
   toISODate,
   weekdayName,
 } from "@/lib/speaking/availability";
-import { busyDatesFromICS } from "@/lib/speaking/ics";
+import { busyDatesFromICS, parseICS } from "@/lib/speaking/ics";
 
 describe("date primitives", () => {
   // The bug this guards: `new Date("2026-04-18")` parses as UTC midnight, so
@@ -332,5 +332,69 @@ describe("manually held dates", () => {
         expect(assessDates(["2026-05-05"], { today }).dates[0].status).toBe("available");
       }
     );
+  });
+});
+
+describe("an unreadable calendar is not an empty one", () => {
+  // The dangerous failure: a feed past the size or event guard yielded an empty
+  // busy set, which fetchBusyDates cached and reported as a live read. The
+  // panel then told an organiser every date was open, under the words "checked
+  // against the live calendar". Declining to answer is the only safe failure.
+  it("returns null rather than an empty set for an oversized feed", () => {
+    const huge = `BEGIN:VCALENDAR\r\nX-PAD:${"a".repeat(1_100_000)}\r\nEND:VCALENDAR`;
+    expect(parseICS(huge)).toBeNull();
+    expect(parseICS("")).toBeNull();
+  });
+
+  it("still returns an empty set for a calendar that is genuinely free", () => {
+    const empty = parseICS("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR");
+    expect(empty).not.toBeNull();
+    expect(empty?.size).toBe(0);
+  });
+});
+
+describe("weekly recurrences with named days", () => {
+  const wrap = (body: string) =>
+    `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${body}\r\nEND:VCALENDAR`;
+
+  // Ignoring BYDAY expanded "every Tuesday and Thursday" as Tuesdays only, so
+  // a committed Thursday reported open — the failure that loses a booking
+  // rather than merely inconveniencing one.
+  it("blocks every named day, not just the start day", () => {
+    // 3 November 2026 is a Tuesday.
+    const busy = busyDatesFromICS(
+      wrap(
+        "BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20261103\r\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20261120\r\nEND:VEVENT"
+      )
+    );
+    expect(busy.has("2026-11-03")).toBe(true); // Tue
+    expect(busy.has("2026-11-05")).toBe(true); // Thu
+    expect(busy.has("2026-11-10")).toBe(true); // Tue
+    expect(busy.has("2026-11-12")).toBe(true); // Thu
+    expect(busy.has("2026-11-04")).toBe(false); // Wed
+    expect(busy.has("2026-11-26")).toBe(false); // past UNTIL
+  });
+
+  it("never blocks a day before the event starts", () => {
+    // Starts Thursday; MO is earlier in the same week and must not be claimed.
+    const busy = busyDatesFromICS(
+      wrap(
+        "BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20261105\r\nRRULE:FREQ=WEEKLY;BYDAY=MO,TH;COUNT=3\r\nEND:VEVENT"
+      )
+    );
+    expect(busy.has("2026-11-02")).toBe(false);
+    expect(busy.has("2026-11-05")).toBe(true);
+    expect(busy.has("2026-11-09")).toBe(true);
+  });
+
+  it("honours an interval on a named-day rule", () => {
+    const busy = busyDatesFromICS(
+      wrap(
+        "BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20261103\r\nRRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;COUNT=3\r\nEND:VEVENT"
+      )
+    );
+    expect(busy.has("2026-11-03")).toBe(true);
+    expect(busy.has("2026-11-10")).toBe(false);
+    expect(busy.has("2026-11-17")).toBe(true);
   });
 });

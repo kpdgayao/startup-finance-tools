@@ -204,6 +204,7 @@ export default function SpeakerQuotationPage() {
     days === 0 ? "No extra days" : `${days} ${days === 1 ? "day" : "days"} of work`;
   const preparationDaysLabel = dayLabel(preparationOption.days);
   const outputDaysLabel = dayLabel(outputOption.days);
+
   const isRemote = format.remote;
 
   const ready = Boolean(now) && isValidISODate(startDate);
@@ -315,6 +316,17 @@ export default function SpeakerQuotationPage() {
   const audienceProfile = audienceProfileFor(input.audienceProfile);
   const complexity =
     COMPLEXITY_TIERS.find((c) => c.id === input.complexity) ?? COMPLEXITY_TIERS[0];
+  /**
+   * The rate the engine will use, resolved the same way it resolves it.
+   * Reading `complexity.dayRate` here put a ₱9,000 travel chip on screen beside
+   * the ₱15,000 travel line the quote actually charged, because the subject
+   * ladder does not price facilitation or team building.
+   */
+  const activeDayRate = isFacilitation
+    ? facilitationScope.dayRate
+    : isTeamBuilding
+      ? TEAM_BUILDING_DAY_RATE
+      : complexity.dayRate;
   const organizer = ORGANIZER_TYPES.find((o) => o.id === input.organizerType) ?? ORGANIZER_TYPES[0];
   const region = REGIONS.find((r) => r.id === input.region) ?? REGIONS[0];
   const leadFactor = quote?.lines.find((l) => l.id === "lead-time")?.factor ?? 1;
@@ -655,7 +667,7 @@ export default function SpeakerQuotationPage() {
                 ? "No travel"
                 : region.travelDays > 0
                   ? `+${formatPHP(
-                      complexity.dayRate * TRAVEL_DAY_FACTOR * region.travelDays
+                      activeDayRate * TRAVEL_DAY_FACTOR * region.travelDays
                     )} travel time`
                   : "No travel"
             }
@@ -977,9 +989,19 @@ export default function SpeakerQuotationPage() {
             format: formatLabel(format, engagementType.id),
             sessions: input.sessions,
             dayEquivalents: quote.dayEquivalents,
-            complexity: `${complexity.label} (₱${complexity.dayRate.toLocaleString("en-PH")}/day)`,
+            // Describes whichever basis actually set the rate. Sending the
+            // speaking tier on a facilitation quote had the model explaining a
+            // subject tier and a day rate that appear nowhere on the page.
+            rateBasis: `${quote.topicTier} (₱${quote.dayRate.toLocaleString("en-PH")}/day)`,
+            ...(isFacilitation
+              ? {
+                  preparation: preparationOption.label,
+                  writtenOutput: outputOption.label,
+                  deskDays: quote.deskDays,
+                }
+              : {}),
             audienceSize: input.audienceSize,
-            audienceProfile: audienceProfile.label,
+            ...(isTeamBuilding ? {} : { audienceProfile: audienceProfile.label }),
             organizerType: organizer.label,
             // The engine forces "online" for a remote format, so sending the
             // stale dropdown value had the model explaining flights and hotel
