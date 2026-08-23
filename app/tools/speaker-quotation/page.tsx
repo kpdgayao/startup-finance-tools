@@ -28,6 +28,7 @@ import {
   DAY_RATE_MAX,
   DAY_RATE_MIN,
   ENGAGEMENT_FORMATS,
+  INVOICING_ENTITY,
   ORGANIZER_TYPES,
   REGIONS,
   TRAVEL_DAY_FACTOR,
@@ -79,6 +80,43 @@ function today(): string {
  */
 const subscribeToNothing = () => () => {};
 const serverToday = () => "";
+
+
+/**
+ * Dropdowns are capped to the viewport. Radix sizes the panel to its widest
+ * item, and these options carry a sentence of explanation each — unconstrained,
+ * one of them measured 805px inside a 375px phone.
+ */
+const SELECT_CONTENT = "max-w-[calc(100vw-2rem)]";
+
+/**
+ * An option rendered as a stacked label and explanation rather than one long
+ * line, so it wraps and stays readable on a phone. `whitespace-normal` is
+ * required: the trigger sets `whitespace-nowrap` and the item inherits it.
+ */
+function OptionText({
+  label,
+  detail,
+  trailing,
+}: {
+  label: string;
+  detail: string;
+  trailing?: string;
+}) {
+  return (
+    <span className="flex flex-col gap-0.5 whitespace-normal">
+      <span className="flex items-baseline gap-2">
+        <span className="font-medium">{label}</span>
+        {trailing && (
+          <span className="font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
+            {trailing}
+          </span>
+        )}
+      </span>
+      <span className="text-xs text-muted-foreground">{detail}</span>
+    </span>
+  );
+}
 
 /** A percentage impact chip, e.g. "+15%". Neutral factors read "No change". */
 function factorImpact(factor: number): string {
@@ -161,6 +199,8 @@ export default function SpeakerQuotationPage() {
       if (typeof draft.expectedPaidAttendees === "number")
         next.expectedPaidAttendees = draft.expectedPaidAttendees;
       if (typeof draft.earlyStart === "boolean") next.earlyStart = draft.earlyStart;
+      if (typeof draft.invoiceRequired === "boolean")
+        next.invoiceRequired = draft.invoiceRequired;
       if (typeof draft.travelCovered === "boolean") next.travelCovered = draft.travelCovered;
       if (typeof draft.accommodationCovered === "boolean")
         next.accommodationCovered = draft.accommodationCovered;
@@ -259,13 +299,18 @@ export default function SpeakerQuotationPage() {
               value={input.format}
               onValueChange={(v) => set("format", v as EngagementFormatId)}
             >
-              <SelectTrigger id={QUESTIONS.format.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.format.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{format.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={SELECT_CONTENT}>
                 {ENGAGEMENT_FORMATS.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label} — {option.detail}
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -306,13 +351,22 @@ export default function SpeakerQuotationPage() {
               value={input.complexity}
               onValueChange={(v) => set("complexity", v as ComplexityId)}
             >
-              <SelectTrigger id={QUESTIONS.complexity.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.complexity.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{complexity.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={SELECT_CONTENT}>
                 {COMPLEXITY_TIERS.map((tier) => (
-                  <SelectItem key={tier.id} value={tier.id}>
-                    {tier.label} — {tier.detail}
+                  <SelectItem key={tier.id} value={tier.id} textValue={tier.label}>
+                    <OptionText
+                      label={tier.label}
+                      detail={tier.detail}
+                      trailing={`${formatPHP(tier.dayRate)}/day`}
+                    />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -412,13 +466,18 @@ export default function SpeakerQuotationPage() {
               onValueChange={(v) => set("region", v as RegionId)}
               disabled={isRemote}
             >
-              <SelectTrigger id={QUESTIONS.region.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.region.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{region.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={SELECT_CONTENT}>
                 {REGIONS.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label} — {option.detail}
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -517,13 +576,18 @@ export default function SpeakerQuotationPage() {
               value={input.organizerType}
               onValueChange={(v) => set("organizerType", v as OrganizerTypeId)}
             >
-              <SelectTrigger id={QUESTIONS.organizerType.id}>
-                <SelectValue />
+              <SelectTrigger id={QUESTIONS.organizerType.id} className="w-full">
+                {/* Explicit children: without them Radix mirrors the item's
+                    full markup into the trigger, and the trigger is `w-fit`,
+                    so a long option stretched it to 805px — pushing <main>
+                    to 896px inside a 375px viewport and giving the whole page
+                    an invisible sideways scroll. */}
+                <SelectValue>{organizer.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={SELECT_CONTENT}>
                 {ORGANIZER_TYPES.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label} — {option.detail}
+                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
+                    <OptionText label={option.label} detail={option.detail} />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -560,6 +624,29 @@ export default function SpeakerQuotationPage() {
               />
               <span className="text-sm text-muted-foreground">
                 {input.ticketed ? "Participants pay to attend" : "Free to participants"}
+              </span>
+            </div>
+          </RateFactorField>
+
+          <RateFactorField
+            question={QUESTIONS.invoiceRequired}
+            impact={
+              input.invoiceRequired
+                ? `Issued by ${INVOICING_ENTITY.name}`
+                : "Billed personally"
+            }
+            active={input.invoiceRequired}
+          >
+            <div className="flex items-center gap-3">
+              <Switch
+                id={QUESTIONS.invoiceRequired.id}
+                checked={input.invoiceRequired}
+                onCheckedChange={(v) => set("invoiceRequired", v)}
+              />
+              <span className="text-sm text-muted-foreground">
+                {input.invoiceRequired
+                  ? "We need an official invoice"
+                  : "No invoice needed"}
               </span>
             </div>
           </RateFactorField>
@@ -712,6 +799,7 @@ export default function SpeakerQuotationPage() {
             projectedGate: quote.projectedGate,
             gateSharePercent: quote.gateShare,
             addOns: input.addOns,
+            invoicedBy: quote.invoicing.entity ?? "billed personally",
           })
         }
         onDismiss={ai.reset}

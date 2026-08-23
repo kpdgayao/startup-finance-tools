@@ -51,6 +51,11 @@ const draftTool = {
       travelCovered: { type: "boolean" },
       accommodationCovered: { type: "boolean" },
       addOns: { type: "array", items: { type: "string", enum: ids(ADD_ONS) } },
+      invoiceRequired: {
+        type: "boolean",
+        description:
+          "True if the organiser needs a formal invoice or official receipt to release payment.",
+      },
       eventTitle: { type: "string" },
       organizationName: { type: "string" },
       venue: { type: "string" },
@@ -85,6 +90,7 @@ const draftSchema = z.object({
   travelCovered: z.boolean().optional(),
   accommodationCovered: z.boolean().optional(),
   addOns: z.array(z.enum(ids(ADD_ONS) as [string, ...string[]])).max(5).optional(),
+  invoiceRequired: z.boolean().optional(),
   eventTitle: z.string().max(200).optional(),
   organizationName: z.string().max(200).optional(),
   venue: z.string().max(200).optional(),
@@ -107,6 +113,7 @@ RULES
   - "frontier": the subject requires substantial reading beyond that — AI applied to accounting, a newly issued standard, an unfamiliar domain.
 - "region" is measured from Baguio City. Map the venue's province to the nearest option; use "online" only when the event is genuinely remote.
 - "ticketed" is true if participants or their employers pay anything to attend, including a registration fee.
+- "invoiceRequired" is true when the description mentions an invoice, official receipt, purchase order, accreditation, procurement, or supplier onboarding. Leave it out if nothing suggests either way.
 - In "questions", ask only about details that would change the price. Do not ask for anything the description already answers.
 - Write "assumptions" and "questions" addressed to the organiser, in plain English, one sentence each.
 

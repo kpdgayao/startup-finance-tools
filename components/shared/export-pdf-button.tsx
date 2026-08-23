@@ -244,6 +244,10 @@ export function ExportPDFButton({
     document.body.appendChild(iframe);
   };
 
+  // Callers put this in a `flex flex-wrap gap-2` row. The wrap matters: the
+  // button is `whitespace-nowrap` and 127px wide, so beside a Reset button it
+  // pushed 320px viewports 4-36px past the edge on every tool page that has
+  // one — enough to slide the whole page sideways.
   return (
     <Button variant="outline" size="sm" onClick={doPrint}>
       <Download className="h-4 w-4 mr-2" />

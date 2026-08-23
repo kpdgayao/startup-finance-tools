@@ -115,6 +115,49 @@ The order the factors apply in is fixed and documented at the top of
 Withholding tax is displayed for transparency and is not deducted: it is the
 organiser's obligation to remit.
 
+## Invoicing
+
+An organiser who needs a formal invoice gets one from `INVOICING_ENTITY` in the
+rate card. **This does not change the professional fee** — issuing a proper
+invoice is not extra work worth charging for. What it changes is the tax
+presentation:
+
+- **Withholding basis.** Billed personally it is the individual professional
+  rate (10%, or 5% with a sworn declaration on file). Billed by the firm it is
+  the corporate rate — the quote uses 2%, the contractor rate a training
+  provider is ordinarily withheld at, and says on its face that a payor
+  classifying the billing as professional fees of a juridical entity withholds
+  10% instead. The organiser's own classification governs.
+- **VAT.** The firm is below the ₱3M threshold, so `vatRegistered` is `false`
+  and no VAT is added. If it registers, flip that one constant: VAT then
+  appears as its own line and the total changes on every quote.
+- **Percentage tax.** A non-VAT entity bears 3% on gross receipts. It is the
+  firm's cost, not the organiser's, so `quote.invoicing.percentageTax` is
+  computed for working out net take-home but deliberately never rendered on the
+  organiser's quote. It is also NOT built into the day rates — if you decide to
+  stay whole by passing it on, gross up the rate ladder rather than adding a
+  surcharge line an organiser will read as a tax they are being charged.
+
+A quote for a corporate, association, government or academic organiser that
+does *not* request an invoice raises a flag, because those payors cannot
+release funds without one and finding out afterwards is a delayed payment.
+
+## Mobile
+
+The tool is checked at 320, 375 and 390px. Two traps are worth knowing about,
+because both are invisible to a naive overflow check:
+
+- **`#main-content` is its own scroll container** (`overflow-auto` in
+  `app/tools/layout.tsx`). Content wider than the viewport therefore scrolls
+  *main* rather than the document, so `document.scrollWidth` stays clean while
+  the page slides sideways. Any overflow audit has to measure
+  `main.scrollWidth - main.clientWidth` as well.
+- **shadcn's `SelectTrigger` is `w-fit`.** Radix mirrors the selected item's
+  markup into the trigger, so a long option label stretches it without limit —
+  one measured 805px on a 375px phone. Every trigger here passes `w-full` and an
+  explicit `<SelectValue>{label}</SelectValue>`, and the option's explanation
+  lives in a wrapping second line inside the dropdown rather than in the trigger.
+
 ## What the tool does not do
 
 - It does not book anything. Availability is confirmed by email.

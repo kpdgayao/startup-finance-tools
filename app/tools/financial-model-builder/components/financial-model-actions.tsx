@@ -55,7 +55,7 @@ export function FinancialModelActions({
         </p>
         <LearnLink toolHref="/tools/financial-model-builder" />
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button variant="ghost" size="sm" onClick={onReset} title="Reset to defaults">
           <RotateCcw className="h-4 w-4" />
         </Button>

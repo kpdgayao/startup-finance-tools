@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
+  EWT_RATE,
+  EWT_RATE_FIRM,
+  INVOICING_ENTITY,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
@@ -362,8 +365,8 @@ describe("running totals and structure", () => {
   });
 
   it("reports withholding as informational, not deducted from the total", () => {
-    const quote = buildQuotation(input({ organizerType: "corporate" }));
-    expect(quote.withholding.amount).toBe(toPeso(quote.professionalFee * 0.1));
+    const quote = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
+    expect(quote.withholding.amount).toBe(toPeso(quote.professionalFee * EWT_RATE));
     expect(quote.withholding.net).toBe(quote.professionalFee - quote.withholding.amount);
     expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
   });
@@ -509,5 +512,75 @@ describe("quotation reference", () => {
     const a = buildQuotation(input({ addOns: ["workbook", "clinic"] }));
     const b = buildQuotation(input({ addOns: ["clinic", "workbook"] }));
     expect(a.reference).toBe(b.reference);
+  });
+});
+
+
+describe("invoicing", () => {
+  // The whole point of the answer to "should an invoice change the price?":
+  // issuing a proper invoice is not extra work worth charging for. What it
+  // changes is the withholding basis, and — if the firm ever registers for
+  // VAT — whether VAT sits on top.
+  it("does not move the professional fee", () => {
+    const billedPersonally = buildQuotation(input({ invoiceRequired: false }));
+    const billedByTheFirm = buildQuotation(input({ invoiceRequired: true }));
+    expect(billedByTheFirm.professionalFee).toBe(billedPersonally.professionalFee);
+    expect(billedByTheFirm.total).toBe(billedPersonally.total);
+  });
+
+  it("switches the withholding basis to the firm's rate", () => {
+    const personal = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
+    const firm = buildQuotation(input({ organizerType: "corporate", invoiceRequired: true }));
+
+    expect(personal.withholding.basis).toBe("individual");
+    expect(personal.withholding.rate).toBe(EWT_RATE);
+    expect(firm.withholding.basis).toBe("firm");
+    expect(firm.withholding.rate).toBe(EWT_RATE_FIRM);
+    // Materially different take-home, which is why showing the wrong one
+    // would misstate the payout rather than merely mislabel it.
+    expect(firm.withholding.net).toBeGreaterThan(personal.withholding.net);
+  });
+
+  it("names the issuing entity only when an invoice was asked for", () => {
+    expect(buildQuotation(input({ invoiceRequired: true })).invoicing.entity).toBe(
+      INVOICING_ENTITY.name
+    );
+    expect(buildQuotation(input({ invoiceRequired: false })).invoicing.entity).toBeNull();
+  });
+
+  it("adds no VAT while the firm is below the threshold", () => {
+    const quote = buildQuotation(input({ invoiceRequired: true }));
+    expect(INVOICING_ENTITY.vatRegistered).toBe(false);
+    expect(quote.invoicing.vat).toBe(0);
+    expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
+  });
+
+  it("reports percentage tax as the firm's cost, never on the organiser's total", () => {
+    const quote = buildQuotation(input({ invoiceRequired: true }));
+    expect(quote.invoicing.percentageTax).toBeGreaterThan(0);
+    // The organiser's total is untouched by it — it is the firm's cost.
+    expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
+  });
+
+  it("carries no percentage tax when nothing is invoiced", () => {
+    expect(buildQuotation(input({ invoiceRequired: false })).invoicing.percentageTax).toBe(0);
+  });
+
+  // A corporate or government payor cannot release funds without one, so
+  // finding out afterwards is a delayed payment rather than a surprise.
+  it("flags a withholding organiser who did not ask for an invoice", () => {
+    const quote = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
+    expect(quote.flags.some((f) => f.includes(INVOICING_ENTITY.name))).toBe(true);
+  });
+
+  it("does not nag a mission organiser about it", () => {
+    const quote = buildQuotation(input({ organizerType: "mission", invoiceRequired: false }));
+    expect(quote.flags.some((f) => f.includes(INVOICING_ENTITY.name))).toBe(false);
+  });
+
+  it("changes the reference when the invoicing arrangement changes", () => {
+    const a = buildQuotation(input({ invoiceRequired: true }));
+    const b = buildQuotation(input({ invoiceRequired: false }));
+    expect(a.reference).not.toBe(b.reference);
   });
 });

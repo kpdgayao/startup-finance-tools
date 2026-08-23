@@ -1,6 +1,6 @@
 import { section, summaryCard, table } from "@/components/shared/export-pdf-button";
 import { formatPHP, formatPercent } from "@/lib/utils";
-import { EWT_RATE, HOME_BASE } from "@/lib/speaking/rate-card";
+import { HOME_BASE } from "@/lib/speaking/rate-card";
 import type { Quotation, QuotationInput } from "@/lib/speaking/quotation";
 
 /**
@@ -134,14 +134,32 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
       )} of ${formatPHP(quote.projectedGate)} in expected ticket revenue.`
     );
   }
+  if (quote.invoicing.entity) {
+    terms.push(
+      `<strong>Invoicing</strong> a formal invoice is issued by ${esc(quote.invoicing.entity)}${
+        quote.invoicing.vatRegistered
+          ? `, which is VAT-registered — VAT of ${formatPHP(
+              quote.invoicing.vat
+            )} is added to the total above and is claimable as input VAT if you are VAT-registered too.`
+          : ", which is not VAT-registered, so no VAT is added to the total above."
+      }`
+    );
+  }
   if (quote.withholding.applies) {
     terms.push(
-      `<strong>Withholding tax</strong> professional fees paid to an individual are subject to creditable withholding of ${formatPercent(
-        EWT_RATE * 100,
-        0
-      )} — ${formatPHP(quote.withholding.amount)} here, leaving ${formatPHP(
-        quote.withholding.net
-      )} net. The rate is 5% where a sworn declaration of gross receipts under P3M is on file. Remittance is the organiser's obligation and is not deducted from the total above.`
+      quote.withholding.basis === "firm"
+        ? `<strong>Withholding tax</strong> billing by a training firm is ordinarily withheld at ${formatPercent(
+            quote.withholding.rate * 100,
+            0
+          )} as a contractor — ${formatPHP(quote.withholding.amount)} here, leaving ${formatPHP(
+            quote.withholding.net
+          )} net. A payor that instead treats it as professional fees of a juridical entity withholds 10%. Your own classification governs; either way remittance is the organiser's obligation and is not deducted from the total above.`
+        : `<strong>Withholding tax</strong> professional fees paid to an individual are subject to creditable withholding of ${formatPercent(
+            quote.withholding.rate * 100,
+            0
+          )} — ${formatPHP(quote.withholding.amount)} here, leaving ${formatPHP(
+            quote.withholding.net
+          )} net. The rate is 5% where a sworn declaration of gross receipts under P3M is on file. Remittance is the organiser's obligation and is not deducted from the total above.`
     );
   }
   terms.push(

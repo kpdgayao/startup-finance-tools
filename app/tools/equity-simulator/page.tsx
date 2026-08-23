@@ -102,7 +102,7 @@ export default function EquitySimulatorPage() {
             Set up founders, add funding rounds, and visualize ownership dilution.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="ghost" size="sm" onClick={handleReset} title="Reset to defaults">
             <RotateCcw className="h-4 w-4" />
           </Button>

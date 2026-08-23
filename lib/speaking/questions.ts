@@ -18,6 +18,9 @@
 
 import {
   DAY_RATE_MAX,
+  EWT_RATE,
+  EWT_RATE_FIRM,
+  INVOICING_ENTITY,
   DAY_RATE_MIN,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
@@ -156,6 +159,17 @@ export const QUESTIONS = {
     hint: "Only asked when the engagement needs an overnight.",
     why: "Same reasoning as transport, and it is usually the larger of the two. An organiser with a hotel partner pays a fraction of the walk-in rate.",
     impact: "Covered: shown at zero. Not covered: added as a reimbursable at the nightly estimate.",
+  },
+  invoiceRequired: {
+    id: "invoiceRequired",
+    label: "Do you need a formal invoice?",
+    hint: "Most companies, agencies and schools do, to release payment.",
+    why: "Finance departments cannot release funds against an email. Asking now means the paperwork is ready when the engagement is, rather than the fee sitting unpaid for a month while it is sorted out afterwards. It also decides who bills you, which changes the tax you withhold — not what you pay.",
+    impact: `No change to the fee. An invoice is issued by ${
+      INVOICING_ENTITY.name
+    }, and withholding follows the firm's rate of ${
+      EWT_RATE_FIRM * 100
+    }% instead of the ${EWT_RATE * 100}% that applies to an individual professional.`,
   },
   addOns: {
     id: "addOns",

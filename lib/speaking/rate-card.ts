@@ -69,8 +69,52 @@ export const REVENUE_SHARE_FLOOR = 0.15;
  */
 export const REVENUE_SHARE_UPLIFT_CAP = 2;
 
-/** Creditable withholding tax on professional fees paid to an individual. */
+/**
+ * Creditable withholding on professional fees paid to an INDIVIDUAL.
+ *
+ * 10% is the default; it drops to 5% where a sworn declaration of gross
+ * receipts under ₱3M is on file with the payor. The quote shows 10% and says
+ * so, because assuming the lower rate understates what the organiser will
+ * actually deduct.
+ */
 export const EWT_RATE = 0.1;
+
+/**
+ * Creditable withholding when the training firm issues the invoice.
+ *
+ * A seminar and training provider billing as a corporation is ordinarily
+ * withheld at 2% as a contractor. A payor that instead classifies the billing
+ * as professional fees of a juridical entity withholds 10% (15% above ₱720K of
+ * gross income). The classification is the ORGANISER'S to make, so the quote
+ * names the rate it used and says the payor's own treatment governs, rather
+ * than asserting a single correct answer.
+ */
+export const EWT_RATE_FIRM = 0.02;
+
+/**
+ * Percentage tax on the gross receipts of a non-VAT entity.
+ *
+ * This is the firm's own cost, not the organiser's, so it appears as a note
+ * and never on the invoice. It is NOT built into the day rates: if you decide
+ * to stay whole by passing it on, gross the rate ladder up rather than adding
+ * a surcharge line an organiser will read as a tax they are being charged.
+ */
+export const PERCENTAGE_TAX_RATE = 0.03;
+
+/**
+ * The entity that issues a formal invoice when an organiser needs one.
+ *
+ * `vatRegistered: false` — the firm is below the ₱3M VAT threshold, so no 12%
+ * is added to the organiser's total. If it crosses that threshold and
+ * registers for VAT, flip this: VAT then has to be added on top of the fee as
+ * its own line, claimable by the organiser as input VAT, and the quotation
+ * total changes for every ticket this touches.
+ */
+export const INVOICING_ENTITY = {
+  name: "1Punch Inc.",
+  vatRegistered: false,
+  vatRate: 0.12,
+} as const;
 
 /** Quote validity, and how long the requested date is held without a deposit. */
 export const QUOTE_VALID_DAYS = 30;

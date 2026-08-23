@@ -282,6 +282,7 @@ Kevin's rate card and the reasoning behind it:
 - When an event sells seats, the fee is floored at 15% of projected gross ticket revenue. This is the line that catches an event grossing several hundred thousand pesos and offering a five-figure honorarium.
 - Public schools, student organisations, NGOs and startup community groups get a 20% concessionary rate, floored at \u20b112,000 a day. It is a concession, stated openly, not a negotiating position.
 - Professional fees paid to an individual are subject to creditable withholding tax (5% or 10%). It is the organiser's obligation and is shown for transparency, not deducted from the quote.
+- When the organiser needs a formal invoice, it is issued by the training firm. This does NOT change the fee — issuing a proper invoice is not extra work worth charging for. What changes is the withholding basis, which drops to the corporate rate. The firm is not VAT-registered, so no VAT is added. Never suggest a discount for waiving an invoice or a surcharge for requiring one.
 
 Do all of this:
 1. Say in two sentences what this engagement actually is and what the total covers.

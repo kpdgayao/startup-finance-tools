@@ -28,6 +28,9 @@ import {
   DATE_HOLD_DAYS,
   ENGAGEMENT_FORMATS,
   EWT_RATE,
+  EWT_RATE_FIRM,
+  INVOICING_ENTITY,
+  PERCENTAGE_TAX_RATE,
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
@@ -83,6 +86,15 @@ export interface QuotationInput {
   /** Session starts before 10am, forcing an overnight the evening before. */
   earlyStart: boolean;
   addOns: AddOnId[];
+  /**
+   * The organiser needs a formal invoice, so the training firm issues it
+   * rather than the fee being billed personally.
+   *
+   * This does NOT change the professional fee. Issuing a proper invoice is not
+   * extra work worth charging for — what it changes is the withholding basis
+   * and, if the firm were ever VAT-registered, whether VAT sits on top.
+   */
+  invoiceRequired: boolean;
   /** Today, `YYYY-MM-DD`. Injected rather than read from the clock. */
   today: string;
   /** Free-text, carried through to the printed quote. */
@@ -106,6 +118,7 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   accommodationCovered: true,
   earlyStart: true,
   addOns: [],
+  invoiceRequired: true,
   eventTitle: "",
   organizationName: "",
   contactName: "",
@@ -177,7 +190,24 @@ export interface Quotation {
   projectedGate: number;
   /** Fee as a share of the gate, 0 when the event is not ticketed. */
   gateShare: number;
-  withholding: { applies: boolean; rate: number; amount: number; net: number };
+  withholding: {
+    applies: boolean;
+    rate: number;
+    amount: number;
+    net: number;
+    /** Whose rate was used — the individual's or the firm's. */
+    basis: "individual" | "firm";
+  };
+  invoicing: {
+    required: boolean;
+    /** The issuing entity, or null when no formal invoice was asked for. */
+    entity: string | null;
+    vatRegistered: boolean;
+    /** VAT added to the organiser's total. Zero while the firm is non-VAT. */
+    vat: number;
+    /** Percentage tax the firm bears on gross receipts. Never invoiced. */
+    percentageTax: number;
+  };
   dates: QuotationDateNote[];
   schedule: { id: ScheduleFactorId; label: string; factor: number; reason: string };
   validUntil: string;
@@ -233,6 +263,7 @@ function referenceFor(input: QuotationInput): string {
     input.accommodationCovered ? "T" : "F",
     input.earlyStart ? "T" : "F",
     [...input.addOns].sort().join(","),
+    input.invoiceRequired ? "INV" : "NOINV",
     input.organizationName ?? "",
   ].join("|");
 
@@ -517,11 +548,28 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     reimbursables.filter((r) => !r.billed).reduce((sum, r) => sum + r.amount, 0)
   );
 
-  const total = professionalFee + reimbursablesBilled;
 
   // Withholding is informational: it is the organiser's obligation, not a
   // deduction the quote applies. It is shown so nobody is surprised at payout.
-  const withholdingAmount = organizer.withholds ? roundPeso(professionalFee * EWT_RATE) : 0;
+  //
+  // The rate follows WHO issues the invoice, not who is speaking. Billed
+  // personally it is the individual professional rate; billed by the firm it is
+  // the corporate one, which is materially lower and changes the net enough
+  // that showing the wrong one would misstate the payout.
+  const withholdingRate = raw.invoiceRequired ? EWT_RATE_FIRM : EWT_RATE;
+  const withholdingAmount = organizer.withholds
+    ? roundPeso(professionalFee * withholdingRate)
+    : 0;
+
+  // Zero while the firm is below the VAT threshold. Left in the shape rather
+  // than omitted so registering for VAT is a constant change, not a refactor.
+  const vat = raw.invoiceRequired && INVOICING_ENTITY.vatRegistered
+    ? roundPeso(professionalFee * INVOICING_ENTITY.vatRate)
+    : 0;
+
+  // Declared after the tax block because VAT, when it applies, is part of what
+  // the organiser pays.
+  const total = professionalFee + reimbursablesBilled + vat;
 
   // Flags ------------------------------------------------------------------
   const flags: string[] = [];
@@ -548,6 +596,16 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   if (daysOfNotice < 14 && daysOfNotice >= 0) {
     flags.push(
       `Only ${daysOfNotice} ${daysOfNotice === 1 ? "day" : "days"} of notice — confirm availability before circulating this quote.`
+    );
+  }
+  // Corporates, agencies and schools cannot release payment without one, so
+  // discovering it after the engagement is a delayed payment, not a surprise.
+  // Keyed on the institutional tiers rather than on `withholds`: mission
+  // organisers withhold too, but a student org raising money by selling
+  // snacks does not need a formal invoice and should not be nagged for one.
+  if (!raw.invoiceRequired && !organizer.mission) {
+    flags.push(
+      `No formal invoice was requested, but a ${organizer.label.toLowerCase()} almost always needs one to release payment. Say so now and it is issued by ${INVOICING_ENTITY.name}; the fee does not change.`
     );
   }
   if (sessions > 1) {
@@ -590,9 +648,20 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     gateShare: projectedGate > 0 ? (professionalFee / projectedGate) * 100 : 0,
     withholding: {
       applies: organizer.withholds,
-      rate: EWT_RATE,
+      rate: withholdingRate,
       amount: withholdingAmount,
       net: professionalFee - withholdingAmount,
+      basis: raw.invoiceRequired ? "firm" : "individual",
+    },
+    invoicing: {
+      required: raw.invoiceRequired,
+      entity: raw.invoiceRequired ? INVOICING_ENTITY.name : null,
+      vatRegistered: INVOICING_ENTITY.vatRegistered,
+      vat,
+      percentageTax:
+        raw.invoiceRequired && !INVOICING_ENTITY.vatRegistered
+          ? roundPeso(professionalFee * PERCENTAGE_TAX_RATE)
+          : 0,
     },
     dates: dates.map((date) => ({
       date,

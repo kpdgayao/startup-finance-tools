@@ -31,6 +31,7 @@ export interface IntakeDraft {
   travelCovered?: boolean;
   accommodationCovered?: boolean;
   addOns?: string[];
+  invoiceRequired?: boolean;
   eventTitle?: string;
   organizationName?: string;
   venue?: string;

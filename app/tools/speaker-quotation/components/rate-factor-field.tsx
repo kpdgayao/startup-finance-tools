@@ -105,7 +105,11 @@ export function RateFactorField({
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="mt-2 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground"
+        // py-2 -my-0.5: the label alone was a 15px-tall tap target, well under
+        // what a thumb can hit reliably, on the one control this page most
+        // wants people to press. The padding grows the hit area to ~31px while
+        // the negative margin keeps the visual rhythm between fields.
+        className="-my-0.5 mt-1.5 inline-flex items-center gap-1.5 py-2 pr-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground"
       >
         <HelpCircle className="h-3 w-3" />
         Why we ask
