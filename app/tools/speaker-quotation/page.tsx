@@ -673,7 +673,7 @@ export default function SpeakerQuotationPage() {
         <CardHeader>
           <CardTitle>And about you</CardTitle>
           <CardDescription>
-            Which rate applies, and whether we have met before.
+            Which rate applies, whether we have met before, and what you have to work with.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

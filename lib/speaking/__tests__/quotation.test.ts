@@ -1184,8 +1184,12 @@ describe("budget", () => {
     const weekend = buildQuotation({ ...overBudget(), startDate: SATURDAY }).budgetFit!;
     const dateLever = weekend.levers.find((l) => l.id === "date")!;
     expect(dateLever).toBeDefined();
+    // The proposed date is carried as data, not parsed back out of the label —
+    // the label is prose, in the same form as every other date on the quote.
+    expect(dateLever.label).toContain("Move it to");
+    expect(dateLever.startDate).toBeDefined();
     expect(dateLever.total).toBe(
-      buildQuotation({ ...overBudget(), startDate: dateLever.label.split(" ").pop()! }).total
+      buildQuotation({ ...overBudget(), startDate: dateLever.startDate! }).total
     );
   });
 

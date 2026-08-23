@@ -131,7 +131,7 @@ function BudgetPanel({ fit }: { fit: BudgetFit }) {
                     ? "Taken together they bring it to "
                     : null}
                   {fit.combined.length > 1 && fit.combined.length < fit.levers.length
-                    ? "Combined — taking the better of the two alternatives above — they bring it to "
+                    ? "Combined, counting only the better of the alternatives above, they bring it to "
                     : null}
                   {formatPHP(fit.floor)}
                   {fit.reachable ? (

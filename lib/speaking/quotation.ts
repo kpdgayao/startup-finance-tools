@@ -71,6 +71,7 @@ import {
   addDays,
   daysBetween,
   engagementDates,
+  formatEngagementDate,
   holidayFor,
   isWeekend,
   weekdayName,
@@ -219,6 +220,8 @@ export interface BudgetLever {
   id: string;
   /** The change, as an instruction the organiser could act on. */
   label: string;
+  /** The date the `date` lever proposes, `YYYY-MM-DD`. Absent on every other. */
+  startDate?: string;
   /** What they give up, or gain, by making it. Never a sales line. */
   detail: string;
   /** Pesos off the total. Always positive — levers that save nothing are dropped. */
@@ -1024,9 +1027,12 @@ function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
         selectedAddOns.length === 1
           ? `Leave out the ${selectedAddOns[0].label.toLowerCase()}`
           : "Leave out the extras",
-      detail: `${selectedAddOns
-        .map((a) => a.label.toLowerCase())
-        .join(", ")} — each of these can be added later without re-quoting the session.`,
+      detail:
+        selectedAddOns.length === 1
+          ? "It can be added later without re-quoting the session itself."
+          : `${selectedAddOns
+              .map((a) => a.label.toLowerCase())
+              .join(", ")} — any of them can be added later without re-quoting the session itself.`,
       change: { addOns: [] },
     });
   }
@@ -1089,7 +1095,10 @@ function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
     specs.push({
       id: "date",
       slot: "date",
-      label: `Move it to ${betterDate}`,
+      // Written the way every other date on the quote is written. A raw
+      // `2026-04-20` in the middle of a sentence reads as a system value
+      // rather than a suggestion someone could act on.
+      label: `Move it to ${formatEngagementDate(betterDate, { weekday: true })}`,
       detail:
         "Weekdays carry no schedule premium, and 30 days' notice carries no rush premium. Moving the date is usually the only lever here that costs you nothing at all.",
       change: { startDate: betterDate },
@@ -1106,6 +1115,7 @@ function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
       slot: spec.slot,
       label: spec.label,
       detail: spec.detail,
+      startDate: spec.change.startDate,
       saving,
       total: variant.total,
       change: spec.change,
@@ -1134,10 +1144,11 @@ function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
     total,
     withinBudget: false,
     difference: total - budget,
-    levers: levers.map(({ id, label, detail, saving, total: leverTotal }) => ({
+    levers: levers.map(({ id, label, detail, startDate, saving, total: leverTotal }) => ({
       id,
       label,
       detail,
+      startDate,
       saving,
       total: leverTotal,
     })),
