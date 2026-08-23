@@ -206,9 +206,22 @@ export interface FacilitationScope {
 }
 
 /**
- * Facilitation rates. Above every speaking tier, because facilitation is
- * bespoke by definition — nothing is reusable, the process is designed for one
- * room, and the facilitator carries the outcome rather than the content.
+ * Facilitation rates, at PUBLIC-SECTOR level like every other ladder here —
+ * the sector multiplier scales them from there.
+ *
+ * Two caveats worth knowing, because this ladder rests on the weakest evidence
+ * on the card. First, the corporate facilitation rate it produces (about
+ * ₱90,000 a day) is extrapolated from international facilitation day rates of
+ * roughly ₱70,000–440,000; no reliable Philippine figure was found. Treat it
+ * as a hypothesis to test against real enquiries rather than an observed price.
+ * Second, these sit above the ~₱21,000 DBM honorarium ceiling even at the
+ * public rate, on the basis that a planning engagement is normally procured as
+ * a consultancy contract rather than paid as a resource-person honorarium —
+ * which is a different rule, not an exemption from that one.
+ *
+ * Above every speaking tier, because facilitation is bespoke by definition —
+ * nothing is reusable, the process is designed for one room, and the
+ * facilitator carries the outcome rather than the content.
  *
  * The ladder is about how many principals have to be reconciled, which is what
  * actually makes a room hard to run.
@@ -629,11 +642,39 @@ export interface OrganizerType {
   id: OrganizerTypeId;
   label: string;
   detail: string;
-  factor: number;
+  /**
+   * Scales the day rate for this sector — it does NOT surcharge it.
+   *
+   * The ladders above are public-sector rates. A government agency cannot
+   * legally pay much more than they say: DBM BC 2007-1 pays a resource person
+   * twice the hourly rate of the salary grade they are pegged to, for delivery
+   * hours plus equal preparation hours, which works out at roughly
+   * ₱18,700–21,200 a day at SG-24 to SG-25 on the 2026 table. So the public
+   * rate is not a discount, it is a ceiling.
+   *
+   * Corporate is a different market with a different ceiling. Philippine
+   * in-house corporate training is quoted at ₱40,000–280,000 for a single
+   * session, and ₱100,000–500,000 for a two-day programme. A 15% premium on a
+   * government rate — which is what this field used to hold — cannot reach
+   * that, and priced a two-day corporate workshop at ₱41,000: roughly what one
+   * session costs at the very bottom of the market, for two days of work.
+   */
+  rateMultiplier: number;
+  /** Short noun for the fee's base line — "the corporate rate for …". */
+  sectorLabel: string;
   /** Eligible for the concessionary mission discount. */
   mission: boolean;
   /** Ordinarily withholds creditable tax on professional fees. */
   withholds: boolean;
+}
+
+/**
+ * Day rates are rounded to the nearest ₱1,000 once the sector has scaled them.
+ * A quote that opens with "₱76,800 a day" invites arithmetic; ₱77,000 invites
+ * a decision.
+ */
+export function deriveDayRate(base: number, multiplier: number): number {
+  return Math.round((base * multiplier) / 1_000) * 1_000;
 }
 
 export const ORGANIZER_TYPES: OrganizerType[] = [
@@ -641,7 +682,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     id: "corporate",
     label: "Company or corporate in-house training",
     detail: "Private firm, bank, cooperative bank, or a commercial training provider",
-    factor: 1.15,
+    // Benchmarked against Philippine in-house corporate training: ₱40,000–280,000 a session, ₱100,000–500,000 for a two-day programme.
+    rateMultiplier: 3.2,
+    sectorLabel: "corporate",
     mission: false,
     withholds: true,
   },
@@ -649,7 +692,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     id: "association",
     label: "Industry association or ticketed conference",
     detail: "Chamber, professional body, or a conference that sells seats",
-    factor: 1.1,
+    // Between the public and corporate rate — a chamber or a ticketed conference sells seats, but rarely on a corporate training budget.
+    rateMultiplier: 2.5,
+    sectorLabel: "association",
     mission: false,
     withholds: true,
   },
@@ -657,7 +702,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     id: "government",
     label: "Government agency, LGU or state university",
     detail: "Has a budget line and a procurement process",
-    factor: 1,
+    // The public-sector rate the ladders are written in. Capped by DBM BC 2007-1 at roughly ₱21,000 a day, so there is no room above it.
+    rateMultiplier: 1,
+    sectorLabel: "public-sector",
     mission: false,
     withholds: true,
   },
@@ -665,7 +712,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     id: "academic",
     label: "Private school or university",
     detail: "Faculty development, student congress, graduate programme",
-    factor: 1,
+    // Private schools and universities have a training budget, but not a corporate one.
+    rateMultiplier: 1.6,
+    sectorLabel: "private-academic",
     mission: false,
     withholds: true,
   },
@@ -673,7 +722,9 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     id: "mission",
     label: "Public school, student org, NGO or startup community",
     detail: "No ticket revenue and no training budget — qualifies for the concessionary rate",
-    factor: 1,
+    // The public rate, before the concession below.
+    rateMultiplier: 1,
+    sectorLabel: "public-sector",
     mission: true,
     // True, despite the concession. Public schools, SUCs and registered NGOs
     // are withholding agents exactly as government offices are; marking the
@@ -683,6 +734,14 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     withholds: true,
   },
 ];
+
+/**
+ * The dearest sector's scaling, so copy can quote the full spread a reader
+ * might be quoted rather than only the public-sector end of it.
+ */
+export const TOP_SECTOR_MULTIPLIER = Math.max(
+  ...ORGANIZER_TYPES.map((o) => o.rateMultiplier)
+);
 
 export function organizerTypeFor(id: OrganizerTypeId): OrganizerType {
   return ORGANIZER_TYPES.find((o) => o.id === id) ?? ORGANIZER_TYPES[0];

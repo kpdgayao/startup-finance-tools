@@ -5,7 +5,11 @@ import {
   AUDIENCE_PROFILES,
   COMPLEXITY_TIERS,
   DAY_RATE_MAX,
+  FACILITATION_SCOPES,
+  TEAM_BUILDING_DAY_RATE,
+  TOP_SECTOR_MULTIPLIER,
   DAY_RATE_MIN,
+  deriveDayRate,
   ENGAGEMENT_FORMATS,
   LEAD_TIME_BANDS,
   MISSION_DISCOUNT,
@@ -112,7 +116,9 @@ describe("rate card integrity", () => {
     // list: they set the rate rather than multiplying one.
     for (const band of AUDIENCE_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
     for (const band of LEAD_TIME_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
-    for (const type of ORGANIZER_TYPES) expect(type.factor).toBeGreaterThanOrEqual(1);
+    // Organiser tiers are no longer in this list: the sector sets the day
+    // rate rather than multiplying a settled one, so its scaling is checked
+    // against the benchmarks below instead.
     for (const profile of AUDIENCE_PROFILES) expect(profile.factor).toBeGreaterThanOrEqual(1);
   });
 
@@ -135,11 +141,24 @@ describe("why-we-ask copy", () => {
   // to BASE_DAY_RATE cannot leave the form quoting last year's number. This
   // fails if someone replaces an interpolation with a typed literal.
   it("quotes the live rate ladder rather than typed literals", () => {
-    expect(QUESTIONS.format.impact).toContain(DAY_RATE_MIN.toLocaleString("en-PH"));
-    expect(QUESTIONS.format.impact).toContain(DAY_RATE_MAX.toLocaleString("en-PH"));
-    expect(QUESTIONS.complexity.impact).toContain(DAY_RATE_MIN.toLocaleString("en-PH"));
-    expect(QUESTIONS.complexity.impact).toContain(DAY_RATE_MAX.toLocaleString("en-PH"));
+    // Since the sector scales the ladder, copy that quotes only the public end
+    // contradicts the number a corporate reader is actually shown. Each of
+    // these should carry both ends of the spread they describe.
+    const topOfLadder = deriveDayRate(DAY_RATE_MAX, TOP_SECTOR_MULTIPLIER).toLocaleString(
+      "en-PH"
+    );
+
+    for (const q of [QUESTIONS.format, QUESTIONS.complexity, QUESTIONS.engagementType]) {
+      expect(q.impact, `${q.id} omits the public-sector end`).toContain(
+        DAY_RATE_MIN.toLocaleString("en-PH")
+      );
+      expect(q.impact, `${q.id} omits the corporate end`).toContain(topOfLadder);
+    }
+
     expect(QUESTIONS.sessions.impact).toContain((DAY_RATE_MIN * 2).toLocaleString("en-PH"));
+    expect(QUESTIONS.sessions.impact).toContain(
+      (deriveDayRate(DAY_RATE_MIN, TOP_SECTOR_MULTIPLIER) * 2).toLocaleString("en-PH")
+    );
     expect(QUESTIONS.organizerType.impact).toContain(
       MISSION_FLOOR_DAY_RATE.toLocaleString("en-PH")
     );
@@ -182,6 +201,86 @@ describe("audience composition is a separate lever from audience size", () => {
     for (const profile of AUDIENCE_PROFILES) {
       const text = `${profile.label} ${profile.detail}`.toLowerCase();
       for (const term of forbidden) expect(text, profile.id).not.toContain(term);
+    }
+  });
+});
+
+describe("sector rates against the market benchmarks", () => {
+  // Researched August 2026. The public rate is a CEILING, not a discount:
+  // DBM BC 2007-1 pays a resource person twice the hourly rate of the salary
+  // grade they are pegged to, for delivery hours plus equal preparation hours
+  // — roughly ₱18,700–21,200 a day at SG-24 to SG-25 on the 2026 table.
+  // Corporate is a different market: Philippine in-house training is quoted at
+  // ₱40,000–280,000 a session and ₱100,000–500,000 for a two-day programme.
+  const dayRate = (organizer: string, base: number) =>
+    deriveDayRate(base, ORGANIZER_TYPES.find((o) => o.id === organizer)!.rateMultiplier);
+
+  it("leaves the public sector at the ladder, which is where its ceiling is", () => {
+    for (const id of ["government", "mission"]) {
+      expect(dayRate(id, DAY_RATE_MIN), id).toBe(DAY_RATE_MIN);
+      expect(dayRate(id, DAY_RATE_MAX), id).toBe(DAY_RATE_MAX);
+    }
+    // The computed government ceiling sits inside the public band.
+    expect(DAY_RATE_MAX).toBeGreaterThanOrEqual(21_200);
+  });
+
+  it("puts a corporate day inside the observed corporate market", () => {
+    // A single in-house session starts at ₱40,000; a day should not undercut it.
+    expect(dayRate("corporate", DAY_RATE_MIN)).toBeGreaterThanOrEqual(40_000);
+    // And should stay well under the ₱280,000 top of the session range, which
+    // buys far more than one speaker's day.
+    expect(dayRate("corporate", DAY_RATE_MAX)).toBeLessThan(120_000);
+  });
+
+  it("orders the sectors public < academic < association < corporate", () => {
+    const order = ["government", "academic", "association", "corporate"].map((id) =>
+      dayRate(id, DAY_RATE_MIN)
+    );
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(new Set(order).size).toBe(order.length);
+  });
+
+  it("never scales a sector below the public rate", () => {
+    for (const type of ORGANIZER_TYPES) {
+      expect(type.rateMultiplier, type.id).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  // Asserting `deriveDayRate` output lands on a thousand only restates its own
+  // implementation. What is worth pinning is that rounding never distorts the
+  // rate enough to matter, across EVERY ladder — including facilitation and
+  // team building, which the first version of this test skipped.
+  it("rounds without moving a rate more than half a thousand", () => {
+    const ladders = [
+      ...COMPLEXITY_TIERS.map((t) => [t.id, t.dayRate] as const),
+      ...FACILITATION_SCOPES.map((f) => [f.id, f.dayRate] as const),
+      ["team-building", TEAM_BUILDING_DAY_RATE] as const,
+    ];
+
+    for (const type of ORGANIZER_TYPES) {
+      for (const [id, base] of ladders) {
+        const exact = base * type.rateMultiplier;
+        const rounded = deriveDayRate(base, type.rateMultiplier);
+        expect(Math.abs(rounded - exact), `${type.id}/${id}`).toBeLessThanOrEqual(500);
+        expect(rounded, `${type.id}/${id}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("keeps every ladder's sector ordering intact after rounding", () => {
+    // Rounding could in principle collapse two adjacent sectors onto the same
+    // figure, which would make the sector question look like it did nothing.
+    const ordered = ["government", "academic", "association", "corporate"];
+    for (const base of [
+      ...COMPLEXITY_TIERS.map((t) => t.dayRate),
+      ...FACILITATION_SCOPES.map((f) => f.dayRate),
+      TEAM_BUILDING_DAY_RATE,
+    ]) {
+      const rates = ordered.map((id) =>
+        deriveDayRate(base, ORGANIZER_TYPES.find((o) => o.id === id)!.rateMultiplier)
+      );
+      expect(new Set(rates).size, `base ${base}`).toBe(rates.length);
+      expect([...rates].sort((a, b) => a - b), `base ${base}`).toEqual(rates);
     }
   });
 });

@@ -41,6 +41,7 @@ import {
   audienceBandFor,
   audienceProfileFor,
   engagementTypeFor,
+  deriveDayRate,
   facilitationScopeFor,
   formatLabel,
   outputOptionFor,
@@ -194,6 +195,7 @@ export default function SpeakerQuotationPage() {
   const ai = useAiExplain("speaker-quotation");
 
   const engagementType = engagementTypeFor(input.engagementType);
+  const organizer = ORGANIZER_TYPES.find((o) => o.id === input.organizerType) ?? ORGANIZER_TYPES[0];
   const isFacilitation = engagementType.id === "facilitation";
   const isTeamBuilding = engagementType.id === "team-building";
   const availableFormats = formatsFor(engagementType.id);
@@ -324,12 +326,15 @@ export default function SpeakerQuotationPage() {
    * the ₱15,000 travel line the quote actually charged, because the subject
    * ladder does not price facilitation or team building.
    */
-  const activeDayRate = isFacilitation
+  const baseDayRate = isFacilitation
     ? facilitationScope.dayRate
     : isTeamBuilding
       ? TEAM_BUILDING_DAY_RATE
       : complexity.dayRate;
-  const organizer = ORGANIZER_TYPES.find((o) => o.id === input.organizerType) ?? ORGANIZER_TYPES[0];
+  // What this engagement will actually be quoted at, resolved the same way the
+  // engine resolves it — the ladders are public-sector rates until the sector
+  // scales them.
+  const activeDayRate = deriveDayRate(baseDayRate, organizer.rateMultiplier);
   const region = REGIONS.find((r) => r.id === input.region) ?? REGIONS[0];
   const leadFactor = quote?.lines.find((l) => l.id === "lead-time")?.factor ?? 1;
 
@@ -350,10 +355,11 @@ export default function SpeakerQuotationPage() {
 
       <div className="border-y border-rule py-4 font-serif text-[15px] leading-[1.55] text-ink-2">
         <p>
-          I would rather you saw the arithmetic than a number I made up on a call. My day rate
-          starts at {formatPHP(DAY_RATE_MIN)} and moves with how much of the work is new, where it
-          is, and who it is for — and every question below tells you what it does to the total
-          before you answer it. Nothing is sent to me until you decide to send it.
+          I would rather you saw the arithmetic than a number I made up on a call. My rate moves
+          with how much of the work is new, where it is, and which sector you are in — public
+          bodies pay what their own rules allow, companies pay the corporate rate — and every
+          question below tells you what it does to the total before you answer it. Nothing is sent
+          to me until you decide to send it.
         </p>
       </div>
 
@@ -375,11 +381,14 @@ export default function SpeakerQuotationPage() {
           <RateFactorField
             question={QUESTIONS.engagementType}
             impact={`from ${formatPHP(
-              engagementType.id === "facilitation"
-                ? FACILITATION_SCOPES[0].dayRate
-                : engagementType.id === "team-building"
-                  ? TEAM_BUILDING_DAY_RATE
-                  : DAY_RATE_MIN
+              deriveDayRate(
+                engagementType.id === "facilitation"
+                  ? FACILITATION_SCOPES[0].dayRate
+                  : engagementType.id === "team-building"
+                    ? TEAM_BUILDING_DAY_RATE
+                    : DAY_RATE_MIN,
+                organizer.rateMultiplier
+              )
             )}/day`}
             active
           >
@@ -461,7 +470,7 @@ export default function SpeakerQuotationPage() {
           {!isFacilitation && !isTeamBuilding && (
           <RateFactorField
             question={QUESTIONS.complexity}
-            impact={`${formatPHP(complexity.dayRate)}/day`}
+            impact={`${formatPHP(deriveDayRate(complexity.dayRate, organizer.rateMultiplier))}/day`}
             active
           >
             <Select
@@ -482,7 +491,7 @@ export default function SpeakerQuotationPage() {
                     <OptionText
                       label={tier.label}
                       detail={tier.detail}
-                      trailing={`${formatPHP(tier.dayRate)}/day`}
+                      trailing={`${formatPHP(deriveDayRate(tier.dayRate, organizer.rateMultiplier))}/day`}
                     />
                   </SelectItem>
                 ))}
@@ -495,7 +504,7 @@ export default function SpeakerQuotationPage() {
             <>
               <RateFactorField
                 question={QUESTIONS.facilitationScope}
-                impact={`${formatPHP(facilitationScope.dayRate)}/day`}
+                impact={`${formatPHP(deriveDayRate(facilitationScope.dayRate, organizer.rateMultiplier))}/day`}
                 active
               >
                 <Select
@@ -511,7 +520,7 @@ export default function SpeakerQuotationPage() {
                         <OptionText
                           label={option.label}
                           detail={option.detail}
-                          trailing={`${formatPHP(option.dayRate)}/day`}
+                          trailing={`${formatPHP(deriveDayRate(option.dayRate, organizer.rateMultiplier))}/day`}
                         />
                       </SelectItem>
                     ))}
@@ -661,8 +670,15 @@ export default function SpeakerQuotationPage() {
         <CardContent className="space-y-4">
           <RateFactorField
             question={QUESTIONS.organizerType}
-            impact={organizer.mission ? "Concessionary rate" : factorImpact(organizer.factor)}
-            active={organizer.factor !== 1 || organizer.mission}
+            // The sector sets the rate rather than adding to it, so the chip
+            // shows the resulting day rate — the number the quote will use —
+            // instead of a ratio the reader would only try to negotiate down.
+            impact={
+              organizer.mission
+                ? "Concessionary rate"
+                : `${formatPHP(deriveDayRate(baseDayRate, organizer.rateMultiplier))}/day`
+            }
+            active
           >
             <Select
               value={input.organizerType}

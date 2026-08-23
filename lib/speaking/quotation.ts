@@ -46,6 +46,7 @@ import {
   TEAM_BUILDING_DAY_RATE,
   audienceBandFor,
   audienceProfileFor,
+  deriveDayRate,
   engagementTypeFor,
   facilitationScopeFor,
   formatLabel,
@@ -359,6 +360,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   const format =
     ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
   const engagementType = engagementTypeFor(raw.engagementType);
+  const organizer = organizerTypeFor(raw.organizerType);
   const complexity = complexityTierFor(raw.complexity);
   const facilitationScope = facilitationScopeFor(raw.facilitationScope);
 
@@ -366,12 +368,17 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   // priced by how much new ground the subject covers; facilitation cannot be,
   // because it is bespoke by definition and has no reusable material to be
   // further or nearer from.
-  const dayRate =
+  // The ladders are public-sector rates; the sector scales them into its own.
+  // This is a rate, not a surcharge — see OrganizerType.rateMultiplier. It
+  // replaced a 15% premium that could not reach the corporate market and
+  // priced a two-day corporate workshop at roughly what one session costs.
+  const baseDayRate =
     engagementType.id === "facilitation"
       ? facilitationScope.dayRate
       : engagementType.id === "team-building"
         ? TEAM_BUILDING_DAY_RATE
         : complexity.dayRate;
+  const dayRate = deriveDayRate(baseDayRate, organizer.rateMultiplier);
 
   const isFacilitation = engagementType.id === "facilitation";
   const preparation = preparationOptionFor(raw.preparation);
@@ -380,7 +387,6 @@ export function buildQuotation(raw: QuotationInput): Quotation {
   // format's day-equivalent, and team building uses the survey/report add-ons.
   const preparationDays = isFacilitation ? preparation.days : 0;
   const outputDays = isFacilitation ? output.days : 0;
-  const organizer = organizerTypeFor(raw.organizerType);
   // An online format overrides whatever region was picked: there is no travel
   // to a webinar, and leaving a stale region selected would bill hotel nights
   // for a video call.
@@ -414,21 +420,19 @@ export function buildQuotation(raw: QuotationInput): Quotation {
     id: "base",
     kind: "base",
     label: `${formatLabel(format, engagementType.id)}${sessions > 1 ? ` × ${sessions}` : ""}`,
-    // The tier sets the rate, so it is named here rather than carried as its
-    // own factor line — it is not a surcharge on a standard rate, it IS the
-    // rate. Kept to a short clause: every session is adapted to the room
-    // whatever the tier, and a longer classification of the client's own
-    // subject reads as a verdict on it rather than an explanation of the price.
+    // Names the SECTOR that set the rate, not the subject tier. Both feed the
+    // number, but only one of them is worth printing: the sector explains why
+    // this reader's rate differs from someone else's, whereas classifying the
+    // client's own subject reads as a verdict on it. The tier still reaches the
+    // AI explanation via `topicTier`, where it has room to be explained.
     detail: `${dayEquivalents} engagement ${
       dayEquivalents === 1 ? "day" : "days"
-    } at ₱${dayRate.toLocaleString("en-PH")}/day, the rate for ${
+    } at ₱${dayRate.toLocaleString("en-PH")}/day — the ${organizer.sectorLabel} rate for ${
       isFacilitation
-        ? facilitationScope.label.toLowerCase()
+        ? "this scope of planning"
         : engagementType.id === "team-building"
-          ? "facilitated team building"
-          : complexity.id === "routine"
-            ? "a settled subject"
-            : complexity.label.toLowerCase()
+          ? "team building"
+          : "this subject"
     }`,
     amount: baseFee,
   });
@@ -497,12 +501,7 @@ export function buildQuotation(raw: QuotationInput): Quotation {
           : "Short notice displaces committed work and compresses preparation",
       factor: leadTime.factor,
     },
-    {
-      id: "organizer",
-      label: organizer.label,
-      detail: organizer.detail,
-      factor: organizer.factor,
-    },
+
   ];
 
   for (const f of factors) {

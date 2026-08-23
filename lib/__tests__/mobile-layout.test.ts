@@ -135,7 +135,13 @@ describe("whole-number fields can be cleared", () => {
     // field refills it and typing appends. `|| 0` is milder but the same bug:
     // the field cannot be left empty either. `parseFloat` handlers are out of
     // scope; those are decimal fields and IntegerInput is the wrong control.
-    const RESETTING = /(?:Number|parseInt)\(\s*e\.target\.value\s*\)\s*\|\|\s*\d/;
+    // Matches the radix form (`parseInt(x, 10)`) and any argument name, both of
+    // which the first version missed — `parseInt(e.target.value, 10) || 0` was
+    // sitting unconverted in unit-economics while this test passed.
+    // parseFloat is deliberately absent: those are decimal fields, and an
+    // integer control is the wrong fix for them.
+    const RESETTING =
+      /(?:Number|parseInt)\(\s*\w+\.target\.value\s*(?:,\s*\d+\s*)?\)\s*\|\|\s*\d/;
 
     // IntegerInput's own documentation quotes the broken handler it replaces,
     // so it matches its own guard. Excluded by full path rather than basename,

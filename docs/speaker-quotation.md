@@ -67,6 +67,38 @@ the quote, the printed PDF and the AI prompt together.
 `lib/speaking/__tests__/rate-card.test.ts` fails if someone replaces an
 interpolation with a typed literal.
 
+### Sector rates
+
+`ORGANIZER_TYPES` carries a `rateMultiplier` that scales the ladders below into
+each sector's own rate. It is a rate, not a surcharge, and the distinction is
+the whole point: it replaced a 15% corporate premium that could not reach the
+corporate market and priced a two-day corporate workshop at ₱41,000 — roughly
+what one in-house session costs at the very bottom of the range, for two days
+of work.
+
+| Sector | × | Day rate, settled subject | Basis |
+| --- | --- | --- | --- |
+| Government, LGU, SUC | 1.0 | ₱15,000 | DBM BC 2007-1 caps a resource person near ₱21,000/day, so this is a ceiling rather than a discount |
+| Mission (before the −20%) | 1.0 | ₱15,000 | The public rate |
+| Private school or university | 1.6 | ₱24,000 | A training budget, but not a corporate one |
+| Association, ticketed conference | 2.5 | ₱38,000 | Sells seats, rarely on a corporate training budget |
+| Company or corporate | 3.2 | ₱48,000 | PH in-house training runs ₱40,000–280,000 a session, ₱100,000–500,000 for two days |
+
+Researched August 2026 against the DBM circular and the 2026 salary table
+(firm), Philippine corporate training price guides (reasonably firm), and the
+widely cited PAPS speaker range of ₱15,000–120,000 (softer — no primary
+schedule was reachable). Tests in `rate-card.test.ts` pin the sectors to those
+benchmarks: a corporate day may not undercut the ₱40,000 session floor, the
+ordering public < academic < association < corporate must hold, and no sector
+may fall below the public rate.
+
+Derived rates round to the nearest ₱1,000. A quote that opens with "₱76,800 a
+day" invites arithmetic; ₱77,000 invites a decision.
+
+The sector does NOT appear as its own factor line — it is named on the fee's
+base line beside the rate it produced. A ratio printed on the quote is a ratio
+the reader negotiates against; the rate is the thing to discuss.
+
 ### The topic rate ladder
 
 There is no single day rate. `COMPLEXITY_TIERS` carries one per tier, because
@@ -87,10 +119,13 @@ delivered as it stands" — untrue, and it told a paying organiser they were
 booking a canned talk. A test in `lib/speaking/__tests__/quotation.test.ts`
 fails on that vocabulary reappearing, on the tier copy or on the quote itself.
 
-The tier is deliberately understated in the output: it appears once, as a short
-clause on the fee's base line, and nowhere in the printed quotation's header.
-Classifying a client's own subject more prominently than that reads as a verdict
-on it rather than an explanation of the price.
+The tier is deliberately understated in the output. Since sector pricing landed
+it no longer appears on the quote at all — the base line names the *sector* that
+set the rate, because that is what explains why this reader's number differs
+from someone else's. The tier still reaches the AI explanation through
+`quote.topicTier`, where there is room to explain it. Classifying a client's own
+subject on the face of their quote reads as a verdict on it rather than an
+explanation of the price.
 
 ### Engagement types
 
@@ -145,6 +180,15 @@ The two ends are the real anchors; the middle two interpolate so an engagement
 that is neither pure delivery nor a research project need not round to whichever
 end is nearer.
 
+**The facilitation ladder is the least evidenced part of this card.** Its
+corporate rate (about ₱90,000/day) is extrapolated from international
+facilitation rates of roughly ₱70,000–440,000 a day; no reliable Philippine
+figure was found. Treat it as a hypothesis to test against real enquiries. It
+also sits above the ~₱21,000 DBM honorarium ceiling even at the public rate, on
+the basis that planning work is normally procured as a consultancy contract
+rather than paid as a resource-person honorarium — a different rule, not an
+exemption from that one.
+
 Three floors, checked in this order:
 
 - `MINIMUM_ENGAGEMENT_FEE` (₱10,000) — before concessions, so they apply to the
@@ -176,8 +220,9 @@ The order the factors apply in is fixed and documented at the top of
 
 1. Base fee — the topic's day rate × day-equivalents for the format and session
    count. The tier is named on this line rather than charged as a premium.
-2. Multipliers — audience size, weekend/holiday, notice, organiser type. Each is
-   listed on the quote even when it changes nothing.
+2. Multipliers — audience size, weekend/holiday, notice. Each is listed on the
+   quote even when it changes nothing. The organiser's sector is NOT here; it
+   scaled the day rate in step 1.
 3. Minimum engagement fee (₱10,000), before concessions.
 4. Add-ons — percentages read the pre-add-on fee; flat amounts are added after.
 5. Travel days at half the topic's day rate.

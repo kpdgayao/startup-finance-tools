@@ -144,8 +144,13 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
                 <CurrencyInput label="Variable Cost per Unit" value={variableCost} onChange={setVariableCost} onBlur={() => markTouched("variableCost")} error={variableCostError} />
                 <div className="space-y-2">
                   <Label>Expected Units / Clients</Label>
+                  {/* min={0}, not 1: the page validates this field itself with
+                      validatePositiveInteger and shows an error at zero.
+                      Clamping to 1 here settles a cleared field silently at 1,
+                      makes that error unreachable, and prices one unit instead
+                      of telling anyone the field is empty. */}
                   <IntegerInput
-                    min={1}
+                    min={0}
                     value={expectedUnits}
                     onChange={setExpectedUnits}
                     onBlur={() => markTouched("expectedUnits")}
