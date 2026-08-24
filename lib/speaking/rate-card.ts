@@ -1039,7 +1039,14 @@ export const REGIONS: Region[] = [
     transport: 14_000,
     nightly: 6_500,
     perDiem: 1_800,
-    travelDays: 1,
+    // 1.5, not 1. Baguio is not an airport city: getting to a Visayas or
+    // Mindanao venue is a road trip to Manila or Clark, a flight, and a
+    // transfer at the far end — a whole day gone before the engagement, and
+    // most of another getting back. Carried at 1 while travel was billed at
+    // half the client's day rate, where the figure was large enough that
+    // under-counting the days did not show; on a flat fee the day count is
+    // the only thing left that reflects how far the journey actually is.
+    travelDays: 1.5,
     overnightRequired: true,
   },
   {
