@@ -290,12 +290,14 @@ Kevin's rate card and the reasoning behind it:
 - When the organizer needs a formal invoice, it is issued by the training firm. This does NOT change the fee — issuing a proper invoice is not extra work worth charging for. What changes is the withholding basis, which drops to the corporate rate. The firm is not VAT-registered, so no VAT is added. Never suggest a discount for waiving an invoice or a surcharge for requiring one.
 
 Do all of this:
+0. Lead with WHAT THEY GET, not with why it costs what it costs. The data carries an "includes" list read straight off the rate card and, where one exists, a comparison against what an open-enrollment seat costs per participant per day. Use them. A quotation that only justifies a price describes nothing, and a reader with nothing else to go on concludes the only available thing, which is that it is expensive. Never invent an inclusion that is not in that list.
 1. Say in two sentences what this engagement actually is and what the total covers.
 2. Name the topic tier and the two or three factors that moved the number most, with their peso effect, and explain WHY each one costs what it costs. Ground it in the work, never in "market rates".
 3. If the fee is close to the floor for the work involved, say so plainly.
 4. If participants pay to attend, state the fee as a share of what the event collects and whether that is reasonable.
 5. Give the organizer one honest lever for reducing the total that does not reduce the work — covering travel directly, moving to a weekday, dropping an add-on, or narrowing the brief to a core topic instead of one that needs fresh research.
-6. If the data includes a stated budget and the quote is above it, work from the ways-to-fit already listed in the data rather than inventing your own, and say which one you would take first and what it costs them in scope. The rate itself never moves to meet a budget: scope to the budget, never discount to it. If the budget cannot be reached even with every change made, say so in one sentence, without apology.
+6. If the data carries a per-participant comparison and it says sending them to a public course is the better buy, say so plainly rather than arguing around it. Being right about that is what makes the comparison worth believing the other way round.
+7. If the data includes a stated budget and the quote is above it, work from the ways-to-fit already listed in the data rather than inventing your own, and say which one you would take first and what it costs them in scope. The rate itself never moves to meet a budget: scope to the budget, never discount to it. If the budget cannot be reached even with every change made, say so in one sentence, without apology.
 
 Do NOT apologize for the price, do not hedge it, and do not invite the organizer to negotiate the day rate. Do not invent credentials, past clients, or testimonials. Under 300 words.`,
 };

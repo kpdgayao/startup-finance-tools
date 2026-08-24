@@ -159,6 +159,23 @@ export const INVOICING_ENTITY = {
  */
 export const HONORARIUM_DAY_CEILING = 21_000;
 
+/**
+ * What a seat at a Philippine open-enrollment course costs, per participant
+ * per day. Researched August 2026 alongside the in-house session range.
+ *
+ * This is the only outside number on the card, and it is here because it is
+ * the comparison an organizer is actually making, whether or not the quote
+ * helps them make it: for the same money, could I just send these people on a
+ * course? Stating it lets the quote answer that honestly in both directions —
+ * below the break-even head count, sending them really is cheaper, and the
+ * quote says so.
+ *
+ * Compared against the BOTTOM of the range wherever a comparison is drawn. A
+ * claim that only holds against the dearest competitor is a sales trick.
+ */
+export const PUBLIC_COURSE_RATE_MIN = 2_500;
+export const PUBLIC_COURSE_RATE_MAX = 15_000;
+
 /** Quote validity, and how long the requested date is held without a deposit. */
 export const QUOTE_VALID_DAYS = 30;
 export const DATE_HOLD_DAYS = 7;

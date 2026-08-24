@@ -398,6 +398,61 @@ A quote for any organizer outside the mission tier that does *not* request an
 invoice raises a flag, because those payors cannot
 release funds without one and finding out afterwards is a delayed payment.
 
+## Saying what the organizer gets
+
+The quotation spent its whole life explaining COST. Every line said why the
+number is what it is; not one said what arrives. That is a strange document to
+hand someone — it argues a price without describing the thing being priced —
+and a reader with nothing else to go on concludes the only available thing,
+which is that it is expensive.
+
+`lib/speaking/inclusions.ts` builds the answer, and **nothing in it is
+invented**. Every inclusion is read off a choice already on the rate card: the
+format says what happens in the room ("6 to 8 hours, hands-on, materials and
+facilitation included"), the subject tier says what gets rebuilt beforehand, the
+add-ons say what was bought on top. All of it was already there and all of it
+was buried — the format's promise of materials sat inside a dropdown that closes
+the moment you choose from it. A test pins the one thing that would break this:
+a keynote's own description mentions no materials, so the list must not claim
+any.
+
+It also renders **what is NOT included**, which is worth more than it looks. A
+list of exclusions reads as confidence rather than meanness, and it settles on
+paper the arguments that otherwise happen on the day, in front of participants,
+about who was bringing the projector. The catch-all line is the useful one:
+everything argued about on the day is something neither side thought to name.
+
+### The comparison
+
+`PUBLIC_COURSE_RATE_MIN`/`MAX` (₱2,500–15,000 per participant per day) is the
+only outside number on the card. It is there because it is the comparison an
+organizer is making anyway, whether or not the quote helps them make it: *for
+this money, could I just send these people on a course?*
+
+Three rules keep it honest:
+
+1. **Compared against the bottom of the range, never the middle.** A claim that
+   only holds against the dearest competitor is a sales trick.
+2. **Only where something comparable is sold by the seat.** Workshops and online
+   sessions, yes. A keynote, no — nobody sells seats to a 90-minute plenary by
+   the head, and a per-seat comparison beside one is arithmetic with no
+   referent. Facilitation, no — there is no open-enrollment strategic plan.
+3. **It answers in both directions.** Below the break-even head count the panel
+   says plainly that sending them on a public course is the better buy. That is
+   the only reason the other direction is worth believing.
+
+The break-even is computed by **re-pricing the engagement at each head count**,
+not by dividing this quote's total. The total is not fixed — a bigger room
+carries a bigger audience factor — so dividing the current one produced a
+threshold the engine contradicted a sentence later: a 40-person quote claimed
+in-house paid from 21 people while a 20-person quote of the same engagement was
+already cheaper. Within one audience band the fee does not move at all, so
+probing each band once is exact and costs five re-prices rather than three
+hundred.
+
+The panel sits **above** the fee breakdown, on screen and in the PDF. Order is
+most of the point.
+
 ## Leading with the right number
 
 Two presentation rules, both learned from a reader balking at a figure that was

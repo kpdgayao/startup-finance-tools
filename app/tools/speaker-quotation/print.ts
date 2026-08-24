@@ -168,6 +168,50 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
     );
   }
 
+  // Before the arithmetic, exactly as on screen. The PDF is what circulates to
+  // whoever signs, and handing them a justified price with no description of
+  // the thing being priced is how a quotation reads as merely expensive.
+  if (quote.deliverables) {
+    const { included, excluded, comparison } = quote.deliverables;
+    parts.push(
+      section(
+        "What this includes",
+        table(
+          ["Included", "What it means"],
+          included.map((item) => [`<strong>${esc(item.label)}</strong>`, esc(item.detail)])
+        ) +
+          (comparison
+            ? `<p class="note">${
+                comparison.cheaperThanSendingThem
+                  ? `That is ${formatPHP(
+                      comparison.perParticipantPerDay
+                    )} per participant per day. Sending the same ${input.audienceSize.toLocaleString(
+                      "en-PH"
+                    )} people to an open-enrollment course costs ${formatPHP(
+                      comparison.publicMin
+                    )} to ${formatPHP(
+                      comparison.publicMax
+                    )} each per day — at least ${formatPHP(
+                      comparison.costOfSendingThem
+                    )} — for a course built for nobody in particular.`
+                  : `That is ${formatPHP(
+                      comparison.perParticipantPerDay
+                    )} per participant per day, against ${formatPHP(
+                      comparison.publicMin
+                    )}–${formatPHP(
+                      comparison.publicMax
+                    )} for an open-enrollment seat. For a group this size, sending them on a public course is honestly the better buy; in-house starts paying from about ${
+                      comparison.breakEvenParticipants
+                    } participants.`
+              }</p>`
+            : "") +
+          `<p class="note"><strong>Not included:</strong> ${excluded
+            .map((item) => esc(item))
+            .join("; ")}.</p>`
+      )
+    );
+  }
+
   parts.push(
     section(
       "How the fee was built",
