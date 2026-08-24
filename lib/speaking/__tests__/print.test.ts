@@ -40,6 +40,20 @@ describe("printed quotation", () => {
     expect(html).not.toContain("Budget stated");
   });
 
+  it("asks a public body for nothing in advance", () => {
+    // The printed quote is what reaches procurement. A "50% on confirmation"
+    // line there is not a price they refuse, it is a term they cannot accept.
+    const gov = buildQuotationPrint(
+      buildQuotation({ ...base, organizerType: "government" }),
+      { ...base, organizerType: "government" }
+    );
+    expect(gov).toContain("nothing in advance");
+    expect(gov).not.toContain("on confirmation");
+
+    const corporate = buildQuotationPrint(buildQuotation(base), base);
+    expect(corporate).toContain("on confirmation");
+  });
+
   it("escapes free text the organizer typed", () => {
     const input = { ...base, eventTitle: '<img src=x onerror="alert(1)">' };
     const html = buildQuotationPrint(buildQuotation(input), input);

@@ -19,6 +19,7 @@ import {
   LEAD_TIME_BANDS,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
+  MULTI_DAY_TAPER,
   MINIMUM_ENGAGEMENT_FEE,
   ORGANIZER_TYPES,
   REGIONS,
@@ -172,9 +173,13 @@ describe("why-we-ask copy", () => {
       expect(q.impact, `${q.id} omits the corporate end`).toContain(topOfLadder);
     }
 
-    expect(QUESTIONS.sessions.impact).toContain((DAY_RATE_MIN * 2).toLocaleString("en-PH"));
+    // Two days is not two full days of fee any more — the day after the first
+    // is tapered, and the copy has to quote what the engine will actually
+    // charge rather than the arithmetic it used to.
+    const twoDays = (rate: number) => Math.round(rate * (1 + MULTI_DAY_TAPER));
+    expect(QUESTIONS.sessions.impact).toContain(twoDays(DAY_RATE_MIN).toLocaleString("en-PH"));
     expect(QUESTIONS.sessions.impact).toContain(
-      (deriveDayRate(DAY_RATE_MIN, TOP_SECTOR_MULTIPLIER) * 2).toLocaleString("en-PH")
+      twoDays(deriveDayRate(DAY_RATE_MIN, TOP_SECTOR_MULTIPLIER)).toLocaleString("en-PH")
     );
     expect(QUESTIONS.organizerType.impact).toContain(
       MISSION_FLOOR_DAY_RATE.toLocaleString("en-PH")

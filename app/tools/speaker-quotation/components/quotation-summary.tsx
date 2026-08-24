@@ -560,9 +560,25 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
               )}
             </p>
           )}
+          {/* Not the same term for every payor. A Philippine public body cannot
+              simply pay half up front — advance payment is limited, needs a
+              surety and a contract provision, and lands the approving officer
+              with a COA finding — so asking for it loses the booking for a
+              reason that has nothing to do with the fee. */}
           <p>
-            <span className="text-foreground">Payment</span> 50% on confirmation, 50% within 15 days
-            of the engagement.
+            <span className="text-foreground">Payment</span>{" "}
+            {quote.payment.advanceShare > 0 ? (
+              <>
+                {formatPercent(quote.payment.advanceShare * 100, 0)} on confirmation, the balance
+                within {quote.payment.daysToSettle} days of the engagement.
+              </>
+            ) : (
+              <>
+                nothing in advance. The full fee is invoiced after the engagement and payable
+                within {quote.payment.daysToSettle} days — no deposit, no surety bond, and nothing
+                for your accounting to justify later.
+              </>
+            )}
           </p>
           <p>
             <span className="text-foreground">Cancellation</span> inside 14 days, 50% of the

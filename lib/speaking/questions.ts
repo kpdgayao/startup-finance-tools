@@ -31,6 +31,7 @@ import {
   MINIMUM_ENGAGEMENT_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
+  MULTI_DAY_TAPER,
   REVENUE_SHARE_FLOOR,
   SCHEDULE_FACTORS,
   TRAVEL_DAY_FEE,
@@ -111,11 +112,13 @@ export const QUESTIONS = {
     id: "sessions",
     label: "How many days or sessions?",
     hint: "I will assume they are consecutive — tell me if they are spread out.",
-    why: "Multi-day programs are the ones I see underpriced most often. Two days of workshop is two days of delivery plus the preparation behind them, and with travel it takes most of my week.",
-    impact: `Multiplies the base fee directly. Two full days on a settled subject is ${peso(
-      DAY_RATE_MIN * 2
+    why: "Multi-day programs are the ones I see underpriced most often — two days of workshop is two days of delivery plus the preparation behind them, and with travel it takes most of my week. But that preparation happens once whether you book one day or three, so I do not charge you for it three times: every day after the first comes down.",
+    impact: `Every day after the first is billed at ${
+      MULTI_DAY_TAPER * 100
+    }%, because the preparation behind the rate happens once however many days you book. Two full days on a settled subject is ${peso(
+      Math.round(DAY_RATE_MIN * (1 + MULTI_DAY_TAPER))
     )} at public-sector rates and ${peso(
-      deriveDayRate(DAY_RATE_MIN, TOP_SECTOR_MULTIPLIER) * 2
+      Math.round(deriveDayRate(DAY_RATE_MIN, TOP_SECTOR_MULTIPLIER) * (1 + MULTI_DAY_TAPER))
     )} for a company, before any other factor.`,
   },
   complexity: {
