@@ -33,7 +33,7 @@ import {
   MISSION_FLOOR_DAY_RATE,
   REVENUE_SHARE_FLOOR,
   SCHEDULE_FACTORS,
-  TRAVEL_DAY_FACTOR,
+  TRAVEL_DAY_FEE,
   LEAD_TIME_BANDS,
   AUDIENCE_BANDS,
 } from "./rate-card";
@@ -193,10 +193,10 @@ export const QUESTIONS = {
     id: "region",
     label: "Where is it being held?",
     hint: "Travel is measured from Baguio City.",
-    why: "I am based in Baguio. Metro Manila is five to seven hours each way; anything past Luzon means a flight and a night before. Those are working hours I cannot sell to anyone else, which is the only reason travel appears on a quote at all.",
-    impact: `Adds ${
-      TRAVEL_DAY_FACTOR * 100
-    }% of the day rate per travel day, and sets the transport, accommodation and per-diem estimates below.`,
+    why: "I am based in Baguio. Metro Manila is five to seven hours each way; anything past Luzon means a flight and a night before. Those are working hours I cannot sell to anyone else, which is the only reason travel time appears on a quote at all — and it is charged at a flat rate, not a share of your rate, because the journey does not get longer for a company than it does for a school. If a day of my travelling is not something you want to pay for, an online session removes it entirely.",
+    impact: `Adds ${peso(
+      TRAVEL_DAY_FEE
+    )} per travel day — a flat figure, the same for every client whatever their rate, because it is the same journey. It sets the transport, accommodation and per-diem estimates too, and those are yours to book directly if you would rather.`,
   },
   earlyStart: {
     id: "earlyStart",

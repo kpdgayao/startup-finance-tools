@@ -33,6 +33,10 @@
  * DAY_RATE_MIN and DAY_RATE_MAX are derived from the tiers so copy elsewhere
  * cannot quote a rate the card no longer offers.
  */
+/**
+ * Share of a day rate that a travel day is worth. See TRAVEL_DAY_FEE, which is
+ * what the engine actually charges — this is only the derivation input.
+ */
 export const TRAVEL_DAY_FACTOR = 0.5;
 
 /**
@@ -531,6 +535,32 @@ export function complexityTierFor(id: ComplexityId): ComplexityTier {
  * rate card the moment the rates moved.
  */
 export const MISSION_FLOOR_DAY_RATE = Math.round(DAY_RATE_MIN * (1 - MISSION_DISCOUNT));
+
+/**
+ * What one day spent travelling is billed at. FLAT — the same figure for every
+ * client, in every sector, on every subject.
+ *
+ * This used to be half of the CLIENT'S day rate, which made the identical bus
+ * ride to Manila cost a company ₱29,000 and a government agency ₱7,500. There
+ * is no answer to an organiser who asks why their travel is worth more than
+ * someone else's: the journey is the same journey. Worse, on a one-day
+ * corporate booking it made travel a third of the whole fee, which is a
+ * shocking thing to meet on a quote before any work has been done — and the
+ * commonest professional practice for speaking is not to itemise travel time at
+ * all, but to fold it into the fee and bill only expenses.
+ *
+ * Itemising it is still the right call for this tool, whose whole argument is
+ * that the reader can see every line. What was wrong was the amount and what
+ * it was derived from. It is now half of the LOWEST day rate on the card,
+ * deliberately: what a travel day costs is a working day that cannot be sold,
+ * and the realistic alternative use of a random Tuesday is ordinary work, not a
+ * guaranteed corporate booking. Pricing it off the top of the ladder assumed
+ * the opposite.
+ *
+ * It compensates lost TIME. The cost of the journey itself — fare, hotel, meals
+ * — is a reimbursable, shown separately and at zero when the organiser books it.
+ */
+export const TRAVEL_DAY_FEE = Math.round(DAY_RATE_MIN * TRAVEL_DAY_FACTOR);
 
 // ---------------------------------------------------------------------------
 // Who is in the room

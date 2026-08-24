@@ -14,6 +14,7 @@ import {
   REVENUE_SHARE_FLOOR,
   FACILITATION_SCOPES,
   TEAM_BUILDING_DAY_RATE,
+  TRAVEL_DAY_FEE,
   complexityTierFor,
   deriveDayRate,
   facilitationScopeFor,
@@ -268,10 +269,11 @@ describe("travel and reimbursables", () => {
     expect(quote.reimbursables.some((r) => r.id === "accommodation")).toBe(false);
   });
 
-  it("bills travel days for an out-of-town engagement", () => {
+  it("bills travel time for an out-of-town engagement", () => {
     const quote = buildQuotation(input({ region: "visayas-mindanao" }));
     const travel = quote.lines.find((l) => l.kind === "travel");
-    expect(travel?.amount).toBe(ROUTINE_RATE * 0.5);
+    // The flat travel-day fee, not a share of this engagement's rate.
+    expect(travel?.amount).toBe(TRAVEL_DAY_FEE);
   });
 
   it("shows covered logistics at zero billed but keeps the estimate visible", () => {
@@ -861,10 +863,9 @@ describe("line factors mean different things", () => {
 });
 
 describe("the day rate a quote reports", () => {
-  // The form showed a travel chip computed from the speaking ladder while the
-  // engine charged the facilitation rate — ₱9,000 on screen beside a ₱15,000
-  // line on the same page.
-  it("matches the travel line the engine actually charges", () => {
+  it("resolves the day rate from the engagement type, not the speaking ladder", () => {
+    // The form once showed a chip computed from the speaking ladder while the
+    // engine charged the facilitation rate — two numbers on the same page.
     for (const [engagementType, expected] of [
       ["speaking", complexityTierFor("tailored").dayRate],
       ["facilitation", facilitationScopeFor("organisation").dayRate],
@@ -874,10 +875,75 @@ describe("the day rate a quote reports", () => {
         input({ engagementType, complexity: "tailored", region: "metro-manila" })
       );
       expect(quote.dayRate, engagementType).toBe(expected);
-      expect(quote.lines.find((l) => l.kind === "travel")?.amount, engagementType).toBe(
-        toPeso(expected * 0.5)
-      );
     }
+  });
+});
+
+describe("travel time is priced as time, not as a share of the client's rate", () => {
+  const travelLine = (overrides: Partial<QuotationInput>) =>
+    buildQuotation(input({ region: "metro-manila", ...overrides })).lines.find(
+      (l) => l.kind === "travel"
+    );
+
+  it("charges the same journey the same, whoever booked it", () => {
+    // The defect this replaced: half of the CLIENT'S day rate made the
+    // identical bus ride to Manila cost a company ₱29,000 and a government
+    // agency ₱7,500. There is no answer to an organiser who asks why their
+    // travel is worth more than someone else's.
+    for (const organizerType of [
+      "government",
+      "academic",
+      "cooperative",
+      "association",
+      "corporate",
+      "mission",
+    ] as const) {
+      expect(travelLine({ organizerType })?.amount, organizerType).toBe(TRAVEL_DAY_FEE);
+    }
+  });
+
+  it("charges the same journey the same whatever the work is", () => {
+    for (const engagementType of ["speaking", "facilitation", "team-building"] as const) {
+      expect(travelLine({ engagementType })?.amount, engagementType).toBe(TRAVEL_DAY_FEE);
+    }
+    for (const complexity of ["routine", "frontier"] as const) {
+      expect(travelLine({ complexity })?.amount, complexity).toBe(TRAVEL_DAY_FEE);
+    }
+  });
+
+  it("scales with the journey, which is the thing that actually differs", () => {
+    // Half a travel day is ₱3,750, which the engine quotes to the nearest ₱100.
+    expect(travelLine({ region: "north-luzon" })?.amount).toBe(toPeso(TRAVEL_DAY_FEE * 0.5));
+    expect(travelLine({ region: "international" })?.amount).toBe(TRAVEL_DAY_FEE * 2);
+    expect(travelLine({ region: "baguio" })).toBeUndefined();
+  });
+
+  it("never lets travel time dominate a one-day corporate fee", () => {
+    // It was a third of the whole professional fee on a single-day corporate
+    // booking — the most objectionable thing on the quote, and the first thing
+    // an organiser sees charged before any work has been done.
+    const quote = buildQuotation(
+      input({ organizerType: "corporate", region: "metro-manila", complexity: "routine" })
+    );
+    const travel = quote.lines.find((l) => l.kind === "travel")!.amount;
+    expect(travel / quote.professionalFee).toBeLessThan(0.15);
+  });
+
+  it("labels it as time lost rather than a day sold", () => {
+    // "One travel day" on a quote reads as a day being sold, which invites
+    // exactly the objection this line attracts: being billed a working day
+    // before any work has happened.
+    expect(travelLine({})?.label).toContain("Travel time");
+    expect(travelLine({ region: "north-luzon" })?.label).toBe("Travel time, half a day");
+    expect(travelLine({ region: "international" })?.label).toBe("Travel time, 2 days");
+  });
+
+  it("says the rate is flat, and that the fare is billed elsewhere", () => {
+    const line = travelLine({ organizerType: "corporate" })!;
+    expect(line.detail).toContain("the same for every client");
+    // Billing the journey here as well as in the reimbursables would be
+    // billing it twice, so the line says which is which.
+    expect(line.detail).toContain("fare");
   });
 });
 

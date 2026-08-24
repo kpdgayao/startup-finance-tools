@@ -296,7 +296,7 @@ The order the factors apply in is fixed and documented at the top of
    scaled the day rate in step 1.
 3. Minimum engagement fee (₱10,000), before concessions.
 4. Add-ons — percentages read the pre-add-on fee; flat amounts are added after.
-5. Travel days at half the topic's day rate.
+5. Travel time at `TRAVEL_DAY_FEE` per travel day — see below.
 6. Mission concession of 20%, floored at ₱12,000/day.
 7. Revenue-share floor — for ticketed events, 15% of projected gross gate,
    capped at twice the rate-card fee. It can only raise the fee.
@@ -305,6 +305,36 @@ The order the factors apply in is fixed and documented at the top of
 
 Withholding tax is displayed for transparency and is not deducted: it is the
 organiser's obligation to remit.
+
+### Travel time
+
+`TRAVEL_DAY_FEE` is FLAT: the same figure for every client, in every sector, on
+every subject. It is derived as half of the lowest day rate on the card.
+
+It used to be half of the CLIENT'S day rate, and that was wrong twice over.
+There is no answer to an organiser who asks why the identical bus ride to Manila
+is worth ₱29,000 from a company and ₱7,500 from a government agency — it is the
+same journey. And on a one-day corporate booking it made travel a third of the
+whole professional fee, which is a shocking thing to meet on a quote before any
+work has happened, and the single line most likely to lose a booking.
+
+Half of the LOWEST day rate is the deliberate anchor. What a travel day costs is
+a working day that cannot be sold, and the realistic alternative use of a random
+Tuesday is ordinary work, not a guaranteed corporate booking. Pricing it off the
+top of the ladder assumed the opposite.
+
+Worth knowing about the wider practice: most professional speakers do not
+itemise travel time at all. The norm is one fee that already includes it, plus
+expenses — or a flat travel buyout agreed in advance, which is what the larger
+bureaus now push because it gives the planner budget certainty. Itemising is
+still right for this tool, whose whole argument is that the reader can check
+every line, and it is what lets the budget panel show that going online removes
+the whole thing. What was wrong was the amount and what it was derived from.
+
+The line is labelled "Travel time", not "One travel day": a day on a quote reads
+as a day being sold, and what is being compensated is time lost. Its detail says
+the rate is flat and that the fare and the hotel are billed separately, because
+billing the journey here as well as in the reimbursables would be billing twice.
 
 ## Organisers who already have a budget
 
