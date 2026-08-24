@@ -80,8 +80,8 @@ export const ABSOLUTE_MINIMUM_FEE = Math.round(MINIMUM_ENGAGEMENT_FEE * (1 - MIS
 export const RETURNING_CLIENT_DISCOUNT = 0.05;
 
 /**
- * If the organizer sells tickets, the speaker fee is floored at this share of
- * projected gross registration revenue. A ₱3,500 × 80-seat workshop grosses ₱280,000; a
+ * If participants pay to register, the speaker fee is floored at this share of
+ * projected gross registration revenue. A ₱3,500 fee across 80 paying participants collects ₱280,000; a
  * ₱10,000 speaker fee is 3.6% of that. This line is what makes the imbalance
  * visible on the quote instead of in a private complaint afterwards.
  */
@@ -785,7 +785,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   {
     id: "association",
     label: "Industry association or conference",
-    detail: "Chamber, professional body, or a conference that sells seats",
+    detail: "Chamber, professional body, or a conference that charges registration",
     // Between the public and corporate rate — a chamber or a paid conference collects registration fees, but rarely on a corporate training budget.
     rateMultiplier: 2.5,
     facilitationMultiplier: 1.9,
