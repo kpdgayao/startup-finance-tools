@@ -20,6 +20,7 @@ import {
   facilitationScopeFor,
   formatsFor,
   organizerTypeFor,
+  regionFor,
   sectorMultiplier,
 } from "@/lib/speaking/rate-card";
 
@@ -270,10 +271,28 @@ describe("travel and reimbursables", () => {
   });
 
   it("bills travel time for an out-of-town engagement", () => {
-    const quote = buildQuotation(input({ region: "visayas-mindanao" }));
+    const quote = buildQuotation(input({ region: "metro-manila" }));
     const travel = quote.lines.find((l) => l.kind === "travel");
     // The flat travel-day fee, not a share of this engagement's rate.
     expect(travel?.amount).toBe(TRAVEL_DAY_FEE);
+  });
+
+  it("counts a day and a half to Visayas or Mindanao", () => {
+    // Baguio is not an airport city. Reaching a Visayas or Mindanao venue is a
+    // road trip to Manila or Clark, a flight, and a transfer at the far end —
+    // further than Metro Manila by any measure, so it cannot cost the same
+    // number of travel days.
+    const far = regionFor("visayas-mindanao");
+    expect(far.travelDays).toBe(1.5);
+    expect(far.travelDays).toBeGreaterThan(regionFor("metro-manila").travelDays);
+
+    const quote = buildQuotation(input({ region: "visayas-mindanao" }));
+    const travel = quote.lines.find((l) => l.kind === "travel")!;
+    expect(travel.amount).toBe(toPeso(TRAVEL_DAY_FEE * 1.5));
+    expect(travel.label).toBe("Travel time, 1.5 days");
+    // And it lands in the days committed, so the reported cost per day is
+    // measured against every day the trip actually takes.
+    expect(quote.daysCommitted).toBe(quote.dayEquivalents + 1.5);
   });
 
   it("shows covered logistics at zero billed but keeps the estimate visible", () => {

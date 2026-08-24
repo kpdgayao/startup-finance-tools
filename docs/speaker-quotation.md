@@ -331,6 +331,14 @@ still right for this tool, whose whole argument is that the reader can check
 every line, and it is what lets the budget panel show that going online removes
 the whole thing. What was wrong was the amount and what it was derived from.
 
+`travelDays` per region is what carries how far the journey actually is, and it
+is the only thing left that does once the fee is flat. Visayas and Mindanao is
+1.5, not 1: Baguio is not an airport city, so reaching a venue there is a road
+trip to Manila or Clark, a flight, and a transfer at the far end — a whole day
+gone before the engagement and most of another getting back. It sat at 1 while
+travel was billed at half the client's day rate, where the figure was large
+enough that under-counting the days did not show.
+
 The line is labelled "Travel time", not "One travel day": a day on a quote reads
 as a day being sold, and what is being compensated is time lost. Its detail says
 the rate is flat and that the fare and the hotel are billed separately, because
