@@ -27,7 +27,7 @@
  * mostly delivery. A topic sitting outside that ground — AI applied to
  * accounting, a standard that has just changed — costs days of reading and
  * testing before a single slide exists, and none of that work is visible to
- * the organiser. Pricing it as a premium on a flat rate hid that; pricing the
+ * the organizer. Pricing it as a premium on a flat rate hid that; pricing the
  * topic directly does not.
  *
  * DAY_RATE_MIN and DAY_RATE_MAX are derived from the tiers so copy elsewhere
@@ -48,7 +48,7 @@ export const TRAVEL_DAY_FACTOR = 0.5;
  * core topic, which collapses the format ladder into a single number.
  *
  * Applied BEFORE any concession: they apply to the whole fee, the minimum
- * included, rather than being clawed back by a floor the discounted organiser
+ * included, rather than being clawed back by a floor the discounted organizer
  * never qualified for. ABSOLUTE_MINIMUM_FEE is what catches the bottom once
  * the concessions have compounded.
  */
@@ -70,7 +70,7 @@ export const MISSION_DISCOUNT = 0.2;
 export const ABSOLUTE_MINIMUM_FEE = Math.round(MINIMUM_ENGAGEMENT_FEE * (1 - MISSION_DISCOUNT));
 
 /**
- * Recognition for an organiser who has booked before.
+ * Recognition for an organizer who has booked before.
  *
  * A real saving rather than a loyalty gimmick: the discovery is already done.
  * Their sector, their constraints, what landed last time and what did not — all
@@ -80,8 +80,8 @@ export const ABSOLUTE_MINIMUM_FEE = Math.round(MINIMUM_ENGAGEMENT_FEE * (1 - MIS
 export const RETURNING_CLIENT_DISCOUNT = 0.05;
 
 /**
- * If the organizer sells tickets, the speaker fee is floored at this share of
- * projected gross gate. A ₱3,500 × 80-seat workshop grosses ₱280,000; a
+ * If participants pay to register, the speaker fee is floored at this share of
+ * projected gross registration revenue. A ₱3,500 fee across 80 paying participants collects ₱280,000; a
  * ₱10,000 speaker fee is 3.6% of that. This line is what makes the imbalance
  * visible on the quote instead of in a private complaint afterwards.
  */
@@ -89,7 +89,7 @@ export const REVENUE_SHARE_FLOOR = 0.15;
 
 /**
  * Ceiling on the revenue-share uplift, as a multiple of the fee it lifts.
- * A very large gate should raise the fee, not replace the rate card with a
+ * A very large collection should raise the fee, not replace the rate card with a
  * percentage of someone else's business.
  */
 export const REVENUE_SHARE_UPLIFT_CAP = 2;
@@ -99,7 +99,7 @@ export const REVENUE_SHARE_UPLIFT_CAP = 2;
  *
  * 10% is the default; it drops to 5% where a sworn declaration of gross
  * receipts under ₱3M is on file with the payor. The quote shows 10% and says
- * so, because assuming the lower rate understates what the organiser will
+ * so, because assuming the lower rate understates what the organizer will
  * actually deduct.
  */
 export const EWT_RATE = 0.1;
@@ -110,7 +110,7 @@ export const EWT_RATE = 0.1;
  * A seminar and training provider billing as a corporation is ordinarily
  * withheld at 2% as a contractor. A payor that instead classifies the billing
  * as professional fees of a juridical entity withholds 10% (15% above ₱720K of
- * gross income). The classification is the ORGANISER'S to make, so the quote
+ * gross income). The classification is the ORGANIZER'S to make, so the quote
  * names the rate it used and says the payor's own treatment governs, rather
  * than asserting a single correct answer.
  */
@@ -119,20 +119,20 @@ export const EWT_RATE_FIRM = 0.02;
 /**
  * Percentage tax on the gross receipts of a non-VAT entity.
  *
- * This is the firm's own cost, not the organiser's, so it appears as a note
+ * This is the firm's own cost, not the organizer's, so it appears as a note
  * and never on the invoice. It is NOT built into the day rates: if you decide
  * to stay whole by passing it on, gross the rate ladder up rather than adding
- * a surcharge line an organiser will read as a tax they are being charged.
+ * a surcharge line an organizer will read as a tax they are being charged.
  */
 export const PERCENTAGE_TAX_RATE = 0.03;
 
 /**
- * The entity that issues a formal invoice when an organiser needs one.
+ * The entity that issues a formal invoice when an organizer needs one.
  *
  * `vatRegistered: false` — the firm is below the ₱3M VAT threshold, so no 12%
- * is added to the organiser's total. If it crosses that threshold and
+ * is added to the organizer's total. If it crosses that threshold and
  * registers for VAT, flip this: VAT then has to be added on top of the fee as
- * its own line, claimable by the organiser as input VAT, and the quotation
+ * its own line, claimable by the organizer as input VAT, and the quotation
  * total changes for every ticket this touches.
  */
 export const INVOICING_ENTITY = {
@@ -218,7 +218,7 @@ export function engagementTypeFor(id: EngagementTypeId): EngagementType {
 // Facilitation
 // ---------------------------------------------------------------------------
 
-export type FacilitationScopeId = "team" | "organisation" | "board";
+export type FacilitationScopeId = "team" | "organization" | "board";
 
 export interface FacilitationScope {
   id: FacilitationScopeId;
@@ -240,7 +240,7 @@ export interface FacilitationScope {
  * imported from a market this one is not in. The corporate facilitation day is
  * now ₱70,000 at the middle rung, which sits at the top of the Philippine
  * in-house training day range rather than above it, and is a hypothesis to test
- * against real enquiries rather than an observed price.
+ * against real inquiries rather than an observed price.
  * Second, these sit above the ~₱21,000 DBM honorarium ceiling even at the
  * public rate, on the basis that a planning engagement is normally procured as
  * a consultancy contract rather than paid as a resource-person honorarium —
@@ -265,17 +265,17 @@ export const FACILITATION_SCOPES: FacilitationScope[] = [
     dayRate: 25_000,
   },
   {
-    id: "organisation",
-    label: "A whole organisation or cooperative",
+    id: "organization",
+    label: "A whole organization or cooperative",
     detail:
-      "Several departments or member groups whose priorities have to be reconciled in the room",
+      "Several departments or member groups whose priorities have to be settled in one room",
     dayRate: 28_000,
   },
   {
     id: "board",
     label: "A board, or several entities at once",
     detail:
-      "Governance-level decisions with competing principals, where the facilitator carries the outcome",
+      "Governance-level decisions where the interests genuinely compete, and the facilitator carries the outcome",
     dayRate: 30_000,
   },
 ];
@@ -309,7 +309,7 @@ export const TEAM_BUILDING_DAY_RATE = 22_000;
  *
  * Not the full rate: time in the room is the premium, and quoting a day of
  * writing at the same price as a day of facilitating is the kind of line an
- * organiser is right to query. Not zero either, which is what happens when
+ * organizer is right to query. Not zero either, which is what happens when
  * pre-work and write-ups are folded into "the day" and quietly absorbed.
  */
 export const DESK_DAY_FACTOR = 0.7;
@@ -333,7 +333,7 @@ export const PREPARATION_OPTIONS: FacilitationStage[] = [
   {
     id: "review",
     label: "Read our documents beforehand",
-    detail: "Financial statements, the previous plan, board papers, an organisation chart",
+    detail: "Financial statements, the previous plan, board papers, an organization chart",
     days: 0.5,
   },
   {
@@ -413,14 +413,14 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
   {
     id: "keynote",
     label: "Keynote or plenary talk",
-    detail: "Up to 90 minutes, single delivery, Q&A included",
+    detail: "Up to 90 minutes, one delivery, open forum included",
     dayEquivalent: 0.5,
     remote: false,
     types: ["speaking"],
   },
   {
     id: "panel",
-    label: "Panel, fireside or reactor",
+    label: "Panel, forum or reactor",
     detail: "Up to 90 minutes, shared stage, light preparation",
     dayEquivalent: 0.4,
     remote: false,
@@ -440,7 +440,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "Up to 4 hours, exercises and facilitation included",
     dayEquivalent: 0.6,
     remote: false,
-    altLabels: { facilitation: "Half-day session", "team-building": "Half-day programme" },
+    altLabels: { facilitation: "Half-day session", "team-building": "Half-day program" },
     types: ["speaking", "facilitation", "team-building"],
   },
   {
@@ -449,7 +449,7 @@ export const ENGAGEMENT_FORMATS: EngagementFormat[] = [
     detail: "6 to 8 hours, hands-on, materials and facilitation included",
     dayEquivalent: 1,
     remote: false,
-    altLabels: { facilitation: "Full-day session", "team-building": "Full-day programme" },
+    altLabels: { facilitation: "Full-day session", "team-building": "Full-day program" },
     types: ["speaking", "facilitation", "team-building"],
   },
 ];
@@ -482,7 +482,7 @@ export interface ComplexityTier {
  * NOTHING HERE SAYS "OFF THE SHELF". Every engagement is adapted to the room —
  * the examples, the figures and the exercises change even when the subject does
  * not. The earlier wording ("already in the catalogue", "delivered as it
- * stands") was both untrue and bad positioning: it told a paying organiser they
+ * stands") was both untrue and bad positioning: it told a paying organizer they
  * were booking a canned talk, and it understated the work behind the cheapest
  * tier. What the ladder prices is how much NEW GROUND the subject covers, not
  * whether a deck already exists.
@@ -504,14 +504,14 @@ export const COMPLEXITY_TIERS: ComplexityTier[] = [
   },
   {
     id: "applied",
-    label: "New programme, within finance and accounting",
+    label: "New program, within finance and accounting",
     detail:
       "Designed from scratch for this engagement — outline, deck, exercises, assessment",
     dayRate: 21_000,
   },
   {
     id: "frontier",
-    label: "New programme needing fresh research",
+    label: "New program needing fresh research",
     detail:
       "AI applied to accounting, a standard that has just changed, an unfamiliar domain — days of reading and testing before any of it can be taught",
     dayRate: 24_000,
@@ -542,14 +542,14 @@ export const MISSION_FLOOR_DAY_RATE = Math.round(DAY_RATE_MIN * (1 - MISSION_DIS
  *
  * This used to be half of the CLIENT'S day rate, which made the identical bus
  * ride to Manila cost a company ₱29,000 and a government agency ₱7,500. There
- * is no answer to an organiser who asks why their travel is worth more than
+ * is no answer to an organizer who asks why their travel is worth more than
  * someone else's: the journey is the same journey. Worse, on a one-day
  * corporate booking it made travel a third of the whole fee, which is a
  * shocking thing to meet on a quote before any work has been done — and the
- * commonest professional practice for speaking is not to itemise travel time at
+ * most common professional practice for speaking is not to itemize travel time at
  * all, but to fold it into the fee and bill only expenses.
  *
- * Itemising it is still the right call for this tool, whose whole argument is
+ * Itemizing it is still the right call for this tool, whose whole argument is
  * that the reader can see every line. What was wrong was the amount and what
  * it was derived from. It is now half of the LOWEST day rate on the card,
  * deliberately: what a travel day costs is a working day that cannot be sold,
@@ -558,7 +558,7 @@ export const MISSION_FLOOR_DAY_RATE = Math.round(DAY_RATE_MIN * (1 - MISSION_DIS
  * the opposite.
  *
  * It compensates lost TIME. The cost of the journey itself — fare, hotel, meals
- * — is a reimbursable, shown separately and at zero when the organiser books it.
+ * — is a reimbursable, shown separately and at zero when the organizer books it.
  */
 export const TRAVEL_DAY_FEE = Math.round(DAY_RATE_MIN * TRAVEL_DAY_FACTOR);
 
@@ -720,7 +720,7 @@ export interface OrganizerType {
    *
    * Corporate is a different market with a different ceiling. Philippine
    * in-house corporate training is quoted at ₱40,000–280,000 for a single
-   * session, and ₱100,000–500,000 for a two-day programme. A 15% premium on a
+   * session, and ₱100,000–500,000 for a two-day program. A 15% premium on a
    * government rate — which is what this field used to hold — cannot reach
    * that, and priced a two-day corporate workshop at ₱41,000: roughly what one
    * session costs at the very bottom of the market, for two days of work.
@@ -772,7 +772,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     id: "corporate",
     label: "Company or corporation",
     detail: "Private firm, bank, or a commercial training provider",
-    // Benchmarked against Philippine in-house corporate training: ₱40,000–280,000 a session, ₱100,000–500,000 for a two-day programme.
+    // Benchmarked against Philippine in-house corporate training: ₱40,000–280,000 a session, ₱100,000–500,000 for a two-day program.
     rateMultiplier: 3.2,
     // 28,000 × 2.5 = ₱70,000 at the middle rung — the top of the observed
     // Philippine training-day range rather than above it.
@@ -785,8 +785,8 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   {
     id: "association",
     label: "Industry association or conference",
-    detail: "Chamber, professional body, or a conference that sells seats",
-    // Between the public and corporate rate — a chamber or a ticketed conference sells seats, but rarely on a corporate training budget.
+    detail: "Chamber, professional body, or a conference that charges registration",
+    // Between the public and corporate rate — a chamber or a paid conference collects registration fees, but rarely on a corporate training budget.
     rateMultiplier: 2.5,
     facilitationMultiplier: 1.9,
     sectorLabel: "association",
@@ -802,7 +802,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     // cooperative has a STATUTORY training budget. RA 9520 requires up to 10%
     // of net surplus to go to the cooperative education and training fund,
     // half of it spent by the co-op itself on education and training. So this
-    // is not an organisation asking to be treated as a charity — the money is
+    // is not an organization asking to be treated as a charity — the money is
     // already ring-fenced for exactly this. It sits below the association and
     // corporate rates because the surplus funding it is members' own, not
     // profit, and a co-op is answerable to those members for how it is spent.
@@ -828,7 +828,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
   {
     id: "academic",
     label: "Private school or university",
-    detail: "Faculty development, student congress, graduate programme",
+    detail: "Faculty development, student congress, graduate program",
     // Private schools and universities have a training budget, but not a corporate one.
     rateMultiplier: 1.6,
     facilitationMultiplier: 1.4,
@@ -841,7 +841,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     id: "mission",
     label: "Public school, student org or NGO",
     detail:
-      "Student orgs, NGOs and startup communities with no ticket revenue and no training budget — the concessionary rate",
+      "Student orgs, NGOs and startup communities with no registration fees collected and no training budget — the concessionary rate",
     // The public rate, before the concession below.
     rateMultiplier: 1,
     facilitationMultiplier: 1,
@@ -851,7 +851,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     // True, despite the concession. Public schools, SUCs and registered NGOs
     // are withholding agents exactly as government offices are; marking the
     // tier exempt suppressed the withholding note and left the speaker short
-    // at payout with no warning on the quote. An organiser that is not a
+    // at payout with no warning on the quote. An organizer that is not a
     // withholding agent simply pays the gross, which the note already allows for.
     withholds: true,
   },
@@ -917,7 +917,7 @@ export const ADD_ONS: AddOn[] = [
   {
     id: "recording-internal",
     label: "Recording, for internal reuse",
-    detail: "You may record the session and replay it inside your organisation indefinitely",
+    detail: "You may record the session and replay it inside your organization indefinitely",
     factor: 0.2,
   },
   {
@@ -934,14 +934,14 @@ export const ADD_ONS: AddOn[] = [
   },
   {
     id: "assessment",
-    label: "Pre-event survey and post-event report",
-    detail: "Baseline survey, scored post-test, and a written findings summary for the organiser",
+    label: "Pre-test, post-test and a written report",
+    detail: "A baseline survey before, a scored post-test after, and a written summary of the results for you",
     amount: 6_000,
   },
   {
     id: "clinic",
-    label: "Follow-up clinic",
-    detail: "A one-hour online consultation for participants, scheduled within 30 days",
+    label: "Follow-up consultation",
+    detail: "A one-hour online session for participants to ask follow-up questions, within 30 days",
     amount: 7_500,
   },
 ];

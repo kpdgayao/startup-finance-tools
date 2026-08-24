@@ -9,7 +9,7 @@
  * for recurrence rules this use case does not generate.
  *
  * PRIVACY: nothing here reads SUMMARY, DESCRIPTION, LOCATION or ATTENDEE, and
- * the return type is a set of dates. An organiser asking about a date learns
+ * the return type is a set of dates. An organizer asking about a date learns
  * "not free" and never learns why. Keep it that way — do not add a title field
  * to this module's output to make an admin view nicer.
  */
@@ -110,7 +110,7 @@ interface RawEvent {
  *
  * Cancelled events and events marked TRANSPARENT (Google's "free" availability)
  * are skipped: a tentative hold the owner marked free should not block an
- * organiser's request.
+ * organizer's request.
  */
 export function busyDatesFromICS(ics: string): Set<string> {
   return parseICS(ics) ?? new Set<string>();
@@ -122,7 +122,7 @@ export function busyDatesFromICS(ics: string): Set<string> {
  * Returns null when the document is unusable — absent, or past the size guard.
  * An empty set from an oversized feed is indistinguishable from a genuinely
  * free calendar, and `fetchBusyDates` would cache it and report `live: true`:
- * the panel then tells an organiser every date is open, over the words
+ * the panel then tells an organizer every date is open, over the words
  * "checked against the live calendar". Refusing to answer is the only safe
  * failure here.
  */
@@ -292,7 +292,7 @@ export interface CalendarResult {
    *
    * Kept separate from `live` because the two answer different questions: the
    * dates ARE the calendar's, but they may be up to a session old. Folding
-   * them into one flag made the panel tell the organiser "checked against the
+   * them into one flag made the panel tell the organizer "checked against the
    * live calendar" over a cache of unknown age.
    */
   stale: boolean;
@@ -302,7 +302,7 @@ export interface CalendarResult {
  * Fetch and cache the configured calendar feed.
  *
  * Failure is never fatal: a feed that times out or 404s degrades to the manual
- * blackout list, and the response says so. Telling an organiser a date is free
+ * blackout list, and the response says so. Telling an organizer a date is free
  * when the calendar was unreachable is a smaller error than refusing to quote.
  */
 export async function fetchBusyDates(icsUrl: string | undefined): Promise<CalendarResult> {

@@ -37,7 +37,7 @@ interface RateFactorFieldProps {
  * One question on the intake form, wrapped in its own reasoning.
  *
  * The disclosure is collapsed by default and the live impact is not: an
- * organiser scanning the form sees WHAT each answer costs immediately, and can
+ * organizer scanning the form sees WHAT each answer costs immediately, and can
  * open WHY when a number surprises them. Opening every rationale at once turns
  * the form into an essay nobody reads, which defeats the purpose.
  */

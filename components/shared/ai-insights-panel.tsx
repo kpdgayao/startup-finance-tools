@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 interface AiInsightsPanelProps {
   /**
    * Button label. Defaults to the calculator wording every other tool uses;
-   * the speaker quotation overrides it because its reader is an organiser
+   * the speaker quotation overrides it because its reader is an organizer
    * reading a quote, not a founder reading their own results.
    */
   label?: string;

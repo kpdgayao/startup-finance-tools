@@ -2,15 +2,15 @@
  * The quotation engine. Pure, deterministic, no I/O, no clock — the caller
  * passes `today` in so the same inputs always produce the same quote.
  *
- * The output is deliberately an ITEMISED list rather than a total. Every
+ * The output is deliberately an ITEMIZED list rather than a total. Every
  * factor that moved the number appears as its own line with the reason
  * attached, because the tool's job is not to name a price: it is to show an
- * organiser what they are actually buying, so the conversation starts from the
+ * organizer what they are actually buying, so the conversation starts from the
  * work rather than from their budget.
  *
  * ORDER OF OPERATIONS matters and is fixed:
  *   1. base fee: the topic's day rate × day-equivalents
- *   2. multiplicative factors (audience, schedule, notice, organiser)
+ *   2. multiplicative factors (audience, schedule, notice, organizer)
  *   3. the minimum engagement floor
  *   4. add-ons (percentages read the floored fee, flat amounts are added after)
  *   5. travel days
@@ -18,7 +18,7 @@
  *   7. the revenue-share floor, which may only ever raise the fee
  *   8. reimbursables, which sit outside the professional fee entirely
  * Reordering these changes the number. Steps 6 and 7 are last on purpose: a
- * concession should be applied to a settled fee, and the gate-share floor is a
+ * concession should be applied to a settled fee, and the revenue-share floor is a
  * floor on everything that came before it, discount included.
  */
 
@@ -107,15 +107,15 @@ export interface QuotationInput {
   region: RegionId;
   /** First engagement day, `YYYY-MM-DD`. */
   startDate: string;
-  /** Organiser books and pays for transport directly. */
+  /** Organizer books and pays for transport directly. */
   travelCovered: boolean;
-  /** Organiser books and pays for accommodation directly. */
+  /** Organizer books and pays for accommodation directly. */
   accommodationCovered: boolean;
   /** Session starts before 10am, forcing an overnight the evening before. */
   earlyStart: boolean;
   addOns: AddOnId[];
   /**
-   * The organiser needs a formal invoice, so the training firm issues it
+   * The organizer needs a formal invoice, so the training firm issues it
    * rather than the fee being billed personally.
    *
    * This does NOT change the professional fee. Issuing a proper invoice is not
@@ -126,14 +126,14 @@ export interface QuotationInput {
   /** They have booked before, so the discovery is already done. */
   returningClient: boolean;
   /**
-   * A budget the organiser already has approved, or 0 when they have not said.
+   * A budget the organizer already has approved, or 0 when they have not said.
    *
    * It does NOT enter the pricing. Nothing downstream reads it except
    * `assessBudget`, which compares it against the finished quote and works out
    * what could be CHANGED to fit — scope to the budget, do not discount to it.
    * A budget that moved the rate would make the rate card decorative: the same
-   * two days of work would cost whatever the organiser said they had, and the
-   * organiser who volunteered a real number would be the one who paid most.
+   * two days of work would cost whatever the organizer said they had, and the
+   * organizer who volunteered a real number would be the one who paid most.
    */
   budget: number;
   /** Today, `YYYY-MM-DD`. Injected rather than read from the clock. */
@@ -150,7 +150,7 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   format: "full-day",
   sessions: 1,
   complexity: "tailored",
-  facilitationScope: "organisation",
+  facilitationScope: "organization",
   preparation: "none",
   output: "none",
   audienceSize: 40,
@@ -182,7 +182,7 @@ export type LineKind = "base" | "factor" | "addon" | "discount" | "floor" | "tra
 export interface LineItem {
   id: string;
   label: string;
-  /** Why this line exists, in the organiser's language. */
+  /** Why this line exists, in the organizer's language. */
   detail: string;
   /** The multiplier, when the line is a factor. */
   factor?: number;
@@ -210,7 +210,7 @@ export interface QuotationDateNote {
 }
 
 /**
- * One thing the organiser could change to bring the quote down, with what it
+ * One thing the organizer could change to bring the quote down, with what it
  * saves and what it costs them in scope.
  *
  * Every saving here is computed by RE-PRICING the engagement with that one
@@ -219,7 +219,7 @@ export interface QuotationDateNote {
  */
 export interface BudgetLever {
   id: string;
-  /** The change, as an instruction the organiser could act on. */
+  /** The change, as an instruction the organizer could act on. */
   label: string;
   /** The date the `date` lever proposes, `YYYY-MM-DD`. Absent on every other. */
   startDate?: string;
@@ -232,7 +232,7 @@ export interface BudgetLever {
 }
 
 export interface BudgetFit {
-  /** What the organiser said they had. */
+  /** What the organizer said they had. */
   budget: number;
   /** The quoted total it is being compared against. */
   total: number;
@@ -292,22 +292,22 @@ export interface Quotation {
   /**
    * Total ÷ participants.
    *
-   * The unit an organiser can actually defend internally. A day rate is the
+   * The unit an organizer can actually defend internally. A day rate is the
    * most alarming way to state a fee — it invites "for ONE day?" — and it is
    * also the least useful, because nobody is buying a day. ₱127,700 for two
    * days reads as a lot; the same quote at ₱1,600 a head reads as less than
    * the ₱2,500–15,000 a day the same participant would cost at an open
-   * programme. Both numbers are true and the second is the one that answers
+   * program. Both numbers are true and the second is the one that answers
    * the question the reader is actually asking.
    *
    * Meaningless for facilitation, where nobody is buying seats, so the
    * surfaces that show it check the engagement type first.
    */
   perParticipant: number;
-  /** Projected gross gate, when the event is ticketed. */
-  projectedGate: number;
-  /** Fee as a share of the gate, 0 when the event is not ticketed. */
-  gateShare: number;
+  /** What the event is expected to collect in registration fees. */
+  projectedRevenue: number;
+  /** Fee as a share of those collections, 0 when nobody pays to attend. */
+  revenueShare: number;
   withholding: {
     applies: boolean;
     rate: number;
@@ -321,7 +321,7 @@ export interface Quotation {
     /** The issuing entity, or null when no formal invoice was asked for. */
     entity: string | null;
     vatRegistered: boolean;
-    /** VAT added to the organiser's total. Zero while the firm is non-VAT. */
+    /** VAT added to the organizer's total. Zero while the firm is non-VAT. */
     vat: number;
     /** Percentage tax the firm bears on gross receipts. Never invoiced. */
     percentageTax: number;
@@ -331,7 +331,7 @@ export interface Quotation {
   validUntil: string;
   holdUntil: string;
   daysOfNotice: number;
-  /** Things the organiser must decide or confirm, surfaced on the quote. */
+  /** Things the organizer must decide or confirm, surfaced on the quote. */
   flags: string[];
   customQuoteRequired: boolean;
   /** How the total sits against a stated budget. Null when none was given. */
@@ -371,7 +371,7 @@ function clampAmount(value: number, min: number, max: number): number {
 }
 
 /**
- * A short, stable reference an organiser can quote back in an email. Derived
+ * A short, stable reference an organizer can quote back in an email. Derived
  * from the inputs by FNV-1a so the same request always yields the same code —
  * a timestamp or a random suffix would make every re-render a "new" quote and
  * make the reference useless as a shared handle.
@@ -379,7 +379,7 @@ function clampAmount(value: number, min: number, max: number): number {
 function referenceFor(input: QuotationInput): string {
   // Every input that can move the total belongs in the seed. Omitting the
   // add-ons and the travel arrangements let two quotes ₱22,800 apart share a
-  // reference — and the reference is the handle the organiser quotes back in
+  // reference — and the reference is the handle the organizer quotes back in
   // an email, and the one printed on the PDF.
   const seed = [
     input.startDate,
@@ -404,7 +404,7 @@ function referenceFor(input: QuotationInput): string {
     input.invoiceRequired ? "INV" : "NOINV",
     input.returningClient ? "RETURNING" : "NEW",
     // The budget is deliberately absent: it moves nothing, so two quotes that
-    // differ only in what the organiser said they could afford are the same
+    // differ only in what the organizer said they could afford are the same
     // quote and should share a reference.
     input.organizationName ?? "",
   ].join("|");
@@ -598,7 +598,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
   for (const f of factors) {
     if (f.factor === 1) {
       // Still listed, at zero: a factor that did nothing is information too.
-      // It shows the organiser which levers they are already on the good side
+      // It shows the organizer which levers they are already on the good side
       // of, and stops the breakdown from reading as a list of surcharges.
       push({ ...f, kind: "factor", amount: 0 });
       continue;
@@ -654,7 +654,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
             // was given one.
             : `Travel time, ${region.travelDays} days`,
       // Names the flat rate, and says outright that it does not move with the
-      // engagement rate. An organiser comparing notes with a colleague in
+      // engagement rate. An organizer comparing notes with a colleague in
       // another sector should find the same figure, because it is the same
       // journey. It also says what it is NOT: the fare and the hotel are in
       // the logistics section, and billing here would be billing twice.
@@ -695,7 +695,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
             ? `The full ${MISSION_DISCOUNT * 100}% discount would fall below the ₱${MISSION_FLOOR_DAY_RATE.toLocaleString(
                 "en-PH"
               )}/day concessionary floor, so it stops there`
-            : "Public schools, student organisations, NGOs and startup community groups pay a reduced rate",
+            : "Public schools, student organizations, NGOs and startup community groups pay a reduced rate",
         amount: -applied,
       });
     }
@@ -724,29 +724,31 @@ function priceEngagement(raw: QuotationInput): Quotation {
     0,
     100_000
   );
-  const projectedGate = raw.ticketed ? participantFee * paidAttendees : 0;
-  const gateFloor = projectedGate * REVENUE_SHARE_FLOOR;
+  const projectedRevenue = raw.ticketed ? participantFee * paidAttendees : 0;
+  const revenueFloor = projectedRevenue * REVENUE_SHARE_FLOOR;
   // Captured before the uplift so the "still conservative" flag below compares
-  // the gate against the rate-card fee rather than against its own result.
-  const feeBeforeGateFloor = running;
+  // the projected revenue against the rate-card fee rather than against its own result.
+  const feeBeforeRevenueFloor = running;
 
-  if (raw.ticketed && gateFloor > running) {
-    const uncapped = gateFloor - running;
+  if (raw.ticketed && revenueFloor > running) {
+    const uncapped = revenueFloor - running;
     const cap = running * REVENUE_SHARE_UPLIFT_CAP;
     const uplift = Math.min(uncapped, cap);
     push({
       id: "revenue-share",
       kind: "floor",
-      label: `Revenue-share floor (${REVENUE_SHARE_FLOOR * 100}% of projected gate)`,
+      label: `Share of registration collections (${REVENUE_SHARE_FLOOR * 100}%)`,
       detail: `${paidAttendees.toLocaleString(
         "en-PH"
-      )} paid seats at ₱${participantFee.toLocaleString(
+      )} paying participants at ₱${participantFee.toLocaleString(
         "en-PH"
-      )} projects ₱${roundPeso(projectedGate).toLocaleString(
+      )} comes to about ₱${roundPeso(projectedRevenue).toLocaleString(
         "en-PH"
-      )} in ticket revenue. When an event sells seats on the strength of its programme, the fee is floored at ${
+      )} in registration fees. When an event collects from participants on the strength of its program, the fee is floored at ${
         REVENUE_SHARE_FLOOR * 100
-      }% of that gate${uplift < uncapped ? ", capped here at twice the rate-card fee" : ""}`,
+      }% of those collections${
+        uplift < uncapped ? ", capped here at twice the rate-card fee" : ""
+      }`,
       amount: uplift,
     });
   }
@@ -806,7 +808,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
   );
 
 
-  // Withholding is informational: it is the organiser's obligation, not a
+  // Withholding is informational: it is the organizer's obligation, not a
   // deduction the quote applies. It is shown so nobody is surprised at payout.
   //
   // The rate follows WHO issues the invoice, not who is speaking. Billed
@@ -825,18 +827,18 @@ function priceEngagement(raw: QuotationInput): Quotation {
     : 0;
 
   // Declared after the tax block because VAT, when it applies, is part of what
-  // the organiser pays.
+  // the organizer pays.
   const total = professionalFee + reimbursablesBilled + vat;
 
   // Flags ------------------------------------------------------------------
-  // Ordered by how much they change what the organiser has to DO. The first
+  // Ordered by how much they change what the organizer has to DO. The first
   // two go to whether this can be bought at all on the route they are on,
   // which outranks anything about the number.
   const flags: string[] = [];
 
   // A public body reading a rate above the honorarium ceiling needs to know
   // before it reaches their procurement unit, not after. The concession is
-  // applied to the comparison because a mission organiser is never actually
+  // applied to the comparison because a mission organizer is never actually
   // asked for the pre-concession rate.
   const payableDayRate = organizer.mission ? dayRate * (1 - MISSION_DISCOUNT) : dayRate;
   if (organizer.honorariumRules && payableDayRate > HONORARIUM_DAY_CEILING) {
@@ -853,7 +855,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
   // all. Said openly rather than left for the small co-op to discover.
   if (organizer.id === "cooperative") {
     flags.push(
-      "The cooperative rate is pitched at a co-op with staff and an education and training fund it actually spends. If you are a large cooperative bank or a federation, the corporate rate is the honest one; if you are a small primary co-op, say so in the enquiry rather than walking away — the rate card has one cooperative rate and your situation may not be it."
+      "The cooperative rate is pitched at a co-op with staff and an education and training fund it actually spends. If you are a large cooperative bank or a federation, the corporate rate is the honest one; if you are a small primary co-op, say so in your inquiry rather than walking away — the rate card has one cooperative rate and your situation may not be it."
     );
   }
 
@@ -862,14 +864,14 @@ function priceEngagement(raw: QuotationInput): Quotation {
       "International engagements need a separate travel quote — airfare, visa and per diem are not estimated here."
     );
   }
-  if (raw.ticketed && projectedGate === 0) {
+  if (raw.ticketed && projectedRevenue === 0) {
     flags.push(
-      "The event is marked as ticketed but the ticket price or seat count is still blank, so the revenue-share floor has not been applied."
+      "You said participants pay, but the registration fee or the number paying is still blank, so the share of collections has not been worked out."
     );
   }
-  if (raw.ticketed && gateFloor > feeBeforeGateFloor * (1 + REVENUE_SHARE_UPLIFT_CAP)) {
+  if (raw.ticketed && revenueFloor > feeBeforeRevenueFloor * (1 + REVENUE_SHARE_UPLIFT_CAP)) {
     flags.push(
-      "Projected ticket revenue is far above the rate-card fee. The uplift is capped, so this quote is likely still conservative."
+      "What the event collects is far above the rate-card fee. The increase is capped, so this quote is probably still on the low side."
     );
   }
   if (!raw.travelCovered || !raw.accommodationCovered) {
@@ -885,11 +887,11 @@ function priceEngagement(raw: QuotationInput): Quotation {
   // Corporates, agencies and schools cannot release payment without one, so
   // discovering it after the engagement is a delayed payment, not a surprise.
   // Keyed on the institutional tiers rather than on `withholds`: mission
-  // organisers withhold too, but a student org raising money by selling
+  // organizers withhold too, but a student org raising money by selling
   // snacks does not need a formal invoice and should not be nagged for one.
   if (!raw.invoiceRequired && !organizer.mission) {
     flags.push(
-      `No formal invoice was requested. Organisations of this kind almost always need one before finance can release payment — say so on the form and it is issued by ${INVOICING_ENTITY.name}, at no change to the fee.`
+      `No formal invoice was requested. Organizations of this kind almost always need one before finance can release payment — say so on the form and it is issued by ${INVOICING_ENTITY.name}, at no change to the fee.`
     );
   }
   if (isFacilitation && outputDays === 0) {
@@ -917,7 +919,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
   //
   // Rounding the two columns independently let them disagree: a quote whose
   // lines read +₱18,000, +₱1,400, +₱2,900, +₱9,000 summed to ₱31,300 while
-  // stating a fee of ₱31,400, on screen and in the exported PDF. An organiser
+  // stating a fee of ₱31,400, on screen and in the exported PDF. An organizer
   // checking the arithmetic finds the error before you do. Deriving one column
   // from the other makes the sum exact by construction.
   let previousTotal = 0;
@@ -948,8 +950,8 @@ function priceEngagement(raw: QuotationInput): Quotation {
     // a fifth out, on the one number a reader is most likely to multiply back
     // up and check.
     perParticipant: audienceSize > 0 ? roundToPeso(total / audienceSize) : 0,
-    projectedGate: roundPeso(projectedGate),
-    gateShare: projectedGate > 0 ? (professionalFee / projectedGate) * 100 : 0,
+    projectedRevenue: roundPeso(projectedRevenue),
+    revenueShare: projectedRevenue > 0 ? (professionalFee / projectedRevenue) * 100 : 0,
     withholding: {
       applies: organizer.withholds,
       rate: withholdingRate,
@@ -991,7 +993,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
 /**
  * The earliest start date on or after `from` whose whole run falls on plain
  * weekdays. Null when no such run exists inside the search window — which is
- * the honest answer for a five-day programme, since every five consecutive
+ * the honest answer for a five-day program, since every five consecutive
  * days include a weekend.
  */
 function plainWeekdayStart(from: string, sessions: number): string | null {
@@ -1004,7 +1006,7 @@ function plainWeekdayStart(from: string, sessions: number): string | null {
 }
 
 /**
- * A change the organiser could make, and the slot it occupies.
+ * A change the organizer could make, and the slot it occupies.
  *
  * Two levers in the same slot are alternatives, not additions — "half a day
  * instead of a full one" and "deliver it online" both rewrite the format, so
@@ -1020,12 +1022,12 @@ interface LeverSpec {
 }
 
 /**
- * Compares a finished quote against a budget the organiser already has, and
+ * Compares a finished quote against a budget the organizer already has, and
  * works out what could be CHANGED to fit inside it.
  *
  * The principle, and the reason this is not a discount calculator: scope to
  * the budget, do not discount to it. A fee that bends to whatever number the
- * organiser names teaches every future organiser to name a lower one, and it
+ * organizer names teaches every future organizer to name a lower one, and it
  * quietly makes the rate card fiction. What genuinely can move is how much
  * work is being bought — a day instead of two, online instead of in the room,
  * the write-up done in-house — and each of those is a real decision with a
@@ -1221,7 +1223,7 @@ function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
 }
 
 /**
- * Prices an engagement and, when the organiser named a budget, works out how
+ * Prices an engagement and, when the organizer named a budget, works out how
  * the total sits against it.
  */
 export function buildQuotation(raw: QuotationInput): Quotation {

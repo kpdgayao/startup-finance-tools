@@ -77,7 +77,7 @@ import { QuotationSummary } from "./components/quotation-summary";
 import { DetailSection } from "./components/detail-section";
 import { buildQuotationPrint } from "./print";
 
-const ENQUIRY_EMAIL = "hello@startupfinance.tools";
+const INQUIRY_EMAIL = "hello@startupfinance.tools";
 
 /** Today in the browser's timezone — the visitor's calendar, not the server's. */
 function today(): string {
@@ -161,19 +161,19 @@ function factorImpact(factor: number): string {
   return `${pct > 0 ? "+" : ""}${pct}%`;
 }
 
-/** The answers the organiser gives. `today` and `startDate` are derived, not stored. */
+/** The answers the organizer gives. `today` and `startDate` are derived, not stored. */
 type FormState = Omit<QuotationInput, "today" | "startDate">;
 
 export default function SpeakerQuotationPage() {
   const now = useSyncExternalStore(subscribeToNothing, today, serverToday);
 
   const [form, setForm] = useState<FormState>({ ...DEFAULT_INPUT });
-  // Null until the organiser picks a date, so the default stays relative to
+  // Null until the organizer picks a date, so the default stays relative to
   // today rather than to whenever this component first rendered.
   const [chosenDate, setChosenDate] = useState<string | null>(null);
 
   // 45 days out: far enough that the default quote carries no rush premium.
-  // The organiser should meet the standard rate first and discover the
+  // The organizer should meet the standard rate first and discover the
   // surcharges by moving the date, not the other way round.
   const startDate = chosenDate ?? (now ? addDays(now, 45) : "");
 
@@ -299,14 +299,14 @@ export default function SpeakerQuotationPage() {
   };
 
   const mailtoHref = useMemo(() => {
-    if (!quote) return `mailto:${ENQUIRY_EMAIL}`;
+    if (!quote) return `mailto:${INQUIRY_EMAIL}`;
     const type = engagementTypeFor(input.engagementType);
     const chosen = formatsFor(type.id).find((f) => f.id === input.format);
     const chosenLabel = chosen ? formatLabel(chosen, type.id) : type.label;
     const lines = [
       `Quotation reference: ${quote.reference}`,
       input.eventTitle ? `Event: ${input.eventTitle}` : null,
-      input.organizationName ? `Organisation: ${input.organizationName}` : null,
+      input.organizationName ? `Organization: ${input.organizationName}` : null,
       input.venue ? `Venue: ${input.venue}` : null,
       `Dates: ${quote.dates.map((d) => formatEngagementDate(d.date, { weekday: true })).join("; ")}`,
       `Engagement: ${type.label}`,
@@ -324,8 +324,8 @@ export default function SpeakerQuotationPage() {
       "",
     ].filter((line): line is string => line !== null);
 
-    const subject = `[Speaking] ${input.eventTitle || "Engagement enquiry"} — ${quote.reference}`;
-    return `mailto:${ENQUIRY_EMAIL}?subject=${encodeURIComponent(
+    const subject = `[Speaking] ${input.eventTitle || "Engagement inquiry"} — ${quote.reference}`;
+    return `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(lines.join("\n"))}`;
   }, [quote, input]);
@@ -464,7 +464,7 @@ export default function SpeakerQuotationPage() {
                 Both numbers are true, and this is the one the reader can take
                 to whoever holds the budget: a day rate invites "for ONE day?",
                 where a per-head figure invites a comparison with what a seat
-                at an open programme costs. Placed here rather than in the
+                at an open program costs. Placed here rather than in the
                 results because this is where the day rate first appears, and
                 so this is where it first needs the context. */}
             {perHeadLine && <p className="mt-1.5 text-xs text-muted-foreground">{perHeadLine}</p>}
@@ -763,7 +763,7 @@ export default function SpeakerQuotationPage() {
         <CardHeader>
           <CardTitle>And a little more about you</CardTitle>
           <CardDescription>
-            Whether we have met before, whether you sell seats, and what you have to work with.
+            Whether we have met before, whether participants pay, and what you have to work with.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -787,8 +787,8 @@ export default function SpeakerQuotationPage() {
           <RateFactorField
             question={QUESTIONS.ticketed}
             impact={
-              quote && quote.projectedGate > 0
-                ? `Gate ${formatPHP(quote.projectedGate)}`
+              quote && quote.projectedRevenue > 0
+                ? `Registrations ${formatPHP(quote.projectedRevenue)}`
                 : input.ticketed
                   ? "Awaiting figures"
                   : "No floor applied"
@@ -834,7 +834,7 @@ export default function SpeakerQuotationPage() {
           )}
 
           {/* Last in the card on purpose. Asking for a budget before the
-              organiser has seen a single number reads as "how much have you
+              organizer has seen a single number reads as "how much have you
               got"; asking it after the rate card has explained itself reads as
               "tell me what to build for what you have". */}
           <RateFactorField
@@ -919,7 +919,7 @@ export default function SpeakerQuotationPage() {
               </p>
             </div>
             <div className="border-t border-rule pt-4">
-              <Label htmlFor="organization">Organisation</Label>
+              <Label htmlFor="organization">Organization</Label>
               <Input
                 id="organization"
                 value={input.organizationName ?? ""}
@@ -969,7 +969,7 @@ export default function SpeakerQuotationPage() {
                       onCheckedChange={(v) => set("travelCovered", v)}
                     />
                     <span className="text-sm text-muted-foreground">
-                      {input.travelCovered ? "We arrange transport" : "Please arrange and bill us"}
+                      {input.travelCovered ? "Yes, we will shoulder it" : "No, please bill it to us"}
                     </span>
                   </div>
                 </RateFactorField>
@@ -987,8 +987,8 @@ export default function SpeakerQuotationPage() {
                     />
                     <span className="text-sm text-muted-foreground">
                       {input.accommodationCovered
-                        ? "We arrange accommodation"
-                        : "Please arrange and bill us"}
+                        ? "Yes, we will shoulder it"
+                        : "No, please bill it to us"}
                     </span>
                   </div>
                 </RateFactorField>
@@ -1082,7 +1082,7 @@ export default function SpeakerQuotationPage() {
           <Button asChild size="sm">
             <a href={mailtoHref}>
               <Send className="mr-2 h-4 w-4" />
-              Send this enquiry
+              Send this inquiry
             </a>
           </Button>
         </div>
@@ -1135,8 +1135,8 @@ export default function SpeakerQuotationPage() {
             billedLogistics: quote.reimbursablesBilled,
             coveredLogistics: quote.reimbursablesCovered,
             total: quote.total,
-            projectedGate: quote.projectedGate,
-            gateSharePercent: quote.gateShare,
+            projectedRevenue: quote.projectedRevenue,
+            revenueSharePercent: quote.revenueShare,
             addOns: input.addOns,
             invoicedBy: quote.invoicing.entity ?? "billed personally",
             // Sent so the explanation cannot contradict the budget panel

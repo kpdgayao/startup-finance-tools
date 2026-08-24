@@ -12,7 +12,7 @@ import type { BudgetFit, LineKind, Quotation } from "@/lib/speaking/quotation";
  * How a line's `factor` is written.
  *
  * A multiplier reads as "×1.15". An add-on's factor is a SHARE of the fee, not
- * a multiplier, so the same rendering turned a +20% recording licence into
+ * a multiplier, so the same rendering turned a +20% recording license into
  * "×0.20" — a number that looks like an 80% discount.
  */
 function factorLabel(factor: number, kind: LineKind): string {
@@ -21,7 +21,7 @@ function factorLabel(factor: number, kind: LineKind): string {
 }
 
 /**
- * How the quote sits against a budget the organiser already had.
+ * How the quote sits against a budget the organizer already had.
  *
  * The rule this panel exists to hold: scope to the budget, never discount to
  * it. So there is no "we can do it for less" anywhere here — every line is a
@@ -142,7 +142,7 @@ function BudgetPanel({ fit }: { fit: BudgetFit }) {
                   ) : (
                     <>
                       , still above your budget. That is worth knowing now rather than after we
-                      have both spent a week on it — send the enquiry anyway and say what you are
+                      have both spent a week on it — send the inquiry anyway and say what you are
                       working with.
                     </>
                   )}
@@ -162,7 +162,7 @@ interface QuotationSummaryProps {
 
 export function QuotationSummary({ quote }: QuotationSummaryProps) {
   // No success/warning variant on the day-rate card. It compared the quote
-  // against the speaker's own target, which is not the organiser's business and
+  // against the speaker's own target, which is not the organizer's business and
   // put a warning triangle on their quotation whenever an engagement came in
   // under it — reading, to the person about to pay, as though something were
   // wrong with the number they had been handed.
@@ -173,7 +173,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
         <ResultCard
           label="Professional fee"
           value={formatPHP(quote.professionalFee)}
-          // Naming the desk days here is the point of itemising them: a
+          // Naming the desk days here is the point of itemizing them: a
           // facilitation fee covering five days of work should not sit under a
           // label saying "2 engagement days".
           sublabel={
@@ -354,7 +354,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                       </td>
                       {/* Not struck through: a strikethrough beside a price
                           reads as a discount being given, when the point is the
-                          opposite — this is a cost the organiser is absorbing
+                          opposite — this is a cost the organizer is absorbing
                           directly, shown so they can budget for it. */}
                       <td className="py-2.5 pl-3 text-right whitespace-nowrap tabular">
                         {item.billed ? (
@@ -384,7 +384,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
       )}
 
       {/* `quote.invoicing.percentageTax` is deliberately not rendered here. It is
-          the firm's own cost on gross receipts, not anything the organiser owes,
+          the firm's own cost on gross receipts, not anything the organizer owes,
           and putting a tax the reader is not being charged onto their quote
           invites exactly the argument the itemisation exists to avoid. It stays
           on the quotation object for working out net take-home. */}
@@ -401,11 +401,11 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
               : ", with travel and accommodation arranged by you"}
             .
           </p>
-          {quote.projectedGate > 0 && (
+          {quote.projectedRevenue > 0 && (
             <p>
-              <span className="text-foreground">Share of projected gate</span>{" "}
-              {formatPercent(quote.gateShare, 1)} of {formatPHP(quote.projectedGate)} in expected
-              ticket revenue.
+              <span className="text-foreground">Share of what the event collects</span>{" "}
+              {formatPercent(quote.revenueShare, 1)} of {formatPHP(quote.projectedRevenue)} in expected
+              in registration fees.
             </p>
           )}
           {quote.invoicing.entity && (
@@ -430,7 +430,7 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                   {formatPHP(quote.withholding.net)} net. A payor that instead treats it as
                   professional fees of a juridical entity withholds 10%. Your own classification
                   governs; either way it is your obligation to remit, not a deduction from the
-                  total above.
+                  total above. Please issue the BIR Form 2307 when you pay.
                 </>
               ) : (
                 <>
@@ -439,7 +439,8 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
                   {formatPHP(quote.withholding.amount)} here, leaving{" "}
                   {formatPHP(quote.withholding.net)} net. The rate is 5% instead where a sworn
                   declaration of gross receipts under ₱3M is on file. This is your obligation to
-                  remit, not a deduction from the total above.
+                  remit, not a deduction from the total above. Please issue the BIR Form 2307 when
+                  you pay.
                 </>
               )}
             </p>

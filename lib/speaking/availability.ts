@@ -21,7 +21,7 @@ export interface DayAssessment {
   isWeekend: boolean;
   holiday?: string; // holiday name when the date is one
   status: DateStatus;
-  /** Why the status is what it is, in one line, safe to show an organiser. */
+  /** Why the status is what it is, in one line, safe to show an organizer. */
   note: string;
 }
 
@@ -114,7 +114,10 @@ export function weekdayName(iso: string): string {
 export function formatEngagementDate(iso: string, options?: { weekday?: boolean }): string {
   if (!isValidISODate(iso)) return iso;
   const date = parseISODate(iso);
-  const body = `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+  // Month first: Philippine English follows the American date order, so
+  // "April 15, 2026" is what a reader here expects on a quotation. The
+  // day-first form reads as a foreign document.
+  const body = `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   return options?.weekday ? `${WEEKDAY_NAMES[date.getDay()]}, ${body}` : body;
 }
 
@@ -184,7 +187,7 @@ export function holidayFor(iso: string): string | undefined {
  * Dates held back by hand, for when there is no calendar feed configured or
  * the commitment is not the kind that goes on a calendar. Format is a single
  * date or an inclusive range; the reason is private and never leaves the
- * server — the organiser only ever sees "not available".
+ * server — the organizer only ever sees "not available".
  */
 export interface BlackoutEntry {
   from: string;
