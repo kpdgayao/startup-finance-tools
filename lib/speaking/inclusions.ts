@@ -165,12 +165,19 @@ export function buildDeliverables(
   // 3. Materials, only where the format actually promises them. A keynote does
   //    not, and claiming it did would be the first false line on the page.
   if (format.detail.includes("materials") || format.detail.includes("exercises")) {
+    // Worded for the kind of work it is. "Worked examples" is training
+    // language and says nothing true about a planning room, where what gets
+    // handed over is the templates and whatever the room produced on them.
     included.push({
       id: "materials",
-      label: "The exercises and worked examples",
-      detail: `Everything used on the day, in a form you can reproduce for all ${quote.audienceSize.toLocaleString(
-        "en-PH"
-      )} without asking again.`,
+      label: isFacilitation
+        ? "The materials the session runs on"
+        : "The exercises and worked examples",
+      detail: isFacilitation
+        ? "The templates and worksheets used in the room, and everything your people fill in on them, handed over afterwards."
+        : `Everything used on the day, in a form you can reproduce for all ${quote.audienceSize.toLocaleString(
+            "en-PH"
+          )} without asking again.`,
     });
   }
 

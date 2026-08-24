@@ -67,6 +67,16 @@ describe("what the organizer gets", () => {
     expect(withoutPrep).not.toContain("Interview up to five of our people first");
   });
 
+  it("words the materials for the kind of work it is", () => {
+    // "Worked examples" is training language and says nothing true about a
+    // planning room, where what is handed over is the templates and whatever
+    // the room filled in on them.
+    expect(labels({ engagementType: "facilitation", format: "half-day" })).toContain(
+      "The materials the session runs on"
+    );
+    expect(labels({ format: "half-day" })).toContain("The exercises and worked examples");
+  });
+
   it("lists only the add-ons actually chosen", () => {
     const workbook = ADD_ONS.find((a) => a.id === "workbook")!;
     expect(labels({ addOns: ["workbook"] })).toContain(workbook.label);
