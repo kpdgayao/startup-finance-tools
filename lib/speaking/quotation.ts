@@ -42,7 +42,7 @@ import {
   REVENUE_SHARE_FLOOR,
   REVENUE_SHARE_UPLIFT_CAP,
   SCHEDULE_FACTORS,
-  TRAVEL_DAY_FACTOR,
+  TRAVEL_DAY_FEE,
   addOnFor,
   TEAM_BUILDING_DAY_RATE,
   audienceBandFor,
@@ -640,16 +640,28 @@ function priceEngagement(raw: QuotationInput): Quotation {
     push({
       id: "travel-days",
       kind: "travel",
+      // "Travel time", not "One travel day". A day on a quote reads as a day
+      // being sold, which invites exactly the objection this line attracts —
+      // being billed a working day before any work has happened. What is
+      // being compensated is time lost, and the label should say so.
       label:
         region.travelDays === 1
-          ? "One travel day"
-          : region.travelDays < 1
-            ? "Part of a travel day"
-            : `${region.travelDays} travel days`,
-      detail: `Getting to ${region.label} and back from Baguio is time that cannot be sold to anyone else — billed at ${
-        TRAVEL_DAY_FACTOR * 100
-      }% of the ₱${dayRate.toLocaleString("en-PH")} day rate`,
-      amount: dayRate * TRAVEL_DAY_FACTOR * region.travelDays,
+          ? "Travel time, one day"
+          : region.travelDays === 0.5
+            ? "Travel time, half a day"
+            // Keyed on the exact value rather than `< 1`, which would have
+            // called a quarter-day journey "half a day" the moment a region
+            // was given one.
+            : `Travel time, ${region.travelDays} days`,
+      // Names the flat rate, and says outright that it does not move with the
+      // engagement rate. An organiser comparing notes with a colleague in
+      // another sector should find the same figure, because it is the same
+      // journey. It also says what it is NOT: the fare and the hotel are in
+      // the logistics section, and billing here would be billing twice.
+      detail: `Getting to ${region.label} and back from Baguio is working time I cannot sell to anyone else — ₱${TRAVEL_DAY_FEE.toLocaleString(
+        "en-PH"
+      )} a travel day, the same for every client whatever their rate, because it is the same journey. The fare and the hotel are separate, in the logistics below.`,
+      amount: TRAVEL_DAY_FEE * region.travelDays,
     });
   }
 

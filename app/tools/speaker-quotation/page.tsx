@@ -37,7 +37,7 @@ import {
   ORGANIZER_TYPES,
   REGIONS,
   RETURNING_CLIENT_DISCOUNT,
-  TRAVEL_DAY_FACTOR,
+  TRAVEL_DAY_FEE,
   audienceBandFor,
   audienceProfileFor,
   engagementTypeFor,
@@ -716,8 +716,12 @@ export default function SpeakerQuotationPage() {
               isRemote
                 ? "No travel"
                 : region.travelDays > 0
-                  ? `+${formatPHP(
-                      activeDayRate * TRAVEL_DAY_FACTOR * region.travelDays
+                  ? // Read off the quote where there is one. Computing it here
+                    // instead showed ₱3,750 beside the ₱3,800 the engine
+                    // charges, since fee lines quote to the nearest ₱100.
+                    `+${formatPHP(
+                      quote?.lines.find((l) => l.kind === "travel")?.amount ??
+                        TRAVEL_DAY_FEE * region.travelDays
                     )} travel time`
                   : "No travel"
             }
