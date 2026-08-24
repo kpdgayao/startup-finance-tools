@@ -10,7 +10,7 @@ import type { Quotation, QuotationInput } from "@/lib/speaking/quotation";
  *
  * The shared print helpers interpolate their arguments into HTML unescaped.
  * Every other tool feeds them formatted numbers, so it has never mattered —
- * this one carries free text the organiser typed (event title, organisation,
+ * this one carries free text the organizer typed (event title, organization,
  * venue), which would otherwise be able to inject markup into the quote they
  * then forward as a PDF.
  */
@@ -47,7 +47,13 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
             // which one to pay.
             `${esc(NAME)}, CPA · MBA${
               quote.invoicing.entity
-                ? `<br>Invoice and official receipt issued by ${esc(quote.invoicing.entity)}`
+                ? // Invoice, not "invoice and official receipt". Since the Ease
+                  // of Paying Taxes Act (RA 11976) and RR 7-2024, the invoice
+                  // IS the primary document for a sale of services — the OR
+                  // was removed for services entirely. Naming both tells a
+                  // Philippine finance officer the quote was written by
+                  // someone working from the old rules.
+                  `<br>Invoice issued by ${esc(quote.invoicing.entity)}`
                 : "<br>Billed personally, not through a firm"
             }`,
           ],
@@ -102,7 +108,7 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
         ${summaryCard("Billed logistics", formatPHP(quote.reimbursablesBilled), {
           sublabel:
             quote.reimbursablesCovered > 0
-              ? `${formatPHP(quote.reimbursablesCovered)} arranged by the organiser`
+              ? `${formatPHP(quote.reimbursablesCovered)} arranged by the organizer`
               : undefined,
         })}
         ${summaryCard("Total", formatPHP(quote.total), { variant: "highlight" })}
@@ -169,7 +175,7 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
         ["Line", "Effect", "Running total"],
         quote.lines.map((line) => [
           // An add-on's factor is a share of the fee, not a multiplier: the
-          // shared rendering printed a +20% licence as "(×0.20)".
+          // shared rendering printed a +20% license as "(×0.20)".
           `<strong>${esc(line.label)}</strong>${
             line.factor !== undefined && line.factor !== 1
               ? line.kind === "addon"
@@ -201,7 +207,7 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
         ) +
           `<p class="note">Estimated from ${esc(
             HOME_BASE
-          )}. Items the organiser arranges directly are shown at zero; billed items are charged at actual cost with receipts.</p>`
+          )}. Items the organizer arranges directly are shown at zero; billed items are charged at actual cost with receipts.</p>`
       )
     );
   }
@@ -213,15 +219,15 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
     )} professional fee${
       quote.reimbursablesBilled > 0
         ? ` plus ${formatPHP(quote.reimbursablesBilled)} in reimbursable logistics`
-        : ", with travel and accommodation arranged by the organiser"
+        : ", with travel and accommodation arranged by the organizer"
     }.`
   );
-  if (quote.projectedGate > 0) {
+  if (quote.projectedRevenue > 0) {
     terms.push(
-      `<strong>Share of projected gate</strong> ${formatPercent(
-        quote.gateShare,
+      `<strong>Share of what the event collects</strong> ${formatPercent(
+        quote.revenueShare,
         1
-      )} of ${formatPHP(quote.projectedGate)} in expected ticket revenue.`
+      )} of ${formatPHP(quote.projectedRevenue)} in expected registration fees.`
     );
   }
   if (quote.invoicing.entity) {
@@ -243,13 +249,13 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
             0
           )} as a contractor — ${formatPHP(quote.withholding.amount)} here, leaving ${formatPHP(
             quote.withholding.net
-          )} net. A payor that instead treats it as professional fees of a juridical entity withholds 10%. Your own classification governs; either way remittance is the organiser's obligation and is not deducted from the total above.`
+          )} net. A payor that instead treats it as professional fees of a juridical entity withholds 10%. Your own classification governs; either way remittance is the organizer's obligation and is not deducted from the total above. Please issue the BIR Form 2307 when you pay.`
         : `<strong>Withholding tax</strong> professional fees paid to an individual are subject to creditable withholding of ${formatPercent(
             quote.withholding.rate * 100,
             0
           )} — ${formatPHP(quote.withholding.amount)} here, leaving ${formatPHP(
             quote.withholding.net
-          )} net. The rate is 5% where a sworn declaration of gross receipts under P3M is on file. Remittance is the organiser's obligation and is not deducted from the total above.`
+          )} net. The rate is 5% where a sworn declaration of gross receipts under ₱3M is on file. Remittance is the organizer's obligation and is not deducted from the total above. Please issue the BIR Form 2307 when you pay.`
     );
   }
   terms.push(

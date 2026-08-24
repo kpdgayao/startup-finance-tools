@@ -13,7 +13,7 @@ import type { AvailabilityReport } from "./availability";
  *
  * Neither call is a calculation: `buildQuotation` runs in the browser and the
  * numbers never leave it. This checks a date against the speaker's calendar,
- * and drafts the form from a description when the organiser asks it to.
+ * and drafts the form from a description when the organizer asks it to.
  */
 
 export interface IntakeDraft {

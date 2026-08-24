@@ -40,7 +40,7 @@ describe("printed quotation", () => {
     expect(html).not.toContain("Budget stated");
   });
 
-  it("escapes free text the organiser typed", () => {
+  it("escapes free text the organizer typed", () => {
     const input = { ...base, eventTitle: '<img src=x onerror="alert(1)">' };
     const html = buildQuotationPrint(buildQuotation(input), input);
     expect(html).not.toContain("<img");

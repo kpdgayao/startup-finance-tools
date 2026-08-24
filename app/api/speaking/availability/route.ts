@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   });
 
   // The response carries dates and statuses only. `assessDates` never sees an
-  // event title and this route must never add one — an organiser learns that a
+  // event title and this route must never add one — an organizer learns that a
   // date is taken, not what it is taken by.
   return Response.json(report, { headers });
 }

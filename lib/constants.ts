@@ -148,7 +148,7 @@ export const TOOL_GROUPS = [
   },
   {
     label: "Booking a Speaker",
-    subtitle: "For organisers costing a workshop, keynote or training day.",
+    subtitle: "For organizers costing a workshop, keynote or training day.",
     tools: ["speaker-quotation"],
   },
 ] as const;

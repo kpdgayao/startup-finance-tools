@@ -106,7 +106,7 @@ describe("action rows wrap", () => {
 });
 
 describe("the form asks a manageable number of questions up front", () => {
-  // A real organiser said the form was too long. Completion falls measurably
+  // A real organizer said the form was too long. Completion falls measurably
   // with each field a person has to consider past roughly eight, and what
   // counts is fields considered rather than screens they are spread over — so
   // the questions that do not move the number live behind one disclosure with
@@ -129,7 +129,7 @@ describe("the form asks a manageable number of questions up front", () => {
 
   // The page is read by someone deciding whether to book a person, and it is
   // that person's own rate card. An institutional register read as distancing
-  // to the organiser who reviewed it.
+  // to the organizer who reviewed it.
   it("speaks in the first person rather than about 'the speaker'", () => {
     const src = readFileSync(join(ROOT, "lib/speaking/questions.ts"), "utf8");
     const bodies = src.match(/why: "[^"]+"/g) ?? [];
@@ -149,7 +149,7 @@ describe("whole-number fields can be cleared", () => {
   // cannot be emptied: deleting the last character yields "", Number("") is 0,
   // `|| 1` makes it 1, and React re-renders the field as "1" under the user's
   // hands. On a phone, where select-all is awkward, the only way to enter 3 is
-  // to put the caret before the stubborn 1 and type — giving 13. An organiser
+  // to put the caret before the stubborn 1 and type — giving 13. An organizer
   // reported exactly that. IntegerInput holds a draft string instead.
   it("uses IntegerInput rather than a self-resetting handler", () => {
     // Catches both shapes. `|| 1` is the one that was reported — clearing the

@@ -73,7 +73,7 @@ describe("rate card integrity", () => {
 
   it("keeps the mission floor below the cheapest day rate", () => {
     // A concession that is not actually cheaper is a bug in the rate card,
-    // not a rounding detail — it would quote mission organisers the standard
+    // not a rounding detail — it would quote mission organizers the standard
     // rate while telling them they got a discount.
     expect(MISSION_FLOOR_DAY_RATE).toBeLessThan(DAY_RATE_MIN);
     expect(MISSION_FLOOR_DAY_RATE).toBe(DAY_RATE_MIN * (1 - MISSION_DISCOUNT));
@@ -118,17 +118,17 @@ describe("rate card integrity", () => {
   it("never discounts below the topic rate through a factor", () => {
     // Every multiplier is a premium or neutral. A factor below 1 would be a
     // silent discount with no line explaining it — concessions go through the
-    // mission discount, which is itemised. The topic tiers are not in this
+    // mission discount, which is itemized. The topic tiers are not in this
     // list: they set the rate rather than multiplying one.
     for (const band of AUDIENCE_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
     for (const band of LEAD_TIME_BANDS) expect(band.factor).toBeGreaterThanOrEqual(1);
-    // Organiser tiers are no longer in this list: the sector sets the day
+    // Organizer tiers are no longer in this list: the sector sets the day
     // rate rather than multiplying a settled one, so its scaling is checked
     // against the benchmarks below instead.
     for (const profile of AUDIENCE_PROFILES) expect(profile.factor).toBeGreaterThanOrEqual(1);
   });
 
-  it("gives exactly one organiser type the concessionary rate", () => {
+  it("gives exactly one organizer type the concessionary rate", () => {
     expect(ORGANIZER_TYPES.filter((o) => o.mission)).toHaveLength(1);
   });
 
@@ -257,7 +257,7 @@ describe("sector rates against the market benchmarks", () => {
   // grade they are pegged to, for delivery hours plus equal preparation hours
   // — roughly ₱18,700–21,200 a day at SG-24 to SG-25 on the 2026 table.
   // Corporate is a different market: Philippine in-house training is quoted at
-  // ₱40,000–280,000 a session and ₱100,000–500,000 for a two-day programme.
+  // ₱40,000–280,000 a session and ₱100,000–500,000 for a two-day program.
   const dayRate = (organizer: string, base: number) =>
     deriveDayRate(base, ORGANIZER_TYPES.find((o) => o.id === organizer)!.rateMultiplier);
 
@@ -352,7 +352,7 @@ describe("facilitation is scaled by its own sector multipliers", () => {
   it("prices a corporate planning day at ₱70,000 at the middle rung", () => {
     expect(
       deriveDayRate(
-        facilitationScopeFor("organisation").dayRate,
+        facilitationScopeFor("organization").dayRate,
         sectorMultiplier(organizerTypeFor("corporate"), "facilitation")
       )
     ).toBe(70_000);

@@ -106,24 +106,24 @@ export const NOTES: Record<string, MarginNoteData[]> = {
       body: "Keep personal and business accounts separate from day one. Mixing them is the most common startup accounting mistake I see — it turns tax filing into a forensic exercise and undermines your books when an investor asks for due diligence.",
     },
   ],
-  // ORGANISER-FACING. Unlike every other tool here, this page is read by
+  // ORGANIZER-FACING. Unlike every other tool here, this page is read by
   // someone receiving a quote, not by the person preparing one. Notes written
   // as advice to a speaker read, on this page, as coaching aimed at the
   // reader's own wallet — the earlier draft told them that preparation "is the
-  // part organisers never see", which is precisely the wrong sentence to put
-  // in front of an organiser. These explain the reasoning from their side.
+  // part organizers never see", which is precisely the wrong sentence to put
+  // in front of an organizer. These explain the reasoning from their side.
   "speaker-quotation": [
     {
       tone: "rule",
-      body: "The number on a quotation is mostly preparation. A session that has been taught many times is close to pure delivery, which is why it is the cheapest line on this rate card. One that has to be researched first costs days before a single slide exists — days that never appear on your programme, but which decide what the day costs.",
+      body: "The number on a quotation is mostly preparation. A session that has been taught many times is close to pure delivery, which is why it is the cheapest line on this rate card. One that has to be researched first costs days before a single slide exists — days that never appear on your program, but which decide what the day costs.",
     },
     {
       tone: "watch",
-      body: "If your event sells seats, say so on the form. It raises the fee rather than lowering it, and that is the point: an event that grosses several hundred thousand pesos at the door is buying a share of the programme's earning power, not an hour of somebody's time. Quoting it openly is faster than discovering the mismatch after you have printed the tickets.",
+      body: "If participants pay to register, say so on the form. It raises the fee rather than lowering it, and that is the point: an event that collects several hundred thousand pesos in registration fees is buying a share of what the program earns, not an hour of somebody's time. Saying it openly is faster than discovering the mismatch after the invitations have gone out.",
     },
     {
       tone: "ph",
-      body: "Arranging travel and a hotel yourself is almost always cheaper than reimbursing them. An organiser with a corporate rate pays a fraction of the walk-in price, and nobody carries the cost for a month waiting on a liquidation. The estimate stays visible on the quote either way, so you can budget for it before you commit.",
+      body: "Arranging travel and a hotel yourself is almost always cheaper than reimbursing them. An organizer with a corporate rate pays a fraction of the walk-in price, and nobody carries the cost for a month waiting on a liquidation. The estimate stays visible on the quote either way, so you can budget for it before you commit.",
     },
   ],
 };

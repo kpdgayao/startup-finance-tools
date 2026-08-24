@@ -41,7 +41,7 @@ const TODAY = "2026-01-15";
 /**
  * Quoted amounts are rounded to the nearest ₱100 by the engine — nobody
  * invoices ₱38,749.99. Expectations that multiply a fee by a factor have to
- * round the same way, or they fail on float dust rather than on behaviour.
+ * round the same way, or they fail on float dust rather than on behavior.
  */
 const toPeso = (amount: number) => Math.round(amount / 100) * 100;
 
@@ -183,7 +183,7 @@ describe("factors", () => {
 });
 
 describe("mission tier", () => {
-  it("discounts a mission organiser", () => {
+  it("discounts a mission organizer", () => {
     const standard = buildQuotation(input({ organizerType: "government" }));
     const mission = buildQuotation(input({ organizerType: "mission" }));
     expect(mission.professionalFee).toBeLessThan(standard.professionalFee);
@@ -208,7 +208,7 @@ describe("mission tier", () => {
   // Public schools, SUCs and registered NGOs are withholding agents just as
   // government offices are. Marking the tier exempt suppressed the note on the
   // quote and left the speaker short at payout with no warning.
-  it("still shows withholding for a mission organiser", () => {
+  it("still shows withholding for a mission organizer", () => {
     expect(buildQuotation(input({ organizerType: "mission" })).withholding.applies).toBe(true);
     expect(buildQuotation(input({ organizerType: "corporate" })).withholding.applies).toBe(true);
   });
@@ -224,8 +224,8 @@ describe("revenue-share floor", () => {
         expectedPaidAttendees: 80,
       })
     );
-    // ₱280,000 gate → a ₱42,000 floor against a ₱25,000 rate-card fee.
-    expect(quote.projectedGate).toBe(280_000);
+    // ₱280,000 in registrations → a ₱42,000 floor against a ₱25,000 rate-card fee.
+    expect(quote.projectedRevenue).toBe(280_000);
     expect(quote.professionalFee).toBe(toPeso(280_000 * REVENUE_SHARE_FLOOR));
     expect(quote.lines.some((l) => l.id === "revenue-share")).toBe(true);
   });
@@ -242,7 +242,7 @@ describe("revenue-share floor", () => {
     const quote = buildQuotation(
       input({ ticketed: true, participantFee: 10_000, expectedPaidAttendees: 500 })
     );
-    // A ₱5,000,000 gate would floor at ₱750,000; the cap holds it to 3×.
+    // A ₱5,000,000 in registrations would floor at ₱750,000; the cap holds it to 3×.
     expect(quote.professionalFee).toBe(ROUTINE_RATE * 3);
     expect(quote.flags.some((f) => f.includes("capped"))).toBe(true);
   });
@@ -251,14 +251,14 @@ describe("revenue-share floor", () => {
     const quote = buildQuotation(
       input({ ticketed: true, participantFee: 3_500, audienceSize: 80, expectedPaidAttendees: 0 })
     );
-    expect(quote.projectedGate).toBe(280_000);
+    expect(quote.projectedRevenue).toBe(280_000);
   });
 
   it("ignores ticket figures entirely when the event is free", () => {
     const quote = buildQuotation(
       input({ ticketed: false, participantFee: 3_500, expectedPaidAttendees: 80 })
     );
-    expect(quote.projectedGate).toBe(0);
+    expect(quote.projectedRevenue).toBe(0);
     expect(quote.professionalFee).toBe(ROUTINE_RATE);
   });
 });
@@ -304,7 +304,7 @@ describe("travel and reimbursables", () => {
     expect(quote.total).toBe(quote.professionalFee);
   });
 
-  it("bills logistics the organiser will not arrange", () => {
+  it("bills logistics the organizer will not arrange", () => {
     const quote = buildQuotation(
       input({ region: "metro-manila", travelCovered: false, accommodationCovered: false, earlyStart: true })
     );
@@ -493,7 +493,7 @@ describe("floor interactions", () => {
 describe("the breakdown reconciles", () => {
   // Rounding each line independently of its running total let the two columns
   // disagree — lines summing to ₱31,300 under a stated fee of ₱31,400, on
-  // screen and in the exported PDF. An organiser checking the arithmetic finds
+  // screen and in the exported PDF. An organizer checking the arithmetic finds
   // that before you do.
   it("sums the effect column exactly to the professional fee", () => {
     const cases: Partial<QuotationInput>[] = [
@@ -530,7 +530,7 @@ describe("the breakdown reconciles", () => {
 describe("quotation reference", () => {
   // Two quotes ₱22,800 apart shared SFT-261015-5H9RQ before the seed covered
   // the add-ons and the travel arrangements. The reference is the handle the
-  // organiser quotes back by email and the one printed on the PDF.
+  // organizer quotes back by email and the one printed on the PDF.
   it("distinguishes quotes that differ only in what is bundled", () => {
     const base = input();
     const references = new Set(
@@ -593,10 +593,10 @@ describe("invoicing", () => {
     expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
   });
 
-  it("reports percentage tax as the firm's cost, never on the organiser's total", () => {
+  it("reports percentage tax as the firm's cost, never on the organizer's total", () => {
     const quote = buildQuotation(input({ invoiceRequired: true }));
     expect(quote.invoicing.percentageTax).toBeGreaterThan(0);
-    // The organiser's total is untouched by it — it is the firm's cost.
+    // The organizer's total is untouched by it — it is the firm's cost.
     expect(quote.total).toBe(quote.professionalFee + quote.reimbursablesBilled);
   });
 
@@ -606,12 +606,12 @@ describe("invoicing", () => {
 
   // A corporate or government payor cannot release funds without one, so
   // finding out afterwards is a delayed payment rather than a surprise.
-  it("flags a withholding organiser who did not ask for an invoice", () => {
+  it("flags a withholding organizer who did not ask for an invoice", () => {
     const quote = buildQuotation(input({ organizerType: "corporate", invoiceRequired: false }));
     expect(quote.flags.some((f) => f.includes(INVOICING_ENTITY.name))).toBe(true);
   });
 
-  it("does not nag a mission organiser about it", () => {
+  it("does not nag a mission organizer about it", () => {
     const quote = buildQuotation(input({ organizerType: "mission", invoiceRequired: false }));
     expect(quote.flags.some((f) => f.includes(INVOICING_ENTITY.name))).toBe(false);
   });
@@ -685,7 +685,7 @@ describe("audience composition", () => {
 
 describe("the rate card never calls an engagement off-the-shelf", () => {
   // Every session is adapted to the room, so wording that implies a canned
-  // delivery is both untrue and bad positioning on a page a paying organiser
+  // delivery is both untrue and bad positioning on a page a paying organizer
   // reads. The cheapest tier means the SUBJECT is settled, not the delivery.
   it("avoids canned-delivery language in the tier copy and on the quote", () => {
     const forbidden = [
@@ -809,7 +809,7 @@ describe("facilitation desk days", () => {
   });
 
   // Desk work is real work, but it is not the room. Billing a day of writing
-  // at the price of a day of facilitating is a line an organiser is right to
+  // at the price of a day of facilitating is a line an organizer is right to
   // query.
   it("bills desk days below the room rate", () => {
     expect(DESK_DAY_FACTOR).toBeLessThan(1);
@@ -866,7 +866,7 @@ describe("facilitation desk days", () => {
 describe("line factors mean different things", () => {
   // A multiplier and an add-on's share of the fee are both stored in `factor`,
   // and the display layer rendered both as "×n" — printing a +20% recording
-  // licence as "×0.20", which reads as an 80% discount.
+  // license as "×0.20", which reads as an 80% discount.
   it("keeps multiplier factors at or above one, and add-on shares below it", () => {
     const quote = buildQuotation(
       input({ organizerType: "corporate", addOns: ["recording-internal", "recording-public"] })
@@ -887,7 +887,7 @@ describe("the day rate a quote reports", () => {
     // engine charged the facilitation rate — two numbers on the same page.
     for (const [engagementType, expected] of [
       ["speaking", complexityTierFor("tailored").dayRate],
-      ["facilitation", facilitationScopeFor("organisation").dayRate],
+      ["facilitation", facilitationScopeFor("organization").dayRate],
       ["team-building", TEAM_BUILDING_DAY_RATE],
     ] as const) {
       const quote = buildQuotation(
@@ -907,7 +907,7 @@ describe("travel time is priced as time, not as a share of the client's rate", (
   it("charges the same journey the same, whoever booked it", () => {
     // The defect this replaced: half of the CLIENT'S day rate made the
     // identical bus ride to Manila cost a company ₱29,000 and a government
-    // agency ₱7,500. There is no answer to an organiser who asks why their
+    // agency ₱7,500. There is no answer to an organizer who asks why their
     // travel is worth more than someone else's.
     for (const organizerType of [
       "government",
@@ -940,7 +940,7 @@ describe("travel time is priced as time, not as a share of the client's rate", (
   it("never lets travel time dominate a one-day corporate fee", () => {
     // It was a third of the whole professional fee on a single-day corporate
     // booking — the most objectionable thing on the quote, and the first thing
-    // an organiser sees charged before any work has been done.
+    // an organizer sees charged before any work has been done.
     const quote = buildQuotation(
       input({ organizerType: "corporate", region: "metro-manila", complexity: "routine" })
     );
@@ -974,7 +974,7 @@ describe("returning clients", () => {
     expect(first.lines.some((l) => l.id === "returning-client")).toBe(false);
   });
 
-  it("recognises a returning client with a modest reduction", () => {
+  it("recognizes a returning client with a modest reduction", () => {
     const first = buildQuotation(input({ returningClient: false }));
     const again = buildQuotation(input({ returningClient: true }));
     expect(again.professionalFee).toBe(
@@ -1037,7 +1037,7 @@ describe("tax figures are exact", () => {
     expect(quote.withholding.net).toBe(quote.professionalFee - quote.withholding.amount);
   });
 
-  it("holds across every organiser tier", () => {
+  it("holds across every organizer tier", () => {
     for (const organizerType of [
       "corporate",
       "association",
@@ -1065,7 +1065,7 @@ describe("expected paid seats keeps zero as its default", () => {
     const quote = buildQuotation(
       input({ ticketed: true, participantFee: 1_000, audienceSize: 60, expectedPaidAttendees: 0 })
     );
-    expect(quote.projectedGate).toBe(60_000);
+    expect(quote.projectedRevenue).toBe(60_000);
   });
 });
 
@@ -1078,7 +1078,7 @@ describe("sector rates", () => {
     const quote = buildQuotation(
       input({
         engagementType: "facilitation",
-        facilitationScope: "organisation",
+        facilitationScope: "organization",
         organizerType: "corporate",
         format: "full-day",
       })
@@ -1106,7 +1106,7 @@ describe("sector rates", () => {
 
   it("charges a cooperative the standard rate, not the concessionary one", () => {
     // A co-op has a statutory education and training fund, so it is not a
-    // mission organiser — marking it one would have quietly discounted every
+    // mission organizer — marking it one would have quietly discounted every
     // cooperative enquiry by a further 20%.
     const quote = buildQuotation(input({ organizerType: "cooperative" }));
     expect(quote.lines.some((l) => l.id === "mission-discount")).toBe(false);
@@ -1204,7 +1204,7 @@ describe("the honorarium ceiling", () => {
   const ceilingFlag = (quote: ReturnType<typeof buildQuotation>) =>
     quote.flags.find((f) => f.includes("honorarium"));
 
-  it("warns a government organiser quoted above it", () => {
+  it("warns a government organizer quoted above it", () => {
     const quote = buildQuotation(input({ organizerType: "government", complexity: "frontier" }));
     expect(quote.dayRate).toBe(FRONTIER_RATE);
     expect(ceilingFlag(quote)).toContain("procured as a service or consultancy contract");
@@ -1221,14 +1221,14 @@ describe("the honorarium ceiling", () => {
     expect(ceilingFlag(quote)).toBeDefined();
   });
 
-  it("compares the concessionary rate for a mission organiser, not the list one", () => {
+  it("compares the concessionary rate for a mission organizer, not the list one", () => {
     // ₱24,000 less the 20% concession is ₱19,200, under the ceiling. Comparing
     // the pre-concession rate would warn about a price never being asked for.
     const quote = buildQuotation(input({ organizerType: "mission", complexity: "frontier" }));
     expect(ceilingFlag(quote)).toBeUndefined();
   });
 
-  it("says nothing to an organiser the circular does not govern", () => {
+  it("says nothing to an organizer the circular does not govern", () => {
     for (const organizerType of ["corporate", "association", "cooperative", "academic"] as const) {
       const quote = buildQuotation(input({ organizerType, complexity: "frontier" }));
       expect(ceilingFlag(quote), organizerType).toBeUndefined();
@@ -1261,9 +1261,9 @@ describe("budget", () => {
     expect(buildQuotation(input({ budget: Number.NaN })).budgetFit).toBeNull();
   });
 
-  it("never moves the fee, whatever the organiser says they have", () => {
+  it("never moves the fee, whatever the organizer says they have", () => {
     // The whole point. A fee that bends to a stated budget makes the rate card
-    // fiction and punishes the organiser who answered honestly.
+    // fiction and punishes the organizer who answered honestly.
     const base = buildQuotation(input());
     for (const budget of [1, 5_000, 50_000, 5_000_000]) {
       const quoted = buildQuotation(input({ budget }));

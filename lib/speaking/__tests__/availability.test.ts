@@ -5,6 +5,7 @@ import {
   assessDates,
   daysBetween,
   engagementDates,
+  formatEngagementDate,
   holidayFor,
   isValidISODate,
   isWeekend,
@@ -338,7 +339,7 @@ describe("manually held dates", () => {
 describe("an unreadable calendar is not an empty one", () => {
   // The dangerous failure: a feed past the size or event guard yielded an empty
   // busy set, which fetchBusyDates cached and reported as a live read. The
-  // panel then told an organiser every date was open, under the words "checked
+  // panel then told an organizer every date was open, under the words "checked
   // against the live calendar". Declining to answer is the only safe failure.
   it("returns null rather than an empty set for an oversized feed", () => {
     const huge = `BEGIN:VCALENDAR\r\nX-PAD:${"a".repeat(1_100_000)}\r\nEND:VCALENDAR`;
@@ -425,5 +426,20 @@ describe("long calendar blocks", () => {
       )
     );
     expect(busy.size).toBeLessThanOrEqual(367);
+  });
+});
+
+
+describe("dates are written the way they are written here", () => {
+  // Philippine English follows the American date order. "15 April 2026" reads
+  // as a foreign document to the person being asked to approve a quotation.
+  it("puts the month first", () => {
+    expect(formatEngagementDate("2026-04-15")).toBe("April 15, 2026");
+  });
+
+  it("keeps the weekday in front when asked for one", () => {
+    expect(formatEngagementDate("2026-04-15", { weekday: true })).toBe(
+      "Wednesday, April 15, 2026"
+    );
   });
 });

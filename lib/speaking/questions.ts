@@ -4,7 +4,7 @@
  * Every question on the intake form carries two pieces of copy: why the
  * question is being asked at all, and what answering it does to the number.
  * They live here rather than inline in the form because they ARE the product —
- * an organiser who can see why a Saturday costs more than a Tuesday negotiates
+ * an organizer who can see why a Saturday costs more than a Tuesday negotiates
  * about the work instead of about the total.
  *
  * Rules for writing these:
@@ -66,7 +66,7 @@ export const QUESTIONS = {
     id: "facilitationScope",
     label: "Whose plan is being made?",
     hint: "How many sets of interests have to agree by the end of the day.",
-    why: "What makes a planning room hard for me to run is not the subject, it is the number of principals in it. One department with a clear remit reaches a decision on its own; a cooperative with several member groups, or a board with competing interests, has to be brought to one. That is the work you are buying, not my slides.",
+    why: "What makes a planning room hard for me to run is not the subject, it is how many people have to agree by the end of it. One department with a clear mandate decides on its own; a cooperative with several member groups, or a board with competing interests, has to be brought to one. That is the work you are buying, not my slides.",
     impact: `From ${peso(
       FACILITATION_SCOPES[0].dayRate
     )} a day for a single team at public-sector rates, up to ${peso(
@@ -88,7 +88,7 @@ export const QUESTIONS = {
   output: {
     id: "output",
     label: "What should exist afterwards?",
-    hint: "Beyond the flipcharts and photographs.",
+    hint: "Beyond the manila paper and the photos of it.",
     why: "Writing a plan up properly takes me days, and it is the piece of work most often absorbed for free: the room agrees, everyone leaves, and somebody is expected to produce the document. Groups who mean to write it up themselves very often do not, and the session quietly stops mattering about a month later.",
     impact: `Charged as days of work at ${
       DESK_DAY_FACTOR * 100
@@ -98,7 +98,7 @@ export const QUESTIONS = {
     id: "format",
     label: "What kind of session is it?",
     hint: "A keynote and a full-day workshop are different pieces of work.",
-    why: "The hours on stage are the smaller half. A 90-minute keynote still costs me most of a working day once the deck, the rehearsal and the travel window are in — which is why I price the shortest formats at half a day rather than by the hour.",
+    why: "The hours on stage are the smaller half. A 90-minute keynote still costs me most of a working day once the slides, the run-through and the travel window are in — which is why I price the shortest formats at half a day rather than by the hour.",
     impact: `Sets the base fee as a share of your day rate — from 0.4 of a day for a panel to a full day for a workshop. That rate runs ${peso(
       DAY_RATE_MIN
     )} to ${peso(
@@ -111,7 +111,7 @@ export const QUESTIONS = {
     id: "sessions",
     label: "How many days or sessions?",
     hint: "I will assume they are consecutive — tell me if they are spread out.",
-    why: "Multi-day programmes are the ones I see underpriced most often. Two days of workshop is two days of delivery plus the preparation behind them, and with travel it takes most of my week.",
+    why: "Multi-day programs are the ones I see underpriced most often. Two days of workshop is two days of delivery plus the preparation behind them, and with travel it takes most of my week.",
     impact: `Multiplies the base fee directly. Two full days on a settled subject is ${peso(
       DAY_RATE_MIN * 2
     )} at public-sector rates and ${peso(
@@ -133,7 +133,7 @@ export const QUESTIONS = {
     id: "audienceSize",
     label: "How many participants do you expect?",
     hint: "Your best estimate of people in the room.",
-    why: "Room size changes the work, not just the audience. Past about 30 people the exercises need more hands, the materials multiply, and anything I have promised to mark or write up afterwards becomes a real evening's work.",
+    why: "Room size changes the work, not just the audience. Past about 30 people the exercises need more hands, the materials multiply, and anything I have promised to check or write up afterwards becomes a real evening's work.",
     impact: `No change up to ${AUDIENCE_BANDS[0].max} participants, rising to +${pct(
       AUDIENCE_BANDS[AUDIENCE_BANDS.length - 1].factor
     )} for a hall of over ${AUDIENCE_BANDS[AUDIENCE_BANDS.length - 2].max}.`,
@@ -142,47 +142,47 @@ export const QUESTIONS = {
     id: "audienceProfile",
     label: "Who will be in the room?",
     hint: "Their background, not their number — that is the question above.",
-    why: "This is the question I most want answered, price aside. Teaching cash flow to the people who prepare the statements is a different job from teaching the people who only ever read them — one has to survive real scrutiny, the other needs translation and good analogies, and a room with both in it I have to pitch twice. Getting it wrong is the commonest way a well-priced session still disappoints everyone.",
+    why: "This is the question I most want answered, price aside. Teaching cash flow to the people who prepare the statements is a different job from teaching the people who only ever read them — one has to survive real scrutiny, the other needs translation and good analogies, and a room with both in it I have to pitch twice. Getting it wrong is the most common way a well-priced session still disappoints everyone.",
     impact:
       "No change for students, or for staff and managers without a finance background. +10% for a room of practitioners or a mixed one, +15% for owners, executives and board members, where the material is distilled and usually briefed with the sponsor beforehand.",
   },
   organizerType: {
     id: "organizerType",
-    label: "Who is organising the event?",
+    label: "Who is organizing the event?",
     hint: "This decides which rate applies. It is the biggest single factor on the price.",
-    why: "This sets the rate, and it is the honest reason my quotes differ. A government agency cannot pay more than its own rules allow — the circular caps a resource person at about \u20b121,000 a day whatever I ask — so that is what public work pays. A corporate training budget is a different market entirely, and a cooperative is a third thing again: the law already sets aside part of its surplus for members' education and training, so the money is there but it is the members' own. Pricing all of them the same would mean either overcharging schools or underwriting companies out of my own time. Saying which you are gets you your sector's rate rather than an average of everyone's.",
-    impact: `Sets which day rate applies. Government and public-sector work is quoted at the public rate; private schools, cooperatives, associations and companies each have their own, shown the moment you choose. Public schools, student organisations and NGOs get a further −${
+    why: "This sets the rate, and it is the honest reason my quotes differ. A government agency cannot pay more than its own rules allow — the circular caps a resource person at about \u20b121,000 a day whatever I ask — so that is what public work pays. A corporate training budget is a different market entirely, and a cooperative is a third thing again: the law already sets aside part of its surplus for members' education and training, so the money is there but it is the members' own. Pricing all of them the same would mean either overcharging schools or subsidizing companies out of my own time. Saying which you are gets you your sector's rate rather than an average of everyone's.",
+    impact: `Sets which day rate applies. Government and public-sector work is quoted at the public rate; private schools, cooperatives, associations and companies each have their own, shown the moment you choose. Public schools, student organizations and NGOs get a further −${
       MISSION_DISCOUNT * 100
     }%, floored at ${peso(MISSION_FLOOR_DAY_RATE)} per day.`,
   },
   ticketed: {
     id: "ticketed",
     label: "Do participants pay to attend?",
-    hint: "Registration fee, ticket price, or a per-seat charge to their employer.",
-    why: "If you are selling seats on the strength of the programme, the programme is part of the product. This is the question that catches the case where an event takes several hundred thousand pesos at the door and offers the speaker a five-figure honorarium out of it — and I would rather raise it now than resent it later.",
-    impact: `When the event is ticketed, the fee is floored at ${
+    hint: "A registration fee they pay themselves, or one their company pays for them.",
+    why: "If people are paying to register on the strength of the program, then the program is part of what you are selling. This is the question that catches the case where an event collects several hundred thousand pesos in registration fees and offers the resource speaker ₱10,000 out of it — and I would rather raise it now than be quiet about it and resent it later.",
+    impact: `When participants pay, the fee is floored at ${
       REVENUE_SHARE_FLOOR * 100
-    }% of projected gross ticket revenue. It can raise the quote; it never lowers it.`,
+    }% of what the event collects. It can raise the quote; it never lowers it.`,
   },
   participantFee: {
     id: "participantFee",
-    label: "Ticket price per participant",
-    hint: "What one seat costs.",
-    why: "Ticket price times expected paid seats is your projected gate. It is the only figure that shows whether the fee we are discussing is a fair share of what the event earns.",
-    impact: `Feeds the ${REVENUE_SHARE_FLOOR * 100}% revenue-share floor.`,
+    label: "Registration fee per participant",
+    hint: "What one participant pays to join.",
+    why: "The registration fee times the number who actually pay is what the event collects. It is the only figure that shows whether the fee we are discussing is a fair share of that.",
+    impact: `Feeds the ${REVENUE_SHARE_FLOOR * 100}% share of collections below.`,
   },
   expectedPaidAttendees: {
     id: "expectedPaidAttendees",
-    label: "Expected paid seats",
+    label: "How many will actually pay?",
     hint: "Leave at zero to use the participant count above.",
-    why: "Paid seats are usually fewer than people in the room — sponsors, staff, scholars and speakers rarely pay. I calculate the floor on the seats that actually bring money in.",
-    impact: `Multiplied by the ticket price to set the projected gate.`,
+    why: "Fewer people pay than attend — sponsors, your own staff, scholars and the other speakers usually come in free. I work the floor out from the ones who actually pay, not from the headcount.",
+    impact: `Multiplied by the registration fee to work out what the event collects.`,
   },
   startDate: {
     id: "startDate",
     label: "First day of the engagement",
     hint: "I will check this against my calendar in a moment.",
-    why: "The date does two jobs: it tells me whether I am free at all, and it tells us both how much notice this gives me. Better answered before either of us spends more time on the enquiry.",
+    why: "The date does two jobs: it tells me whether I am free at all, and it tells us both how much notice this gives me. Better answered before either of us spends more time on the inquiry.",
     impact: `Weekends add ${pct(SCHEDULE_FACTORS.weekend.factor)}, Philippine holidays ${pct(
       SCHEDULE_FACTORS.holiday.factor
     )}. Under 30 days' notice adds ${pct(
@@ -201,20 +201,20 @@ export const QUESTIONS = {
   earlyStart: {
     id: "earlyStart",
     label: "Does the session start before 10am?",
-    hint: "Registration time, not the programme's stated start.",
+    hint: "Registration time, not the program's stated start.",
     why: "An early start makes same-day travel from Baguio impossible, which turns a day trip into an overnight. It is one hotel night either way — better settled now than the week before.",
     impact: "Adds one accommodation night to the logistics estimate.",
   },
   travelCovered: {
     id: "travelCovered",
-    label: "Will you arrange and pay for transport?",
+    label: "Will you shoulder the transportation?",
     hint: "Booked by you directly, not reimbursed afterwards.",
     why: "You will almost certainly get a better rate than a reimbursement claim will, and booking it yourself means neither of us carries the cost for a month waiting on a liquidation. If that is awkward, it simply becomes a visible line instead of an invisible one.",
     impact: "Covered: shown at zero, with the estimate visible so you can budget it. Not covered: added to the invoice as a reimbursable at actual cost.",
   },
   accommodationCovered: {
     id: "accommodationCovered",
-    label: "Will you arrange and pay for accommodation?",
+    label: "Will you shoulder the accommodation?",
     hint: "Only asked when the engagement needs an overnight.",
     why: "Same as transport, and usually the bigger number. If you already have a hotel you use, you will pay a fraction of what I would walking in.",
     impact: "Covered: shown at zero. Not covered: added as a reimbursable at the nightly estimate.",
@@ -232,7 +232,7 @@ export const QUESTIONS = {
     id: "invoiceRequired",
     label: "Do you need a formal invoice?",
     hint: "Most companies, agencies and schools do, to release payment.",
-    why: "Your finance department cannot release funds against an email. Asking now means the paperwork is ready when the engagement is, instead of my fee sitting unpaid for a month afterwards. It also decides who bills you, which changes the tax you withhold — not what you pay.",
+    why: "Your accounting cannot release payment against an email. Asking now means the paperwork is ready when the engagement is, instead of my fee sitting unliquidated for a month afterwards. It also decides who bills you, which changes the tax you withhold — not what you pay. Since the Ease of Paying Taxes Act, an invoice is the document for a sale of services — the old receipt for services is no longer the one BIR asks for.",
     impact: `No change to the fee. An invoice is issued by ${
       INVOICING_ENTITY.name
     }, and withholding follows the firm's rate of ${
@@ -243,7 +243,7 @@ export const QUESTIONS = {
     id: "budget",
     label: "Do you already have a budget set for this?",
     hint: "Optional. The amount approved on your side — it does not change my rate.",
-    why: "Most organisers who ask me this have a number already, and hold it back in case naming it costs them something. It does not: the rate comes off a published card either way, and you can see every line of it above. What knowing it changes is what I propose for the money — whether that is a day instead of two, the write-up done in-house, or a session online. I would much rather shape the engagement around a real figure now than have us both find out at the end that it was never going to work.",
+    why: "Most organizers who ask me this have a number already, and hold it back in case naming it costs them something. It does not: the rate comes off a published card either way, and you can see every line of it above. What knowing it changes is what I propose for the money — whether that is a day instead of two, the write-up done in-house, or a session online. I would much rather shape the engagement around a real figure now than have us both find out at the end that it was never going to work.",
     impact:
       "Nothing at all to the fee. If the quote lands above your figure, you get a list of what you could change to bring it down, with the saving beside each one and the total it would leave you at.",
   },
@@ -251,7 +251,7 @@ export const QUESTIONS = {
     id: "addOns",
     label: "Anything beyond the session itself?",
     hint: "Optional. Each one is priced separately.",
-    why: "These are the things most often assumed to be included and then asked for on the day. I would rather price them now so you can take them or leave them, than have them quietly absorbed.",
+    why: "These are the things most often assumed to be included and then asked for on the day itself. I would rather price them now so you can take them or leave them, than have them quietly absorbed.",
     impact: "Percentage add-ons apply to the professional fee; the rest are flat amounts.",
   },
 } as const satisfies Record<string, RateQuestion>;

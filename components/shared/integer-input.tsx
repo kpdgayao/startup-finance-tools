@@ -26,7 +26,7 @@ interface IntegerInputProps {
  * `Number("")` is 0, `|| 1` turns it into 1, and React immediately re-renders
  * the field as "1". On a phone — where select-all is awkward — the only way to
  * enter 3 is to put the caret before the stubborn 1 and type, giving "13". An
- * organiser reported exactly that.
+ * organizer reported exactly that.
  *
  * The fix is to let the field hold a DRAFT string, the empty one included,
  * while it is being edited, and settle it on blur. The bound value stays a

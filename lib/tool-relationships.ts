@@ -87,12 +87,12 @@ export const TOOL_RELATIONSHIPS: Record<ToolId, RelatedTool[]> = {
     { toolId: "financial-model-builder", reason: "Compare with the startup-flavored 3-year model" },
     { toolId: "compliance-checklist", reason: "Make sure your registration and BIR setup is complete" },
   ],
-  // Written for an EVENT ORGANISER, who is the reader of this page — not for a
+  // Written for an EVENT ORGANIZER, who is the reader of this page — not for a
   // founder pricing their own time. "Work out what a day of your time has to
   // earn" is advice to the person being booked, and made no sense to the
   // person doing the booking.
   "speaker-quotation": [
-    { toolId: "break-even", reason: "How many seats your event needs to sell to cover the programme" },
+    { toolId: "break-even", reason: "How many seats your event needs to sell to cover the program" },
     { toolId: "pricing-calculator", reason: "Setting a registration fee that covers costs without emptying the room" },
     { toolId: "startup-costs", reason: "Budget the whole event, not just the speaker line" },
   ],

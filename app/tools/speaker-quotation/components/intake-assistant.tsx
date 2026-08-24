@@ -26,7 +26,7 @@ interface IntakeAssistantProps {
  * filled in for you.
  *
  * The draft is never applied silently. Every inferred field comes back with an
- * assumption line, and the organiser presses "Use these answers" to accept
+ * assumption line, and the organizer presses "Use these answers" to accept
  * them — a quotation built on a misread sentence is worse than an empty form,
  * because it looks authoritative.
  */
