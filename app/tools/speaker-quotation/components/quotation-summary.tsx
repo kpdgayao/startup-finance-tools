@@ -1,12 +1,13 @@
 "use client";
 
-import { AlertTriangle, Minus, Plus } from "lucide-react";
+import { AlertTriangle, Check, Minus, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResultCard } from "@/components/shared/result-card";
 import { cn, formatPHP, formatPercent } from "@/lib/utils";
 import { formatEngagementDate } from "@/lib/speaking/availability";
 import { HOME_BASE } from "@/lib/speaking/rate-card";
 import type { BudgetFit, LineKind, Quotation } from "@/lib/speaking/quotation";
+import type { Deliverables } from "@/lib/speaking/inclusions";
 
 /**
  * How a line's `factor` is written.
@@ -156,6 +157,113 @@ function BudgetPanel({ fit }: { fit: BudgetFit }) {
   );
 }
 
+/**
+ * What the organizer gets — placed above the arithmetic, not below it.
+ *
+ * Order is the whole point. This document spent its life opening with an
+ * itemized justification of a price, which is a strange thing to hand
+ * somebody: it argues the number without ever describing the thing, so a
+ * reader with nothing else to go on concludes the only available thing, that
+ * it is expensive. The breakdown is still there and still checkable. It just
+ * no longer speaks first.
+ *
+ * Nothing here is a claim. Every line is read off a choice already on the rate
+ * card, and the comparison is against the CHEAPEST open-course seat, so it
+ * survives a reader who goes looking.
+ */
+function DeliverablesPanel({
+  deliverables,
+  participants,
+}: {
+  deliverables: Deliverables;
+  participants: number;
+}) {
+  const { included, excluded, comparison } = deliverables;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">What this includes</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <ul className="space-y-2.5">
+          {included.map((item) => (
+            <li key={item.id} className="flex gap-2.5">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-good" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {comparison && (
+          /* The comparison an organizer is making anyway, whether or not the
+             quote helps them make it: for this money, could I just send these
+             people on a course? Answered in both directions — below the
+             break-even head count it says plainly that sending them is
+             cheaper, which is the only reason the other direction is worth
+             believing. */
+          <div className="border-l-[2px] border-ochre pl-[15px] font-serif text-[15px] leading-[1.55] text-ink-2">
+            {comparison.cheaperThanSendingThem ? (
+              <p>
+                That works out at{" "}
+                <span className="font-sans font-medium tabular">
+                  {formatPHP(comparison.perParticipantPerDay)}
+                </span>{" "}
+                per participant per day. Sending the same{" "}
+                <span className="font-sans tabular">
+                  {participants.toLocaleString("en-PH")}
+                </span>{" "}
+                people to an open-enrollment course costs{" "}
+                <span className="font-sans tabular">{formatPHP(comparison.publicMin)}</span> to{" "}
+                <span className="font-sans tabular">{formatPHP(comparison.publicMax)}</span> each
+                per day — at least{" "}
+                <span className="font-sans font-medium tabular">
+                  {formatPHP(comparison.costOfSendingThem)}
+                </span>{" "}
+                — for a course built for nobody in particular, with your people out of the office
+                and travelling to it.
+              </p>
+            ) : (
+              <p>
+                That works out at{" "}
+                <span className="font-sans font-medium tabular">
+                  {formatPHP(comparison.perParticipantPerDay)}
+                </span>{" "}
+                per participant per day, against{" "}
+                <span className="font-sans tabular">{formatPHP(comparison.publicMin)}</span>–
+                <span className="font-sans tabular">{formatPHP(comparison.publicMax)}</span> for an
+                open-enrollment seat. For a group this size you would honestly do better sending
+                them on a public course. In-house starts paying from about{" "}
+                <span className="font-sans font-medium tabular">
+                  {comparison.breakEvenParticipants}
+                </span>{" "}
+                participants — worth knowing before you decide either way.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="border-t border-rule pt-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            Not included
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {excluded.map((item, i) => (
+              <li key={i} className="flex gap-2.5 text-xs text-muted-foreground">
+                <Minus className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface QuotationSummaryProps {
   quote: Quotation;
 }
@@ -241,6 +349,13 @@ export function QuotationSummary({ quote }: QuotationSummaryProps) {
             ))}
           </ul>
         </div>
+      )}
+
+      {quote.deliverables && (
+        <DeliverablesPanel
+          deliverables={quote.deliverables}
+          participants={quote.audienceSize}
+        />
       )}
 
       <Card>

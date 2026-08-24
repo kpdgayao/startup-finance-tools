@@ -68,6 +68,7 @@ import {
   type ScheduleFactorId,
 } from "./rate-card";
 import { complexityTierFor } from "./rate-card";
+import { buildDeliverables, type Deliverables } from "./inclusions";
 import {
   addDays,
   daysBetween,
@@ -336,6 +337,15 @@ export interface Quotation {
   customQuoteRequired: boolean;
   /** How the total sits against a stated budget. Null when none was given. */
   budgetFit: BudgetFit | null;
+  /**
+   * What the organizer gets, what they do not, and what the same training
+   * costs bought a seat at a time.
+   *
+   * Filled in by buildQuotation for the same reason budgetFit is: it needs a
+   * priced quote to describe. Everything in it is read off choices already on
+   * the rate card — see lib/speaking/inclusions.ts.
+   */
+  deliverables: Deliverables | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -983,6 +993,7 @@ function priceEngagement(raw: QuotationInput): Quotation {
     customQuoteRequired: Boolean(region.custom),
     // Filled in by buildQuotation, which needs this finished quote first.
     budgetFit: null,
+    deliverables: null,
   };
 }
 
@@ -1228,7 +1239,16 @@ function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
  */
 export function buildQuotation(raw: QuotationInput): Quotation {
   const quote = priceEngagement(raw);
-  return { ...quote, budgetFit: assessBudget(raw, quote) };
+  return {
+    ...quote,
+    budgetFit: assessBudget(raw, quote),
+    deliverables: buildDeliverables(raw, quote, (audienceSize) =>
+      // Re-prices the same engagement at a different head count, so the
+      // break-even is measured against the fee that size would actually be
+      // quoted rather than against this one.
+      priceEngagement({ ...raw, audienceSize }).total
+    ),
+  };
 }
 
 /** Every add-on id, for validating client input. */

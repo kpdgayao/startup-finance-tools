@@ -1139,6 +1139,29 @@ export default function SpeakerQuotationPage() {
             revenueSharePercent: quote.revenueShare,
             addOns: input.addOns,
             invoicedBy: quote.invoicing.entity ?? "billed personally",
+            // What the organizer GETS, read off the rate card. Sent so the
+            // explanation can describe the engagement rather than only defend
+            // its price — and so it cannot invent an inclusion of its own.
+            ...(quote.deliverables
+              ? {
+                  includes: quote.deliverables.included.map(
+                    (item) => `${item.label} — ${item.detail}`
+                  ),
+                  notIncluded: quote.deliverables.excluded,
+                  ...(quote.deliverables.comparison
+                    ? {
+                        perParticipantPerDay: quote.deliverables.comparison.perParticipantPerDay,
+                        openCourseSeatPerDay: `${formatPHP(
+                          quote.deliverables.comparison.publicMin
+                        )}–${formatPHP(quote.deliverables.comparison.publicMax)}`,
+                        cheaperThanSendingThemOnACourse:
+                          quote.deliverables.comparison.cheaperThanSendingThem,
+                        inHousePaysFromParticipants:
+                          quote.deliverables.comparison.breakEvenParticipants,
+                      }
+                    : {}),
+                }
+              : {}),
             // Sent so the explanation cannot contradict the budget panel
             // sitting directly above it — the levers are the engine's, priced
             // by re-quoting each change, and the model is told to use these
