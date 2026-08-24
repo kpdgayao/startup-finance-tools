@@ -106,6 +106,23 @@ describe("base fee", () => {
     expect(quote.lines[0].amount).toBe(ROUTINE_RATE * 3);
   });
 
+  it("stops at the mission floor rather than stacking on top of it", () => {
+    // Tempting to taper the floor as well so the concession reaches this tier
+    // too. It should not: the floor is where concessions STOP, which is the
+    // whole point of having one, and the mission tier already carries a 20%
+    // reduction. Tapering the floor as well pushed a three-day booking to
+    // ₱11,200 a day against a card that promises ₱12,000, and broke the
+    // invariant that has guarded this since the concession existed.
+    const quote = buildQuotation(
+      input({ organizerType: "mission", format: "full-day", sessions: 3 })
+    );
+    expect(quote.effectiveDayRate).toBeGreaterThanOrEqual(MISSION_FLOOR_DAY_RATE);
+    // The mission line says so itself rather than leaving it to be noticed.
+    expect(quote.lines.find((l) => l.id === "mission-discount")?.detail).toContain(
+      "concessionary floor"
+    );
+  });
+
   it("leaves a single-day engagement untouched", () => {
     expect(
       buildQuotation(input({ sessions: 1 })).lines.some((l) => l.id === "multi-day")

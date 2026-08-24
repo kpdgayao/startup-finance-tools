@@ -379,6 +379,15 @@ A discount applied to a booking that was going to happen anyway is a gift; one
 that moves the choice is an investment. Every line in that table is the second
 kind.
 
+**Concessions stop at the floor, and the taper is not an exception.** It is
+tempting to taper `MISSION_FLOOR_DAY_RATE` as well, so that the cheapest tier
+gets the multi-day reduction too. It should not be: the floor is where
+concessions stop, which is the whole reason for having one, and the mission tier
+already carries 20%. Tapering the floor took a three-day mission booking to
+₱11,200 a day against a card that promises ₱12,000 — and the invariant that has
+guarded this since the concession existed caught it. The mission line already
+says on the quote when the floor is what stopped the discount.
+
 ## Payment terms are not a price
 
 `advancePaymentPossible` on each organizer tier decides how payment is asked
