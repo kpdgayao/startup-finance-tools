@@ -647,8 +647,11 @@ function priceEngagement(raw: QuotationInput): Quotation {
       label:
         region.travelDays === 1
           ? "Travel time, one day"
-          : region.travelDays < 1
+          : region.travelDays === 0.5
             ? "Travel time, half a day"
+            // Keyed on the exact value rather than `< 1`, which would have
+            // called a quarter-day journey "half a day" the moment a region
+            // was given one.
             : `Travel time, ${region.travelDays} days`,
       // Names the flat rate, and says outright that it does not move with the
       // engagement rate. An organiser comparing notes with a colleague in

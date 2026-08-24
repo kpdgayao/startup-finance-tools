@@ -9,6 +9,7 @@ import {
   TEAM_BUILDING_DAY_RATE,
   TOP_SECTOR_MULTIPLIER,
   TOP_SECTOR_FACILITATION_MULTIPLIER,
+  TRAVEL_DAY_FEE,
   facilitationScopeFor,
   organizerTypeFor,
   sectorMultiplier,
@@ -25,6 +26,7 @@ import {
   leadTimeBandFor,
 } from "@/lib/speaking/rate-card";
 import { QUESTIONS } from "@/lib/speaking/questions";
+import { getSystemPrompt } from "@/lib/ai/prompts";
 
 const unique = (ids: string[]) => new Set(ids).size === ids.length;
 
@@ -204,6 +206,25 @@ describe("why-we-ask copy", () => {
   });
 });
 
+
+describe("the AI explanation is told the same rules the engine applies", () => {
+  // The prompt carries the rate card in prose, and prose drifts. It described
+  // travel as "half the topic's day rate" for a while after the engine had
+  // stopped charging that — so the model would have explained, at length and
+  // confidently, a rule that produced none of the numbers on the page in
+  // front of the reader.
+  const prompt = getSystemPrompt("speaker-quotation");
+
+  it("states the flat travel-day fee the engine actually charges", () => {
+    expect(prompt).toContain(TRAVEL_DAY_FEE.toLocaleString("en-PH"));
+  });
+
+  it("does not describe travel time as a share of the day rate", () => {
+    expect(prompt.toLowerCase()).not.toMatch(
+      /travel days? (are|is) billed at half|half (the|of the) (topic's |engagement )?day rate/
+    );
+  });
+});
 
 describe("audience composition is a separate lever from audience size", () => {
   it("keeps at least one neutral profile so the default quote is unmoved", () => {
