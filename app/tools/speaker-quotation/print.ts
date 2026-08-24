@@ -303,7 +303,17 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
     );
   }
   terms.push(
-    "<strong>Payment</strong> 50% on confirmation, 50% within 15 days of the engagement."
+    quote.payment.advanceShare > 0
+      ? `<strong>Payment</strong> ${formatPercent(
+          quote.payment.advanceShare * 100,
+          0
+        )} on confirmation, the balance within ${
+          quote.payment.daysToSettle
+        } days of the engagement.`
+      : // A public body cannot simply pay half up front: advance payment is
+        // limited, needs a surety and a contract provision, and lands the
+        // approving officer with a COA finding.
+        `<strong>Payment</strong> nothing in advance. The full fee is invoiced after the engagement and payable within ${quote.payment.daysToSettle} days — no deposit, no surety bond, and nothing for the approving officer to justify later.`
   );
   terms.push(
     "<strong>Cancellation</strong> inside 14 days, 50% of the professional fee; inside 7 days, 100%. Non-refundable travel already booked is billed at cost either way."

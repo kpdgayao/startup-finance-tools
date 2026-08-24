@@ -11,6 +11,7 @@ import {
   MISSION_DISCOUNT,
   RETURNING_CLIENT_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
+  MULTI_DAY_TAPER,
   REVENUE_SHARE_FLOOR,
   FACILITATION_SCOPES,
   TEAM_BUILDING_DAY_RATE,
@@ -19,6 +20,7 @@ import {
   deriveDayRate,
   facilitationScopeFor,
   formatsFor,
+  ORGANIZER_TYPES,
   organizerTypeFor,
   regionFor,
   sectorMultiplier,
@@ -77,10 +79,54 @@ describe("base fee", () => {
     expect(frontier.professionalFee).toBe(FRONTIER_RATE);
   });
 
-  it("scales linearly with session count", () => {
-    const quote = buildQuotation(input({ format: "full-day", sessions: 2 }));
-    expect(quote.dayEquivalents).toBe(2);
-    expect(quote.professionalFee).toBe(ROUTINE_RATE * 2);
+  it("tapers days after the first rather than scaling linearly", () => {
+    // The day rate carries the preparation behind it, and that happens once
+    // however many days are booked, so charging three full days charges for it
+    // three times — which the rate card's own reasoning does not support.
+    const one = buildQuotation(input({ format: "full-day", sessions: 1 }));
+    const two = buildQuotation(input({ format: "full-day", sessions: 2 }));
+
+    expect(one.professionalFee).toBe(ROUTINE_RATE);
+    expect(two.professionalFee).toBe(toPeso(ROUTINE_RATE * (1 + MULTI_DAY_TAPER)));
+    // Still more money for more days — the taper is a taper, not a cliff.
+    expect(two.professionalFee).toBeGreaterThan(one.professionalFee);
+  });
+
+  it("shows the taper as a line rather than a quietly smaller base", () => {
+    // Every other effect on this quote is a line with a reason attached, and a
+    // saving is the last thing that should be hidden.
+    const quote = buildQuotation(input({ format: "full-day", sessions: 3 }));
+    const line = quote.lines.find((l) => l.id === "multi-day")!;
+    expect(line).toBeDefined();
+    expect(line.amount).toBeLessThan(0);
+    expect(line.detail).toContain("happens once");
+    // The base line still states the full, untapered day count, because that
+    // is what they are getting.
+    expect(quote.dayEquivalents).toBe(3);
+    expect(quote.lines[0].amount).toBe(ROUTINE_RATE * 3);
+  });
+
+  it("stops at the mission floor rather than stacking on top of it", () => {
+    // Tempting to taper the floor as well so the concession reaches this tier
+    // too. It should not: the floor is where concessions STOP, which is the
+    // whole point of having one, and the mission tier already carries a 20%
+    // reduction. Tapering the floor as well pushed a three-day booking to
+    // ₱11,200 a day against a card that promises ₱12,000, and broke the
+    // invariant that has guarded this since the concession existed.
+    const quote = buildQuotation(
+      input({ organizerType: "mission", format: "full-day", sessions: 3 })
+    );
+    expect(quote.effectiveDayRate).toBeGreaterThanOrEqual(MISSION_FLOOR_DAY_RATE);
+    // The mission line says so itself rather than leaving it to be noticed.
+    expect(quote.lines.find((l) => l.id === "mission-discount")?.detail).toContain(
+      "concessionary floor"
+    );
+  });
+
+  it("leaves a single-day engagement untouched", () => {
+    expect(
+      buildQuotation(input({ sessions: 1 })).lines.some((l) => l.id === "multi-day")
+    ).toBe(false);
   });
 
   // The engagement this whole tool exists to price correctly: a two-day
@@ -1232,6 +1278,46 @@ describe("the honorarium ceiling", () => {
     for (const organizerType of ["corporate", "association", "cooperative", "academic"] as const) {
       const quote = buildQuotation(input({ organizerType, complexity: "frontier" }));
       expect(ceilingFlag(quote), organizerType).toBeUndefined();
+    }
+  });
+});
+
+describe("payment terms", () => {
+  // Advance payment by a Philippine public body is limited, needs a surety and
+  // a contract provision, and lands the approving officer with a COA finding.
+  // A routine "50% on confirmation" is therefore not a price they are
+  // refusing — it is a term they cannot accept, which is the most expensive
+  // way to lose a booking.
+  it("asks nothing in advance of a payor whose rules will not allow it", () => {
+    for (const organizerType of ["government", "mission"] as const) {
+      const { payment } = buildQuotation(input({ organizerType }));
+      expect(payment.advanceShare, organizerType).toBe(0);
+      expect(payment.daysToSettle, organizerType).toBeGreaterThan(15);
+    }
+  });
+
+  it("keeps the usual terms for a payor who can meet them", () => {
+    for (const organizerType of [
+      "corporate",
+      "association",
+      "cooperative",
+      "academic",
+    ] as const) {
+      const { payment } = buildQuotation(input({ organizerType }));
+      expect(payment.advanceShare, organizerType).toBe(0.5);
+      expect(payment.daysToSettle, organizerType).toBe(15);
+    }
+  });
+
+  it("always states terms a reader can act on", () => {
+    for (const type of ORGANIZER_TYPES) {
+      const { payment } = buildQuotation(input({ organizerType: type.id }));
+      expect(payment.advanceShare, type.id).toBeGreaterThanOrEqual(0);
+      expect(payment.advanceShare, type.id).toBeLessThanOrEqual(1);
+      expect(payment.daysToSettle, type.id).toBeGreaterThan(0);
+      // The concession is the ADVANCE, never the fee. Timing is a term; if it
+      // moved the number it would be a discount for being slow to pay.
+      expect(payment.advanceShare === 0, type.id).toBe(!type.advancePaymentPossible);
     }
   });
 });

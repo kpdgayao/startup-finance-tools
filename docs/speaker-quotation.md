@@ -344,6 +344,67 @@ as a day being sold, and what is being compensated is time lost. Its detail says
 the rate is flat and that the fare and the hotel are billed separately, because
 billing the journey here as well as in the reimbursables would be billing twice.
 
+## Concessions, and the one that was refused
+
+The question that produced this section was "should we discount across the
+board, except government?". The answer was no, and the reasoning is worth
+keeping, because the question will come back.
+
+**A permanent across-the-board discount is not a discount, it is a price cut**
+with extra steps — and a visible one, which teaches the reader that the card is
+a starting position. The [consulting literature](https://www.consultingsuccess.com/consultant-fees)
+is blunt about this: discounting signals the original price was inflated, and
+sets a reference point that is very hard to move back.
+
+**The volume arithmetic does not work here.** For a service whose cost is the
+practitioner's own time, margin is effectively total, so a 20% cut needs 25%
+more booked days to stand still. Days are the binding constraint — this is
+someone with a full-time job — so the extra days are not available to be sold.
+Cutting price on capacity-constrained time is loss with no possible offset.
+
+**And the instrument already existed.** "Negotiate scope, not rate" is the
+standard advice, and the budget panel is exactly that: it responds to a number
+the organizer cannot exceed by changing what is bought, never what a day costs.
+
+What went in instead were concessions that are EARNED — each one buys something
+real, and each one changes a decision rather than rewarding one already made:
+
+| Concession | What it buys | Why it is honest |
+| --- | --- | --- |
+| `MULTI_DAY_TAPER` (10% off every day after the first) | A second and third day | The rate carries preparation; preparation happens once |
+| `RETURNING_CLIENT_DISCOUNT` (5%) | A repeat booking | The discovery is genuinely already done |
+| `MISSION_DISCOUNT` (20%) | Nothing — it is a concession, stated openly | Public schools, student orgs and NGOs have no training budget |
+
+A discount applied to a booking that was going to happen anyway is a gift; one
+that moves the choice is an investment. Every line in that table is the second
+kind.
+
+**Concessions stop at the floor, and the taper is not an exception.** It is
+tempting to taper `MISSION_FLOOR_DAY_RATE` as well, so that the cheapest tier
+gets the multi-day reduction too. It should not be: the floor is where
+concessions stop, which is the whole reason for having one, and the mission tier
+already carries 20%. Tapering the floor took a three-day mission booking to
+₱11,200 a day against a card that promises ₱12,000 — and the invariant that has
+guarded this since the concession existed caught it. The mission line already
+says on the quote when the floor is what stopped the discount.
+
+## Payment terms are not a price
+
+`advancePaymentPossible` on each organizer tier decides how payment is asked
+for, and it is the change most likely to win a booking that price never would.
+
+Advance payment by a Philippine public body is strictly regulated — limited in
+size, conditional on a surety and on the term appearing in the contract, and a
+COA finding for whoever approves it otherwise. A routine "50% on confirmation"
+is therefore **not a price a government office is refusing. It is a term they
+cannot accept**, and losing a booking that way costs the whole fee for a reason
+that has nothing to do with the fee.
+
+So government and mission organizers are asked for nothing up front and given 30
+days to settle; everyone else keeps 50% on confirmation and 15 days. It costs
+nothing but timing, and the printed quote says so in as many words, because the
+person reading it in procurement is the person who needed to hear it.
+
 ## Organizers who already have a budget
 
 The form asks for a budget, optionally, and it is the last question in its card

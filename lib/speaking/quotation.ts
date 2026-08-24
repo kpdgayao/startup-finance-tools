@@ -37,6 +37,7 @@ import {
   ABSOLUTE_MINIMUM_FEE,
   MISSION_DISCOUNT,
   MISSION_FLOOR_DAY_RATE,
+  MULTI_DAY_TAPER,
   RETURNING_CLIENT_DISCOUNT,
   QUOTE_VALID_DAYS,
   REVENUE_SHARE_FLOOR,
@@ -332,6 +333,13 @@ export interface Quotation {
   validUntil: string;
   holdUntil: string;
   daysOfNotice: number;
+  /**
+   * How payment is asked for, which is not the same question for every payor.
+   *
+   * `advance` is the share due on confirmation, 0 where the payor's own rules
+   * make an advance impractical — see OrganizerType.advancePaymentPossible.
+   */
+  payment: { advanceShare: number; daysToSettle: number };
   /** Things the organizer must decide or confirm, surfaced on the quote. */
   flags: string[];
   customQuoteRequired: boolean;
@@ -537,6 +545,25 @@ function priceEngagement(raw: QuotationInput): Quotation {
     }`,
     amount: baseFee,
   });
+
+  // 1a. Multi-day taper ----------------------------------------------------
+  // Its own line rather than a quietly smaller base, because every other
+  // effect on this quote is a line with a reason attached and a saving is the
+  // last thing that should be hidden. Placed before the factors, so a bigger
+  // room still costs more per day on the tapered base rather than on the
+  // untapered one.
+  if (sessions > 1 && MULTI_DAY_TAPER < 1) {
+    const taperedDays = format.dayEquivalent * (sessions - 1);
+    push({
+      id: "multi-day",
+      kind: "discount",
+      label: `Multi-day program (−${Math.round((1 - MULTI_DAY_TAPER) * 100)}% after the first day)`,
+      detail: `The day rate carries the preparation behind it, and that happens once however many days you book — so every day after the first is billed at ${
+        MULTI_DAY_TAPER * 100
+      }%.`,
+      amount: -(dayRate * taperedDays * (1 - MULTI_DAY_TAPER)),
+    });
+  }
 
   // 1b. Desk days ---------------------------------------------------------
   // Placed with the base fee, before any multiplier, because they are part of
@@ -986,6 +1013,12 @@ function priceEngagement(raw: QuotationInput): Quotation {
       isWeekend: isWeekend(date),
     })),
     schedule,
+    payment: organizer.advancePaymentPossible
+      ? { advanceShare: 0.5, daysToSettle: 15 }
+      : // Nothing up front, and longer to settle. Both are what a public body's
+        // own rules and release cycle actually allow, and neither costs
+        // anything but timing.
+        { advanceShare: 0, daysToSettle: 30 },
     validUntil: addDays(raw.today, QUOTE_VALID_DAYS),
     holdUntil: addDays(raw.today, DATE_HOLD_DAYS),
     daysOfNotice,

@@ -54,6 +54,27 @@ export const TRAVEL_DAY_FACTOR = 0.5;
  */
 export const MINIMUM_ENGAGEMENT_FEE = 10_000;
 
+/**
+ * What a day after the first is billed at, on a multi-day engagement.
+ *
+ * The rate card prices a day as delivery PLUS the preparation behind it — that
+ * is the whole argument of the subject ladder. On a three-day program the
+ * preparation happens once, so charging three full days charges for it three
+ * times, which the card's own reasoning does not support.
+ *
+ * Deliberately small. The saving is real but it is not the whole of the
+ * preparation: every extra day still needs its own material, its own exercises
+ * and its own energy, and multi-day programs are the ones most often
+ * underpriced, not overpriced.
+ *
+ * It is also the only price concession here that CHANGES A DECISION. An
+ * organizer weighing one day against two sees the second at 90% and is likelier
+ * to buy it, which is more revenue rather than less. A discount applied to a
+ * booking that was going to happen anyway is a gift; one that moves the choice
+ * is an investment.
+ */
+export const MULTI_DAY_TAPER = 0.9;
+
 /** Concessionary discount for the mission tier (see ORGANIZER_TYPES). */
 export const MISSION_DISCOUNT = 0.2;
 
@@ -769,6 +790,20 @@ export interface OrganizerType {
    * A new tier has to answer the question rather than inherit an answer.
    */
   honorariumRules: boolean;
+  /**
+   * Whether this payor can realistically pay anything before the engagement.
+   *
+   * Not a question about their goodwill. Advance payment by a Philippine
+   * public body is strictly regulated — limited in size, and conditional on a
+   * surety and on the term being in the contract — so a routine "50% on
+   * confirmation" is not a price a government office is refusing, it is a term
+   * they cannot accept without paperwork most resource speakers cannot
+   * produce, and a COA finding for whoever approved it.
+   *
+   * Asking for it anyway loses the booking for a reason that has nothing to do
+   * with the fee, which is the most expensive way to lose one.
+   */
+  advancePaymentPossible: boolean;
   /** Eligible for the concessionary mission discount. */
   mission: boolean;
   /** Ordinarily withholds creditable tax on professional fees. */
@@ -796,6 +831,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     facilitationMultiplier: 2.5,
     sectorLabel: "corporate",
     honorariumRules: false,
+    advancePaymentPossible: true,
     mission: false,
     withholds: true,
   },
@@ -808,6 +844,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     facilitationMultiplier: 1.9,
     sectorLabel: "association",
     honorariumRules: false,
+    advancePaymentPossible: true,
     mission: false,
     withholds: true,
   },
@@ -827,6 +864,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     facilitationMultiplier: 1.6,
     sectorLabel: "cooperative",
     honorariumRules: false,
+    advancePaymentPossible: true,
     mission: false,
     withholds: true,
   },
@@ -839,6 +877,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     facilitationMultiplier: 1,
     sectorLabel: "public-sector",
     honorariumRules: true,
+    advancePaymentPossible: false,
     mission: false,
     withholds: true,
   },
@@ -851,6 +890,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     facilitationMultiplier: 1.4,
     sectorLabel: "private-academic",
     honorariumRules: false,
+    advancePaymentPossible: true,
     mission: false,
     withholds: true,
   },
@@ -864,6 +904,7 @@ export const ORGANIZER_TYPES: OrganizerType[] = [
     facilitationMultiplier: 1,
     sectorLabel: "public-sector",
     honorariumRules: true,
+    advancePaymentPossible: false,
     mission: true,
     // True, despite the concession. Public schools, SUCs and registered NGOs
     // are withholding agents exactly as government offices are; marking the
