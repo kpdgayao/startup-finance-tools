@@ -46,6 +46,11 @@ import {
   visibleFieldIds,
   type FieldId,
 } from "@/lib/speaking/intake-state";
+import {
+  useStoredQuotation,
+  writeStoredQuotation,
+  clearStoredQuotation,
+} from "@/lib/speaking/use-quotation-storage";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
   addDays,
@@ -107,26 +112,46 @@ type FormState = Omit<QuotationInput, "today" | "startDate">;
 export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }) {
   const now = useSyncExternalStore(subscribeToNothing, today, serverToday);
 
-  const [form, setForm] = useState<FormState>({ ...DEFAULT_INPUT });
   /**
-   * Which state the page is in. Opening and Reading arrive in later tasks;
-   * until then every visitor gets the full form, exactly as before.
+   * A quotation left in this browser by an earlier visit.
+   *
+   * Read through `useSyncExternalStore`, which uses the server snapshot for
+   * the hydration render and the real one immediately after — so restoring
+   * cannot mismatch the server HTML. Seeding `useState` from localStorage
+   * would; restoring in an effect would be the `set-state-in-effect` pattern
+   * that already fails lint in three other tools here.
    */
-  const [phase, setPhase] = useState<Phase>(aiAvailable ? "opening" : "full");
+  const stored = useStoredQuotation();
+
   /**
-   * Fields the organizer has changed by hand. An assumption note beside one of
-   * them stops being true the moment they correct it.
+   * Every answer is DERIVED from the stored value until the organizer touches
+   * it, at which point the override takes over. Nothing is copied from storage
+   * into state, so there is no restore step to get wrong.
    */
-  const [edits, setEdits] = useState<ReadonlySet<FieldId>>(() => new Set());
+  const [formOverride, setFormOverride] = useState<FormState | null>(null);
+  const [phaseOverride, setPhaseOverride] = useState<Phase | null>(null);
+  const [editsOverride, setEditsOverride] = useState<ReadonlySet<FieldId> | null>(null);
+  const [draftOverride, setDraftOverride] = useState<IntakeDraft | null>(null);
+  const [dateOverride, setDateOverride] = useState<string | null>(null);
+
+  const form: FormState = useMemo(
+    () => formOverride ?? { ...DEFAULT_INPUT, ...(stored?.form ?? {}) },
+    [formOverride, stored]
+  );
   /**
-   * The draft is RETAINED rather than dismissed after it is applied. Without
-   * it the page cannot tell "the model read this from their note" from "this
-   * is still DEFAULT_INPUT", which is the whole basis of the reading panel.
+   * Someone with answers in this browser is the organizer who came back after
+   * their sponsor said "see if he can do it for less" — they want their own
+   * quote, not either blank state.
    */
-  const [draft, setDraft] = useState<IntakeDraft | null>(null);
-  // Null until the organizer picks a date, so the default stays relative to
-  // today rather than to whenever this component first rendered.
-  const [chosenDate, setChosenDate] = useState<string | null>(null);
+  const phase: Phase = phaseOverride ?? (stored ? "reading" : aiAvailable ? "opening" : "full");
+  const edits: ReadonlySet<FieldId> = useMemo(
+    () => editsOverride ?? new Set(stored?.edits ?? []),
+    [editsOverride, stored]
+  );
+  const draft: IntakeDraft | null = draftOverride ?? stored?.draft ?? null;
+  const chosenDate: string | null = dateOverride ?? stored?.chosenDate ?? null;
+
+  const setPhase = setPhaseOverride;
 
   // 45 days out: far enough that the default quote carries no rush premium.
   // The organizer should meet the standard rate first and discover the
@@ -138,29 +163,60 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
     [form, now, startDate]
   );
 
-  const set = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    setEdits((prev) =>
-      prev.has(key as FieldId) ? prev : new Set(prev).add(key as FieldId)
-    );
-  }, []);
+  /**
+   * Persisting happens here rather than in an effect, so the write is part of
+   * the same user action that caused it and there is no second source of
+   * truth to fall out of step.
+   */
+  const persist = useCallback(
+    (next: {
+      form?: FormState;
+      chosenDate?: string | null;
+      draft?: IntakeDraft | null;
+      edits?: ReadonlySet<FieldId>;
+    }) => {
+      writeStoredQuotation({
+        form: next.form ?? form,
+        chosenDate: next.chosenDate !== undefined ? next.chosenDate : chosenDate,
+        draft: next.draft !== undefined ? next.draft : draft,
+        edits: [...(next.edits ?? edits)],
+      });
+    },
+    [form, chosenDate, draft, edits]
+  );
+
+  const set = useCallback(
+    <K extends keyof FormState>(key: K, value: FormState[K]) => {
+      const nextForm = { ...form, [key]: value };
+      const nextEdits = new Set(edits).add(key as FieldId);
+      setFormOverride(nextForm);
+      setEditsOverride(nextEdits);
+      persist({ form: nextForm, edits: nextEdits });
+    },
+    [form, edits, persist]
+  );
 
   /**
    * Changing the engagement type can strand the chosen format — a keynote is
    * not offered for a board retreat — so the format falls back to the last
    * option the new type does offer, which is the full day in every list.
    */
-  const setEngagementType = useCallback((value: EngagementTypeId) => {
-    setForm((prev) => {
+  const setEngagementType = useCallback(
+    (value: EngagementTypeId) => {
       const allowed = formatsFor(value);
-      const keep = allowed.some((f) => f.id === prev.format);
-      return {
-        ...prev,
+      const keep = allowed.some((f) => f.id === form.format);
+      const nextForm: FormState = {
+        ...form,
         engagementType: value,
-        format: keep ? prev.format : allowed[allowed.length - 1].id,
+        format: keep ? form.format : allowed[allowed.length - 1].id,
       };
-    });
-  }, []);
+      const nextEdits = new Set(edits).add("engagementType" as FieldId);
+      setFormOverride(nextForm);
+      setEditsOverride(nextEdits);
+      persist({ form: nextForm, edits: nextEdits });
+    },
+    [form, edits, persist]
+  );
 
   const availability = useAvailability();
   const intake = useIntakeDraft();
@@ -190,10 +246,12 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
 
   const handleReset = () => {
     setPhase(aiAvailable ? "opening" : "full");
-    setForm({ ...DEFAULT_INPUT });
-    setChosenDate(null);
-    setEdits(new Set());
-    setDraft(null);
+    setFormOverride({ ...DEFAULT_INPUT });
+    setDateOverride(null);
+    setEditsOverride(new Set());
+    setDraftOverride(null);
+    // The stored answers go with it, or a reload would undo the reset.
+    clearStoredQuotation();
     availability.reset();
     intake.dismiss();
     ai.reset();
@@ -206,8 +264,9 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    * against the live option list before it is accepted.
    */
   const applyDraft = (draft: IntakeDraft) => {
-    if (draft.startDate && isValidISODate(draft.startDate)) setChosenDate(draft.startDate);
-    setForm((prev) => {
+    const nextDate =
+      draft.startDate && isValidISODate(draft.startDate) ? draft.startDate : chosenDate;
+    const next = ((prev: FormState) => {
       const next = { ...prev };
       if (draft.engagementType && ENGAGEMENT_TYPES.some((t) => t.id === draft.engagementType))
         next.engagementType = draft.engagementType as EngagementTypeId;
@@ -255,8 +314,12 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
       if (draft.organizationName) next.organizationName = draft.organizationName.slice(0, 200);
       if (draft.venue) next.venue = draft.venue.slice(0, 200);
       return next;
-    });
-    setDraft(draft);
+    })(form);
+
+    setFormOverride(next);
+    setDateOverride(nextDate);
+    setDraftOverride(draft);
+    persist({ form: next, chosenDate: nextDate, draft });
     intake.dismiss();
     availability.reset();
     // Even an empty draft goes to Reading: a short form ordered by price
@@ -386,7 +449,10 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
     budgetFit,
     set,
     setEngagementType,
-    setChosenDate,
+    setChosenDate: (value: string) => {
+      setDateOverride(value);
+      persist({ chosenDate: value });
+    },
     resetAvailability: availability.reset,
     organizer,
     engagementType,
