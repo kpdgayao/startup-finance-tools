@@ -4,19 +4,6 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { CurrencyInput } from "@/components/shared/currency-input";
-import { IntegerInput } from "@/components/shared/integer-input";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { MarginNote } from "@/components/shared/margin-note";
 import { RelatedTools } from "@/components/shared/related-tools";
@@ -32,12 +19,8 @@ import {
   OUTPUT_OPTIONS,
   PREPARATION_OPTIONS,
   TEAM_BUILDING_DAY_RATE,
-  DAY_RATE_MIN,
-  INVOICING_ENTITY,
   ORGANIZER_TYPES,
   REGIONS,
-  RETURNING_CLIENT_DISCOUNT,
-  TRAVEL_DAY_FEE,
   audienceBandFor,
   audienceProfileFor,
   engagementTypeFor,
@@ -57,7 +40,7 @@ import {
   type OrganizerTypeId,
   type RegionId,
 } from "@/lib/speaking/rate-card";
-import { QUESTIONS } from "@/lib/speaking/questions";
+import { visibleFieldIds, type FieldId } from "@/lib/speaking/intake-state";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
   addDays,
@@ -70,7 +53,17 @@ import {
   useIntakeDraft,
   type IntakeDraft,
 } from "@/lib/speaking/use-quotation-assist";
-import { RateFactorField } from "./components/rate-factor-field";
+import {
+  QuotationFields,
+  IdentityFields,
+  CARD_ONE,
+  CARD_TWO_BEFORE_CALENDAR,
+  CARD_TWO_AFTER_CALENDAR,
+  CARD_THREE,
+  DETAILS_BEFORE_IDENTITY,
+  DETAILS_AFTER_IDENTITY,
+  type FieldContext,
+} from "./components/quotation-fields";
 import { AvailabilityPanel } from "./components/availability-panel";
 import { IntakeAssistant } from "./components/intake-assistant";
 import { QuotationSummary } from "./components/quotation-summary";
@@ -104,62 +97,6 @@ function today(): string {
  */
 const subscribeToNothing = () => () => {};
 const serverToday = () => "";
-
-
-/**
- * Dropdowns are capped to the viewport. Radix sizes the panel to its widest
- * item, and these options carry a sentence of explanation each — unconstrained,
- * one of them measured 805px inside a 375px phone.
- */
-const SELECT_CONTENT = "max-w-[calc(100vw-2rem)]";
-
-/**
- * Triggers are full-width, and their value shrinks rather than being clipped.
- *
- * `w-full` alone is not enough. The trigger sets `whitespace-nowrap` and its
- * value is a flex item, which by default will not shrink below its content —
- * so a long option was cut off mid-word with no ellipsis ("Company or
- * corporate in-house trainin"), reading as a typo rather than as a label too
- * long for the box. `min-w-0` lets it shrink so the existing `line-clamp-1`
- * can do its job.
- */
-const SELECT_TRIGGER = "w-full *:data-[slot=select-value]:min-w-0";
-
-/**
- * An option rendered as a stacked label and explanation rather than one long
- * line, so it wraps and stays readable on a phone. `whitespace-normal` is
- * required: the trigger sets `whitespace-nowrap` and the item inherits it.
- */
-function OptionText({
-  label,
-  detail,
-  trailing,
-}: {
-  label: string;
-  detail: string;
-  trailing?: string;
-}) {
-  return (
-    <span className="flex flex-col gap-0.5 whitespace-normal">
-      <span className="flex items-baseline gap-2">
-        <span className="font-medium">{label}</span>
-        {trailing && (
-          <span className="font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
-            {trailing}
-          </span>
-        )}
-      </span>
-      <span className="text-xs text-muted-foreground">{detail}</span>
-    </span>
-  );
-}
-
-/** A percentage impact chip, e.g. "+15%". Neutral factors read "No change". */
-function factorImpact(factor: number): string {
-  if (factor === 1) return "No change";
-  const pct = Math.round((factor - 1) * 100);
-  return `${pct > 0 ? "+" : ""}${pct}%`;
-}
 
 /** The answers the organizer gives. `today` and `startDate` are derived, not stored. */
 type FormState = Omit<QuotationInput, "today" | "startDate">;
@@ -375,6 +312,48 @@ export default function SpeakerQuotationPage() {
       : null;
   const leadFactor = quote?.lines.find((l) => l.id === "lead-time")?.factor ?? 1;
 
+  /**
+   * Everything the controls need, resolved once, here, the way the engine
+   * resolves it. The registry never recomputes any of it — see FieldContext.
+   */
+  const fieldContext: FieldContext = {
+    input,
+    quote,
+    now,
+    startDate,
+    budgetFit,
+    set,
+    setEngagementType,
+    setChosenDate,
+    resetAvailability: availability.reset,
+    organizer,
+    engagementType,
+    availableFormats,
+    format,
+    complexity,
+    facilitationScope,
+    preparationOption,
+    outputOption,
+    region,
+    audienceBand,
+    audienceProfile,
+    activeDayRate,
+    dayEquivalentsPreview,
+    leadFactor,
+    perHeadLine,
+    preparationDaysLabel,
+    outputDaysLabel,
+    isRemote,
+  };
+
+  /**
+   * Which of a group's questions apply to this engagement. The conditionals
+   * that used to wrap each control in the JSX live in `visibleFieldIds` now,
+   * so the full form and the reading panel cannot disagree about what applies.
+   */
+  const applicable = visibleFieldIds(input);
+  const visible = (group: FieldId[]) => group.filter((id) => applicable.includes(id));
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -428,241 +407,7 @@ export default function SpeakerQuotationPage() {
               NGO had to read the corporate number and then work downwards.
               Asking who is asking first means every figure below is already
               the reader's own. */}
-          <RateFactorField
-            question={QUESTIONS.organizerType}
-            // The sector sets the rate rather than adding to it, so the chip
-            // shows the resulting day rate — the number the quote will use —
-            // instead of a ratio the reader would only try to negotiate down.
-            impact={
-              organizer.mission
-                ? "Concessionary rate"
-                : `${formatPHP(activeDayRate)}/day`
-            }
-            active
-          >
-            <Select
-              value={input.organizerType}
-              onValueChange={(v) => set("organizerType", v as OrganizerTypeId)}
-            >
-              <SelectTrigger id={QUESTIONS.organizerType.id} className={SELECT_TRIGGER}>
-                {/* Explicit children: without them Radix mirrors the item's
-                    full markup into the trigger, and the trigger is `w-fit`,
-                    so a long option stretched it to 805px — pushing <main>
-                    to 896px inside a 375px viewport and giving the whole page
-                    an invisible sideways scroll. */}
-                <SelectValue>{organizer.label}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className={SELECT_CONTENT}>
-                {ORGANIZER_TYPES.map((option) => (
-                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                    <OptionText label={option.label} detail={option.detail} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {/* The day rate, restated as what it costs per person.
-                Both numbers are true, and this is the one the reader can take
-                to whoever holds the budget: a day rate invites "for ONE day?",
-                where a per-head figure invites a comparison with what a seat
-                at an open program costs. Placed here rather than in the
-                results because this is where the day rate first appears, and
-                so this is where it first needs the context. */}
-            {perHeadLine && <p className="mt-1.5 text-xs text-muted-foreground">{perHeadLine}</p>}
-          </RateFactorField>
-
-          <RateFactorField
-            question={QUESTIONS.engagementType}
-            impact={`from ${formatPHP(
-              deriveDayRate(
-                engagementType.id === "facilitation"
-                  ? FACILITATION_SCOPES[0].dayRate
-                  : engagementType.id === "team-building"
-                    ? TEAM_BUILDING_DAY_RATE
-                    : DAY_RATE_MIN,
-                // Facilitation is scaled by its own sector multiplier, so the
-                // chip has to resolve it the way the engine does or the two
-                // ladders disagree on one screen.
-                sectorMultiplier(organizer, engagementType.id)
-              )
-            )}/day`}
-            active
-          >
-            <Select
-              value={input.engagementType}
-              onValueChange={(v) => setEngagementType(v as EngagementTypeId)}
-            >
-              <SelectTrigger id={QUESTIONS.engagementType.id} className={SELECT_TRIGGER}>
-                <SelectValue>{engagementType.label}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className={SELECT_CONTENT}>
-                {ENGAGEMENT_TYPES.map((option) => (
-                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                    <OptionText label={option.label} detail={option.detail} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </RateFactorField>
-
-          <RateFactorField
-            question={QUESTIONS.format}
-            impact={`${format.dayEquivalent} day${format.dayEquivalent === 1 ? "" : "s"} each`}
-            active
-          >
-            <Select
-              value={input.format}
-              onValueChange={(v) => set("format", v as EngagementFormatId)}
-            >
-              <SelectTrigger id={QUESTIONS.format.id} className={SELECT_TRIGGER}>
-                {/* Explicit children: without them Radix mirrors the item's
-                    full markup into the trigger, and the trigger is `w-fit`,
-                    so a long option stretched it to 805px — pushing <main>
-                    to 896px inside a 375px viewport and giving the whole page
-                    an invisible sideways scroll. */}
-                <SelectValue>{formatLabel(format, engagementType.id)}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className={SELECT_CONTENT}>
-                {availableFormats.map((option) => (
-                  <SelectItem
-                    key={option.id}
-                    value={option.id}
-                    textValue={formatLabel(option, engagementType.id)}
-                  >
-                    <OptionText
-                      label={formatLabel(option, engagementType.id)}
-                      detail={option.detail}
-                    />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </RateFactorField>
-
-          <RateFactorField
-            question={QUESTIONS.sessions}
-            // Rounded the way the engine rounds it: 0.6 × 3 in raw float is
-            // 1.7999999999999998, which rendered verbatim in the chip.
-            impact={`${dayEquivalentsPreview} engagement day${
-              dayEquivalentsPreview === 1 ? "" : "s"
-            }`}
-            active={input.sessions > 1}
-          >
-            <IntegerInput
-              id={QUESTIONS.sessions.id}
-              min={1}
-              max={30}
-              value={input.sessions}
-              onChange={(v) => {
-                set("sessions", v);
-                // The session count decides how many dates the engagement
-                // spans, so an existing check no longer covers it. Leaving it
-                // on screen showed a one-date "Open" beside a three-date quote.
-                availability.reset();
-              }}
-            />
-          </RateFactorField>
-
-          {!isFacilitation && !isTeamBuilding && (
-          <RateFactorField
-            question={QUESTIONS.complexity}
-            impact={`${formatPHP(deriveDayRate(complexity.dayRate, sectorMultiplier(organizer, "speaking")))}/day`}
-            active
-          >
-            <Select
-              value={input.complexity}
-              onValueChange={(v) => set("complexity", v as ComplexityId)}
-            >
-              <SelectTrigger id={QUESTIONS.complexity.id} className={SELECT_TRIGGER}>
-                {/* Explicit children: without them Radix mirrors the item's
-                    full markup into the trigger, and the trigger is `w-fit`,
-                    so a long option stretched it to 805px — pushing <main>
-                    to 896px inside a 375px viewport and giving the whole page
-                    an invisible sideways scroll. */}
-                <SelectValue>{complexity.label}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className={SELECT_CONTENT}>
-                {COMPLEXITY_TIERS.map((tier) => (
-                  <SelectItem key={tier.id} value={tier.id} textValue={tier.label}>
-                    <OptionText
-                      label={tier.label}
-                      detail={tier.detail}
-                      trailing={`${formatPHP(deriveDayRate(tier.dayRate, sectorMultiplier(organizer, "speaking")))}/day`}
-                    />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </RateFactorField>
-          )}
-
-          {isFacilitation && (
-            <>
-              <RateFactorField
-                question={QUESTIONS.facilitationScope}
-                impact={`${formatPHP(deriveDayRate(facilitationScope.dayRate, sectorMultiplier(organizer, "facilitation")))}/day`}
-                active
-              >
-                <Select
-                  value={input.facilitationScope}
-                  onValueChange={(v) => set("facilitationScope", v as FacilitationScopeId)}
-                >
-                  <SelectTrigger id={QUESTIONS.facilitationScope.id} className={SELECT_TRIGGER}>
-                    <SelectValue>{facilitationScope.label}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className={SELECT_CONTENT}>
-                    {FACILITATION_SCOPES.map((option) => (
-                      <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                        <OptionText
-                          label={option.label}
-                          detail={option.detail}
-                          trailing={`${formatPHP(deriveDayRate(option.dayRate, sectorMultiplier(organizer, "facilitation")))}/day`}
-                        />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </RateFactorField>
-
-              <RateFactorField
-                question={QUESTIONS.preparation}
-                impact={preparationDaysLabel}
-                active={preparationOption.days > 0}
-              >
-                <Select value={input.preparation} onValueChange={(v) => set("preparation", v)}>
-                  <SelectTrigger id={QUESTIONS.preparation.id} className={SELECT_TRIGGER}>
-                    <SelectValue>{preparationOption.label}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className={SELECT_CONTENT}>
-                    {PREPARATION_OPTIONS.map((option) => (
-                      <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                        <OptionText label={option.label} detail={option.detail} />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </RateFactorField>
-
-              <RateFactorField
-                question={QUESTIONS.output}
-                impact={outputDaysLabel}
-                active={outputOption.days > 0}
-              >
-                <Select value={input.output} onValueChange={(v) => set("output", v)}>
-                  <SelectTrigger id={QUESTIONS.output.id} className={SELECT_TRIGGER}>
-                    <SelectValue>{outputOption.label}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className={SELECT_CONTENT}>
-                    {OUTPUT_OPTIONS.map((option) => (
-                      <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                        <OptionText label={option.label} detail={option.detail} />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </RateFactorField>
-            </>
-          )}
-
+          <QuotationFields ids={visible(CARD_ONE)} ctx={fieldContext} />
         </CardContent>
       </Card>
 
@@ -674,34 +419,7 @@ export default function SpeakerQuotationPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RateFactorField
-            question={QUESTIONS.startDate}
-            impact={
-              quote
-                ? `${factorImpact(quote.schedule.factor)} · notice ${factorImpact(leadFactor)}`
-                : undefined
-            }
-            active={Boolean(quote && (quote.schedule.factor !== 1 || leadFactor !== 1))}
-          >
-            <Input
-              id={QUESTIONS.startDate.id}
-              type="date"
-              value={startDate}
-              min={now || undefined}
-              onChange={(e) => {
-                if (isValidISODate(e.target.value)) {
-                  setChosenDate(e.target.value);
-                  availability.reset();
-                }
-              }}
-            />
-            {quote && (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                {quote.schedule.reason}. {quote.daysOfNotice} days of notice.
-              </p>
-            )}
-          </RateFactorField>
-
+          <QuotationFields ids={visible(CARD_TWO_BEFORE_CALENDAR)} ctx={fieldContext} />
           <AvailabilityPanel
             report={availability.report}
             isChecking={availability.isChecking}
@@ -710,51 +428,7 @@ export default function SpeakerQuotationPage() {
             disabled={!ready}
           />
 
-          <RateFactorField
-            question={QUESTIONS.region}
-            impact={
-              isRemote
-                ? "No travel"
-                : region.travelDays > 0
-                  ? // Read off the quote where there is one. Computing it here
-                    // instead showed ₱3,750 beside the ₱3,800 the engine
-                    // charges, since fee lines quote to the nearest ₱100.
-                    `+${formatPHP(
-                      quote?.lines.find((l) => l.kind === "travel")?.amount ??
-                        TRAVEL_DAY_FEE * region.travelDays
-                    )} travel time`
-                  : "No travel"
-            }
-            active={!isRemote && region.travelDays > 0}
-          >
-            <Select
-              value={input.region}
-              onValueChange={(v) => set("region", v as RegionId)}
-              disabled={isRemote}
-            >
-              <SelectTrigger id={QUESTIONS.region.id} className={SELECT_TRIGGER}>
-                {/* Explicit children: without them Radix mirrors the item's
-                    full markup into the trigger, and the trigger is `w-fit`,
-                    so a long option stretched it to 805px — pushing <main>
-                    to 896px inside a 375px viewport and giving the whole page
-                    an invisible sideways scroll. */}
-                <SelectValue>{region.label}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className={SELECT_CONTENT}>
-                {REGIONS.map((option) => (
-                  <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                    <OptionText label={option.label} detail={option.detail} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isRemote && (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                An online session has no travel, so the location does not affect the quote.
-              </p>
-            )}
-          </RateFactorField>
-
+          <QuotationFields ids={visible(CARD_TWO_AFTER_CALENDAR)} ctx={fieldContext} />
 
         </CardContent>
       </Card>
@@ -767,101 +441,7 @@ export default function SpeakerQuotationPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RateFactorField
-            question={QUESTIONS.returningClient}
-            impact={input.returningClient ? `−${RETURNING_CLIENT_DISCOUNT * 100}%` : "No change"}
-            active={input.returningClient}
-          >
-            <div className="flex items-center gap-3">
-              <Switch
-                id={QUESTIONS.returningClient.id}
-                checked={input.returningClient}
-                onCheckedChange={(v) => set("returningClient", v)}
-              />
-              <span className="text-sm text-muted-foreground">
-                {input.returningClient ? "Yes, we have worked together" : "This would be the first time"}
-              </span>
-            </div>
-          </RateFactorField>
-
-          <RateFactorField
-            question={QUESTIONS.ticketed}
-            impact={
-              quote && quote.projectedRevenue > 0
-                ? `Registrations ${formatPHP(quote.projectedRevenue)}`
-                : input.ticketed
-                  ? "Awaiting figures"
-                  : "No floor applied"
-            }
-            active={input.ticketed}
-          >
-            <div className="flex items-center gap-3">
-              <Switch
-                id={QUESTIONS.ticketed.id}
-                checked={input.ticketed}
-                onCheckedChange={(v) => set("ticketed", v)}
-              />
-              <span className="text-sm text-muted-foreground">
-                {input.ticketed ? "Participants pay to attend" : "Free to participants"}
-              </span>
-            </div>
-          </RateFactorField>
-
-
-          {input.ticketed && (
-            <>
-              <RateFactorField question={QUESTIONS.participantFee} labelMode="child">
-                <CurrencyInput
-                  id={QUESTIONS.participantFee.id}
-                  label={QUESTIONS.participantFee.label}
-                  value={input.participantFee}
-                  onChange={(v) => set("participantFee", v)}
-                  min={0}
-                />
-              </RateFactorField>
-
-              <RateFactorField question={QUESTIONS.expectedPaidAttendees}>
-                <IntegerInput
-                  id={QUESTIONS.expectedPaidAttendees.id}
-                  min={0}
-                  max={100000}
-                  value={input.expectedPaidAttendees}
-                  onChange={(v) => set("expectedPaidAttendees", v)}
-                  placeholder={String(input.audienceSize)}
-                />
-              </RateFactorField>
-            </>
-          )}
-
-          {/* Last in the card on purpose. Asking for a budget before the
-              organizer has seen a single number reads as "how much have you
-              got"; asking it after the rate card has explained itself reads as
-              "tell me what to build for what you have". */}
-          <RateFactorField
-            question={QUESTIONS.budget}
-            labelMode="child"
-            impact={
-              budgetFit
-                ? budgetFit.withinBudget
-                  ? `${formatPHP(budgetFit.difference)} to spare`
-                  : `${formatPHP(budgetFit.difference)} over`
-                : "Not stated"
-            }
-            active={Boolean(budgetFit && !budgetFit.withinBudget)}
-          >
-            <CurrencyInput
-              id={QUESTIONS.budget.id}
-              label={QUESTIONS.budget.label}
-              value={input.budget}
-              onChange={(v) => set("budget", v)}
-              min={0}
-              // Matched to the engine's own clamp. Without it a typed
-              // ₱9,999,999,999 would be clamped out of sight and the panel
-              // would quote a budget back that nobody had entered.
-              max={1_000_000_000}
-              placeholder="Leave blank if you would rather not say"
-            />
-          </RateFactorField>
+          <QuotationFields ids={visible(CARD_THREE)} ctx={fieldContext} />
         </CardContent>
       </Card>
 
@@ -869,195 +449,9 @@ export default function SpeakerQuotationPage() {
         title="Anything else I should know?"
         summary="Room size, the venue, travel arrangements, invoicing, extras. All optional — the quote above already assumes sensible answers, and everything you set here shows on it."
       >
-            <RateFactorField
-              question={QUESTIONS.audienceSize}
-              impact={factorImpact(audienceBand.factor)}
-              active={audienceBand.factor !== 1}
-            >
-              <IntegerInput
-                id={QUESTIONS.audienceSize.id}
-                min={1}
-                max={100000}
-                value={input.audienceSize}
-                onChange={(v) => set("audienceSize", v)}
-              />
-            </RateFactorField>
-            {!isTeamBuilding && (
-            <RateFactorField
-              question={QUESTIONS.audienceProfile}
-              impact={factorImpact(audienceProfile.factor)}
-              active={audienceProfile.factor !== 1}
-            >
-              <Select
-                value={input.audienceProfile}
-                onValueChange={(v) => set("audienceProfile", v as AudienceProfileId)}
-              >
-                <SelectTrigger id={QUESTIONS.audienceProfile.id} className={SELECT_TRIGGER}>
-                  <SelectValue>{audienceProfile.label}</SelectValue>
-                </SelectTrigger>
-                <SelectContent className={SELECT_CONTENT}>
-                  {AUDIENCE_PROFILES.map((option) => (
-                    <SelectItem key={option.id} value={option.id} textValue={option.label}>
-                      <OptionText label={option.label} detail={option.detail} />
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </RateFactorField>
-            )}
-            <div className="border-t border-rule pt-4">
-              <Label htmlFor="event-title">Working title of the session</Label>
-              <Input
-                id="event-title"
-                value={input.eventTitle ?? ""}
-                onChange={(e) => set("eventTitle", e.target.value.slice(0, 200))}
-                placeholder="e.g. Bookkeeping for Non-Accountants"
-                className="mt-2"
-              />
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Optional, but it is the clearest signal of how much new ground the subject covers.
-              </p>
-            </div>
-            <div className="border-t border-rule pt-4">
-              <Label htmlFor="organization">Organization</Label>
-              <Input
-                id="organization"
-                value={input.organizationName ?? ""}
-                onChange={(e) => set("organizationName", e.target.value.slice(0, 200))}
-                placeholder="Who the quote is addressed to"
-                className="mt-2"
-              />
-            </div>
-            <div className="border-t border-rule pt-4">
-              <Label htmlFor="venue">Venue</Label>
-              <Input
-                id="venue"
-                value={input.venue ?? ""}
-                onChange={(e) => set("venue", e.target.value.slice(0, 200))}
-                placeholder="e.g. Baguio Country Club, or Zoom"
-                className="mt-2"
-              />
-            </div>
-            {!isRemote && (
-              <>
-                <RateFactorField
-                  question={QUESTIONS.earlyStart}
-                  impact={input.earlyStart ? "One extra night" : "No overnight added"}
-                  active={input.earlyStart}
-                >
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id={QUESTIONS.earlyStart.id}
-                      checked={input.earlyStart}
-                      onCheckedChange={(v) => set("earlyStart", v)}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {input.earlyStart ? "Starts before 10am" : "Starts at 10am or later"}
-                    </span>
-                  </div>
-                </RateFactorField>
-
-                <RateFactorField
-                  question={QUESTIONS.travelCovered}
-                  impact={input.travelCovered ? "Not billed" : "Billed as a reimbursable"}
-                  active={!input.travelCovered}
-                >
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id={QUESTIONS.travelCovered.id}
-                      checked={input.travelCovered}
-                      onCheckedChange={(v) => set("travelCovered", v)}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {input.travelCovered ? "Yes, we will shoulder it" : "No, please bill it to us"}
-                    </span>
-                  </div>
-                </RateFactorField>
-
-                <RateFactorField
-                  question={QUESTIONS.accommodationCovered}
-                  impact={input.accommodationCovered ? "Not billed" : "Billed as a reimbursable"}
-                  active={!input.accommodationCovered}
-                >
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id={QUESTIONS.accommodationCovered.id}
-                      checked={input.accommodationCovered}
-                      onCheckedChange={(v) => set("accommodationCovered", v)}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {input.accommodationCovered
-                        ? "Yes, we will shoulder it"
-                        : "No, please bill it to us"}
-                    </span>
-                  </div>
-                </RateFactorField>
-              </>
-            )}
-            <RateFactorField
-              question={QUESTIONS.invoiceRequired}
-              impact={
-                input.invoiceRequired
-                  ? `Issued by ${INVOICING_ENTITY.name}`
-                  : "Billed personally"
-              }
-              active={input.invoiceRequired}
-            >
-              <div className="flex items-center gap-3">
-                <Switch
-                  id={QUESTIONS.invoiceRequired.id}
-                  checked={input.invoiceRequired}
-                  onCheckedChange={(v) => set("invoiceRequired", v)}
-                />
-                <span className="text-sm text-muted-foreground">
-                  {input.invoiceRequired
-                    ? "We need an official invoice"
-                    : "No invoice needed"}
-                </span>
-              </div>
-            </RateFactorField>
-            <RateFactorField
-              question={QUESTIONS.addOns}
-              labelMode="group"
-              impact={
-                input.addOns.length
-                  ? `${input.addOns.length} selected`
-                  : "None"
-              }
-              active={input.addOns.length > 0}
-            >
-              <div className="space-y-3">
-                {ADD_ONS.map((addOn) => {
-                  const checked = input.addOns.includes(addOn.id);
-                  return (
-                    <div key={addOn.id} className="flex items-start gap-3">
-                      <Checkbox
-                        id={`addon-${addOn.id}`}
-                        checked={checked}
-                        onCheckedChange={(value) =>
-                          set(
-                            "addOns",
-                            value === true
-                              ? [...input.addOns, addOn.id]
-                              : input.addOns.filter((id) => id !== addOn.id)
-                          )
-                        }
-                        className="mt-0.5"
-                      />
-                      <div className="min-w-0">
-                        <Label htmlFor={`addon-${addOn.id}`} className="font-medium">
-                          {addOn.label}
-                          <span className="ml-2 font-mono text-[11px] text-ochre-deep dark:text-ochre tabular">
-                            {addOn.factor ? `+${Math.round(addOn.factor * 100)}%` : `+${formatPHP(addOn.amount ?? 0)}`}
-                          </span>
-                        </Label>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{addOn.detail}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </RateFactorField>
+            <QuotationFields ids={visible(DETAILS_BEFORE_IDENTITY)} ctx={fieldContext} />
+            <IdentityFields ctx={fieldContext} />
+            <QuotationFields ids={visible(DETAILS_AFTER_IDENTITY)} ctx={fieldContext} />
       </DetailSection>
 
       {quote && (

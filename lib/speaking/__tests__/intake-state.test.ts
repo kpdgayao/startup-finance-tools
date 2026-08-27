@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
   FIELD_IDS,
@@ -202,5 +204,28 @@ describe("materialBlanks", () => {
     const answered = {} as Record<FieldId, FieldStatus>;
     for (const id of FIELD_IDS) answered[id] = "read";
     expect(materialBlanks(input(), answered)).toEqual([]);
+  });
+});
+
+describe("the field registry", () => {
+  const registry = readFileSync(
+    join(process.cwd(), "app/tools/speaker-quotation/components/quotation-fields.tsx"),
+    "utf8"
+  );
+
+  it("has a renderer for every field id", () => {
+    for (const id of FIELD_IDS) {
+      expect(registry, `quotation-fields.tsx has no case for ${id}`).toContain(`case "${id}":`);
+    }
+  });
+
+  it("is the only place the controls are defined", () => {
+    // Two copies of a control drift, and a sector select that differs between
+    // two states of one page produces two different prices for one event.
+    const page = readFileSync(
+      join(process.cwd(), "app/tools/speaker-quotation/page.tsx"),
+      "utf8"
+    );
+    expect(page).not.toContain("<RateFactorField");
   });
 });

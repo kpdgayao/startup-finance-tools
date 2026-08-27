@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
+import {
+  CARD_ONE,
+  CARD_TWO_BEFORE_CALENDAR,
+  CARD_TWO_AFTER_CALENDAR,
+  CARD_THREE,
+  DETAILS_BEFORE_IDENTITY,
+  DETAILS_AFTER_IDENTITY,
+} from "@/app/tools/speaker-quotation/components/quotation-fields";
 
 // Vitest runs from the repo root, which IS the `app/` directory.
 const ROOT = process.cwd();
@@ -36,13 +44,20 @@ describe("the main region is not a scroll container", () => {
   });
 });
 
+/**
+ * Where the quotation page's controls actually live. They were inline in
+ * page.tsx until the conversational intake split them out, so that both the
+ * full form and the reading panel render one definition of each.
+ */
+const QUOTATION_CONTROLS = "app/tools/speaker-quotation/components/quotation-fields.tsx";
+
 describe("select triggers are width-constrained", () => {
   // shadcn's SelectTrigger is `w-fit`, and Radix mirrors the selected item's
   // markup into it. An option carrying a sentence of explanation therefore
   // stretched the trigger to 805px inside a 375px viewport. Any page whose
   // options are longer than a couple of words has to pass w-full.
   it("gives every trigger on the speaker quotation page a full-width class", () => {
-    const src = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
+    const src = readFileSync(join(ROOT, QUOTATION_CONTROLS), "utf8");
     const triggers = src.match(/<SelectTrigger[^>]*>/g) ?? [];
 
     // The page routes them all through one constant. Resolve it rather than
@@ -70,7 +85,7 @@ describe("select triggers are width-constrained", () => {
   // "Company or corporate in-house trainin", with no ellipsis to show that
   // anything had been cut.
   it("lets a long label shrink rather than be clipped mid-word", () => {
-    const src = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
+    const src = readFileSync(join(ROOT, QUOTATION_CONTROLS), "utf8");
     const shared = src.match(/const SELECT_TRIGGER = "([^"]*)"/)?.[1] ?? "";
     expect(shared, "SELECT_TRIGGER should carry the width classes").toMatch(/w-full/);
     expect(shared, "the value needs min-w-0 for line-clamp to apply").toMatch(/min-w-0/);
@@ -112,19 +127,36 @@ describe("the form asks a manageable number of questions up front", () => {
   // the questions that do not move the number live behind one disclosure with
   // sensible defaults, rather than being spread across more steps.
   it("keeps the optional questions behind a disclosure", () => {
-    const src = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
-    expect(src, "the optional questions should sit inside a DetailSection").toMatch(
+    const page = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
+    expect(page, "the optional questions should sit inside a DetailSection").toMatch(
       /<DetailSection/
     );
 
-    // Everything in the collapsed group must come after the quote-critical
-    // questions, or the disclosure is hiding something load-bearing.
-    const detailIndex = src.indexOf("<DetailSection");
-    for (const critical of ["QUESTIONS.engagementType", "QUESTIONS.startDate", "QUESTIONS.region"]) {
-      expect(src.indexOf(critical), `${critical} must stay outside the disclosure`).toBeLessThan(
-        detailIndex
-      );
+    // Everything in the collapsed group must be a question that does not move
+    // the number, or the disclosure is hiding something load-bearing.
+    //
+    // This used to compare source positions inside one file. The controls now
+    // live in a registry shared by the full form and the reading panel, so the
+    // grouping is asserted against the id lists themselves — which is what the
+    // page actually renders from, and cannot be satisfied by moving a line.
+    const collapsed = [...DETAILS_BEFORE_IDENTITY, ...DETAILS_AFTER_IDENTITY];
+    const upFront = [
+      ...CARD_ONE,
+      ...CARD_TWO_BEFORE_CALENDAR,
+      ...CARD_TWO_AFTER_CALENDAR,
+      ...CARD_THREE,
+    ];
+
+    for (const critical of ["engagementType", "startDate", "region"] as const) {
+      expect(upFront, `${critical} must stay outside the disclosure`).toContain(critical);
+      expect(collapsed, `${critical} must stay outside the disclosure`).not.toContain(critical);
     }
+
+    // And the disclosure must still be doing real work: if it were empty, the
+    // guard above would pass while the form was as long as it ever was.
+    expect(collapsed.length, "the disclosure should hold the optional questions").toBeGreaterThan(
+      4
+    );
   });
 
   // The page is read by someone deciding whether to book a person, and it is
