@@ -175,13 +175,36 @@ export function mergeDrafts(prev: IntakeDraft | null, incoming: IntakeDraft): In
 
   // A field the new message spoke about takes the new message's note — or no
   // note at all, if it stated the thing outright this time.
+  const incomingNotes = incoming.assumptions ?? [];
   merged.assumptions = [
-    ...incoming.assumptions,
-    ...prev.assumptions.filter(
-      (a) => !named.has(a.field) && !incoming.assumptions.some((b) => b.field === a.field)
+    ...incomingNotes,
+    ...(prev.assumptions ?? []).filter(
+      (a) => !named.has(a.field) && !incomingNotes.some((b) => b.field === a.field)
     ),
   ];
   return merged;
+}
+
+/**
+ * Which of the three states the page is in.
+ *
+ * One URL, no navigation: the quote is computed the same way in all three, and
+ * only the questions around it change.
+ */
+export type Phase = "opening" | "reading" | "full";
+
+/**
+ * Where a visitor lands.
+ *
+ * `storedPhase` is what they were last doing, and it is READ, not inferred.
+ * Deriving it from "is there anything in storage" replaced the full form with
+ * the reading panel the instant somebody changed their first field — that
+ * write is what made storage non-empty — and headed it "Here's what I read
+ * from your note" when there had been no note.
+ */
+export function initialPhase(storedPhase: Phase | null | undefined, aiAvailable: boolean): Phase {
+  if (storedPhase) return storedPhase;
+  return aiAvailable ? "opening" : "full";
 }
 
 export type FieldStatus = "read" | "assumed" | "blank" | "edited";
@@ -216,7 +239,10 @@ export function fieldProvenance(
 
 /** The note attached to a field, or null when there is none. */
 export function assumptionFor(draft: IntakeDraft | null, id: FieldId): string | null {
-  return draft?.assumptions.find((a) => a.field === id)?.note ?? null;
+  // Optional chain on `assumptions` too: the draft is rehydrated from
+  // localStorage without validation, and an older or hand-edited record
+  // missing the array threw during render and took the page down.
+  return draft?.assumptions?.find((a) => a.field === id)?.note ?? null;
 }
 
 /**
@@ -254,6 +280,22 @@ const MAX_QUESTIONS = 5;
  * there is no honest quote without one. Pinned first rather than ranked.
  */
 const ALWAYS_ASK: FieldId[] = ["startDate"];
+
+/**
+ * Questions with no option ladder to probe, which are therefore invisible to
+ * the spread measurement and have to be named.
+ *
+ * The registration fee is the case that matters: once the organizer says
+ * participants pay, the fee times the head count is what decides whether the
+ * revenue-share floor lifts the quote. Measured by spread it scores zero —
+ * there is nothing to vary it against — so it fell into the collapsed
+ * disclosure and was never asked, and the floor silently never applied.
+ */
+function pinnedFor(input: QuotationInput): FieldId[] {
+  const pinned = [...ALWAYS_ASK];
+  if (input.ticketed && !input.participantFee) pinned.push("participantFee");
+  return pinned;
+}
 
 /**
  * A blank budget is an answer — it means "I have not been given one" — and
@@ -348,13 +390,14 @@ export function materialBlanks(
       !NEVER_ASK.includes(id)
   );
 
-  const pinned = candidates.filter((id) => ALWAYS_ASK.includes(id));
+  const alwaysAsk = pinnedFor(input);
+  const pinned = candidates.filter((id) => alwaysAsk.includes(id));
 
   const total = buildQuotation(input).total;
   const threshold = Math.max(total * MATERIAL_SHARE, MATERIAL_FLOOR);
 
   const ranked = candidates
-    .filter((id) => !ALWAYS_ASK.includes(id))
+    .filter((id) => !alwaysAsk.includes(id))
     .map((id) => ({ id, spread: spreadFor(id, input) }))
     .filter((c) => c.spread >= threshold)
     .sort((a, b) => b.spread - a.spread)

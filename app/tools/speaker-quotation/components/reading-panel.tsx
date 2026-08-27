@@ -10,7 +10,17 @@ import { DetailSection } from "./detail-section";
 import { QuotationFields, IdentityFields, type FieldContext } from "./quotation-fields";
 
 const MAX_CHARS = 4_000;
-const MIN_CHARS = 3;
+
+/**
+ * Matched to `requestSchema` in `app/api/speaking/intake/route.ts`, which
+ * rejects anything under 20 characters.
+ *
+ * At 3 the button happily sent "hotel is covered" and the organizer got back
+ * "Describe the event in at least a couple of sentences" — advice that makes
+ * no sense for a one-line follow-up, about a sentence this box's own
+ * placeholder invites.
+ */
+const MIN_CHARS = 20;
 
 /** A section heading, in the eyebrow style the rest of the page uses. */
 function Eyebrow({ children }: { children: React.ReactNode }) {
@@ -36,7 +46,8 @@ interface ReadingPanelProps {
   ready: boolean;
   isDrafting: boolean;
   error: string | null;
-  onMore: (description: string) => void;
+  /** Resolves false when the sentence could not be read, so it is not thrown away. */
+  onMore: (description: string) => Promise<boolean>;
   onShowAll: () => void;
 }
 
@@ -64,10 +75,12 @@ export function ReadingPanel({
   const [more, setMore] = useState("");
   const tooShort = more.trim().length < MIN_CHARS;
 
-  const submitMore = () => {
+  const submitMore = async () => {
     if (tooShort || isDrafting) return;
-    onMore(more);
-    setMore("");
+    // Cleared only once it has actually been read. Clearing on submit meant a
+    // rate limit or a dropped connection left an error message above an empty
+    // box, with the sentence gone.
+    if (await onMore(more)) setMore("");
   };
 
   return (
@@ -107,15 +120,16 @@ export function ReadingPanel({
         disabled={!ready}
       />
 
-      {restIds.length > 0 && (
-        <DetailSection
-          title="The rest of the details"
-          summary="All optional — the quote above already assumes sensible answers, and everything you set here shows on it."
-        >
-          <QuotationFields ids={restIds} ctx={ctx} noteFor={noteFor} />
-          <IdentityFields ctx={ctx} />
-        </DetailSection>
-      )}
+      {/* Always rendered: the identity fields live in here, and gating the
+          whole section on `restIds` once made the working title, organization
+          and venue unreachable in this phase. */}
+      <DetailSection
+        title="The rest of the details"
+        summary="All optional — the quote above already assumes sensible answers, and everything you set here shows on it."
+      >
+        <QuotationFields ids={restIds} ctx={ctx} noteFor={noteFor} />
+        <IdentityFields ctx={ctx} />
+      </DetailSection>
 
       <section className="space-y-2 border-t border-rule pt-6">
         <label htmlFor="anything-else" className="block text-sm font-medium">

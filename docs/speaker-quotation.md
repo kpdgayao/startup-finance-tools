@@ -9,7 +9,7 @@ as its own line. This file covers the parts you maintain.
 | Variable | Required | What it does |
 | --- | --- | --- |
 | `SPEAKER_CALENDAR_ICS_URL` | No | Private iCal feed used for the calendar check. Without it the check falls back to the manual blackout list and says so on the page. |
-| `ANTHROPIC_API_KEY` | No, but it decides how the page opens | Reads an organizer's description into the form, and powers the AI explanation. **Without it the page opens on the full form instead of the prose box** — silently, with no error and no dead button. See "The three states" below. |
+| `ANTHROPIC_API_KEY` | No, but it decides how the page opens, and is read **per request** | Reads an organizer's description into the form, and powers the AI explanation. **Without it the page opens on the full form instead of the prose box** — silently, with no error and no dead button. See "The three states" below. |
 | `ANTHROPIC_MODEL` | No | Defaults to `claude-haiku-4-5-20251001`. |
 
 ### Getting the calendar URL
@@ -73,9 +73,15 @@ hall and not for a boardroom.
 
 ## Stored answers
 
-Answers persist to `localStorage` under **`sft-speaker-quotation`** — the form,
-the chosen date, the retained draft, and which fields the organizer corrected
-by hand. Someone arriving with stored answers lands in **Reading**, on their
+Answers persist to `localStorage` under **`sft-speaker-quotation`** — the
+**phase**, the form, the chosen date, the retained draft, and which fields the
+organizer corrected by hand.
+
+The phase is stored rather than inferred. Deriving it from "is there anything
+in storage" replaced the full form with the reading panel the moment somebody
+changed their first field, since that write is what made storage non-empty.
+`initialPhase()` in `lib/speaking/intake-state.ts` is the one place that
+decides, and it is tested. Someone arriving with stored answers lands in **Reading**, on their
 own quote, rather than on either blank state: the second visit that matters is
 the organizer coming back after their sponsor named a figure.
 
@@ -87,6 +93,15 @@ State is *derived* from storage rather than copied into `useState`. Do not
 makes `pnpm lint` fail in `compliance-checklist`, `fundraising-guide`,
 `ecosystem-banner` and `theme-toggle` today, and it would also mismatch the
 server render.
+
+### Why the route is `force-dynamic`
+
+`page.tsx` reads `ANTHROPIC_API_KEY` on the server. Next prerenders routes by
+default, which would bake that value in at **build** time — and the Docker
+build stage declares no such variable, so the deployed page would ship with the
+prose box permanently switched off, and rotating the key at runtime could not
+turn it back on. `export const dynamic = "force-dynamic"` is load-bearing;
+a test asserts it is still there. The `layout.tsx` metadata stays static.
 
 ## The intake endpoint
 

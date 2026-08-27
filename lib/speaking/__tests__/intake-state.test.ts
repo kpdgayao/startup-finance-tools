@@ -10,6 +10,7 @@ import {
   assumptionFor,
   noteToShow,
   mergeDrafts,
+  initialPhase,
   type FieldId,
   type IntakeDraft,
   type FieldStatus,
@@ -321,5 +322,79 @@ describe("mergeDrafts", () => {
   it("returns the incoming draft when there is nothing to merge into", () => {
     const d = draft({ sessions: 1 });
     expect(mergeDrafts(null, d)).toEqual(d);
+  });
+});
+
+describe("materialBlanks — ticketed events", () => {
+  it("asks what participants pay once it knows they pay", () => {
+    // Without this the revenue-share floor can never apply: the fee has no
+    // option list, so its measured spread is 0, so it fell through to the
+    // collapsed disclosure and was never asked. projectedRevenue stayed 0 and
+    // the organizer was never asked for the one figure that could raise the
+    // quote.
+    const ticketed = input({ ticketed: true, participantFee: 0 });
+    const p = fieldProvenance(draft({ ticketed: true }), new Set());
+    expect(materialBlanks(ticketed, p)).toContain("participantFee");
+  });
+
+  it("stops asking once the fee is known", () => {
+    const paid = input({ ticketed: true, participantFee: 1_500 });
+    const p = fieldProvenance(draft({ ticketed: true, participantFee: 1500 }), new Set());
+    expect(materialBlanks(paid, p)).not.toContain("participantFee");
+  });
+
+  it("does not ask about the fee when nobody is paying", () => {
+    const p = fieldProvenance(draft({ ticketed: false }), new Set());
+    expect(materialBlanks(input({ ticketed: false }), p)).not.toContain("participantFee");
+  });
+});
+
+describe("the speaker quotation route is rendered per request", () => {
+  // `page.tsx` reads ANTHROPIC_API_KEY on the server to decide whether the
+  // page can open with the prose box. Next prerenders routes by default, which
+  // BAKES that value in at build time — and the Docker build stage declares no
+  // such variable, so the deployed page shipped with aiAvailable=false
+  // permanently and the opening panel never rendered in production.
+  //
+  // Nothing else catches this: it builds, lints, and works locally because
+  // .env.local is present while building.
+  it("opts out of static prerendering", () => {
+    const page = readFileSync(
+      join(process.cwd(), "app/tools/speaker-quotation/page.tsx"),
+      "utf8"
+    );
+    expect(page).toMatch(/export const dynamic = "force-dynamic"/);
+  });
+
+  it("still reads the key on the server rather than in the client bundle", () => {
+    const client = readFileSync(
+      join(process.cwd(), "app/tools/speaker-quotation/speaker-quotation-client.tsx"),
+      "utf8"
+    );
+    expect(client).not.toContain("ANTHROPIC_API_KEY");
+  });
+});
+
+describe("initialPhase", () => {
+  it("opens on the prose box for a cold visitor when the key is set", () => {
+    expect(initialPhase(null, true)).toBe("opening");
+  });
+
+  it("opens on the full form when there is no key, silently", () => {
+    expect(initialPhase(null, false)).toBe("full");
+  });
+
+  it("returns a visitor to the state they were last in", () => {
+    expect(initialPhase("reading", true)).toBe("reading");
+    expect(initialPhase("full", true)).toBe("full");
+  });
+
+  it("keeps somebody on the full form once they have chosen it", () => {
+    // The regression: phase used to be inferred from "is anything stored", so
+    // the first field change wrote to storage and threw the organizer out of
+    // the form they had deliberately picked and into the reading panel,
+    // headed "Here's what I read from your note" when there was no note.
+    expect(initialPhase("full", false)).toBe("full");
+    expect(initialPhase("full", true)).toBe("full");
   });
 });

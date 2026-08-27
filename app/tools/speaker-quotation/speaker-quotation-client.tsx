@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
@@ -42,10 +42,12 @@ import {
 import {
   fieldProvenance,
   noteToShow,
+  initialPhase,
   mergeDrafts,
   materialBlanks,
   visibleFieldIds,
   type FieldId,
+  type Phase,
 } from "@/lib/speaking/intake-state";
 import {
   useStoredQuotation,
@@ -99,13 +101,8 @@ function today(): string {
 const subscribeToNothing = () => () => {};
 const serverToday = () => "";
 
-/**
- * Which of the three states the page is in.
- *
- * One URL, no navigation: the quote is computed the same way in all three, and
- * only the questions around it change.
- */
-type Phase = "opening" | "reading" | "full";
+/** Bucketing ignores edits on purpose — see `bucketProvenance`. */
+const EMPTY_EDITS: ReadonlySet<FieldId> = new Set();
 
 /** The answers the organizer gives. `today` and `startDate` are derived, not stored. */
 type FormState = Omit<QuotationInput, "today" | "startDate">;
@@ -143,8 +140,13 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    * Someone with answers in this browser is the organizer who came back after
    * their sponsor said "see if he can do it for less" — they want their own
    * quote, not either blank state.
+   *
+   * Read from the store rather than inferred from its existence: deriving it
+   * from `stored ? "reading" : …` replaced the full form with the reading
+   * panel the moment somebody changed their first field, because that write is
+   * what made the store non-empty.
    */
-  const phase: Phase = phaseOverride ?? (stored ? "reading" : aiAvailable ? "opening" : "full");
+  const phase: Phase = phaseOverride ?? initialPhase(stored?.phase, aiAvailable);
   const edits: ReadonlySet<FieldId> = useMemo(
     () => editsOverride ?? new Set(stored?.edits ?? []),
     [editsOverride, stored]
@@ -152,7 +154,33 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
   const draft: IntakeDraft | null = draftOverride ?? stored?.draft ?? null;
   const chosenDate: string | null = dateOverride ?? stored?.chosenDate ?? null;
 
-  const setPhase = setPhaseOverride;
+  /**
+   * What the organizer has done as of RIGHT NOW.
+   *
+   * The follow-up box awaits a model round trip, and anything corrected while
+   * it span was being reverted — and persisted — when the draft landed,
+   * because the handler was still holding the `form` and `edits` from the
+   * render that created it.
+   */
+  const latest = useRef({ form, edits, draft, chosenDate, phase });
+  // Synced after commit rather than during render — writing a ref while
+  // rendering is what `react-hooks/refs` forbids, and the window this leaves
+  // (commit to effect) is microseconds against a race that lasts as long as a
+  // model round trip.
+  useEffect(() => {
+    latest.current = { form, edits, draft, chosenDate, phase };
+  });
+
+  const setPhase = useCallback((next: Phase) => {
+    setPhaseOverride(next);
+    writeStoredQuotation({
+      phase: next,
+      form: latest.current.form,
+      chosenDate: latest.current.chosenDate,
+      draft: latest.current.draft,
+      edits: [...latest.current.edits],
+    });
+  }, []);
 
   // 45 days out: far enough that the default quote carries no rush premium.
   // The organizer should meet the standard rate first and discover the
@@ -171,30 +199,33 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    */
   const persist = useCallback(
     (next: {
+      phase?: Phase;
       form?: FormState;
       chosenDate?: string | null;
       draft?: IntakeDraft | null;
       edits?: ReadonlySet<FieldId>;
     }) => {
+      const now = latest.current;
       writeStoredQuotation({
-        form: next.form ?? form,
-        chosenDate: next.chosenDate !== undefined ? next.chosenDate : chosenDate,
-        draft: next.draft !== undefined ? next.draft : draft,
-        edits: [...(next.edits ?? edits)],
+        phase: next.phase ?? now.phase,
+        form: next.form ?? now.form,
+        chosenDate: next.chosenDate !== undefined ? next.chosenDate : now.chosenDate,
+        draft: next.draft !== undefined ? next.draft : now.draft,
+        edits: [...(next.edits ?? now.edits)],
       });
     },
-    [form, chosenDate, draft, edits]
+    []
   );
 
   const set = useCallback(
     <K extends keyof FormState>(key: K, value: FormState[K]) => {
-      const nextForm = { ...form, [key]: value };
-      const nextEdits = new Set(edits).add(key as FieldId);
+      const nextForm = { ...latest.current.form, [key]: value };
+      const nextEdits = new Set(latest.current.edits).add(key as FieldId);
       setFormOverride(nextForm);
       setEditsOverride(nextEdits);
       persist({ form: nextForm, edits: nextEdits });
     },
-    [form, edits, persist]
+    [persist]
   );
 
   /**
@@ -204,19 +235,20 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    */
   const setEngagementType = useCallback(
     (value: EngagementTypeId) => {
+      const current = latest.current.form;
       const allowed = formatsFor(value);
-      const keep = allowed.some((f) => f.id === form.format);
+      const keep = allowed.some((f) => f.id === current.format);
       const nextForm: FormState = {
-        ...form,
+        ...current,
         engagementType: value,
-        format: keep ? form.format : allowed[allowed.length - 1].id,
+        format: keep ? current.format : allowed[allowed.length - 1].id,
       };
-      const nextEdits = new Set(edits).add("engagementType" as FieldId);
+      const nextEdits = new Set(latest.current.edits).add("engagementType" as FieldId);
       setFormOverride(nextForm);
       setEditsOverride(nextEdits);
       persist({ form: nextForm, edits: nextEdits });
     },
-    [form, edits, persist]
+    [persist]
   );
 
   const availability = useAvailability();
@@ -246,7 +278,7 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
   const quote = useMemo(() => (ready ? buildQuotation(input) : null), [input, ready]);
 
   const handleReset = () => {
-    setPhase(aiAvailable ? "opening" : "full");
+    setPhaseOverride(aiAvailable ? "opening" : "full");
     setFormOverride({ ...DEFAULT_INPUT });
     setDateOverride(null);
     setEditsOverride(new Set());
@@ -265,8 +297,11 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    * against the live option list before it is accepted.
    */
   const applyDraft = (incoming: IntakeDraft) => {
+    // Read through the ref: the organizer may have corrected something while
+    // the model was reading their sentence, and that correction must survive.
+    const current = latest.current;
     const nextDate =
-      incoming.startDate && isValidISODate(incoming.startDate) ? incoming.startDate : chosenDate;
+      incoming.startDate && isValidISODate(incoming.startDate) ? incoming.startDate : current.chosenDate;
     const next = ((prev: FormState) => {
       const next = { ...prev };
       if (incoming.engagementType && ENGAGEMENT_TYPES.some((t) => t.id === incoming.engagementType))
@@ -315,17 +350,17 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
       if (incoming.organizationName) next.organizationName = incoming.organizationName.slice(0, 200);
       if (incoming.venue) next.venue = incoming.venue.slice(0, 200);
       return next;
-    })(form);
+    })(current.form);
 
     // Merged, not replaced. A follow-up sentence describes one field, not the
     // whole engagement — overwriting the draft made the page forget what the
     // first note had answered and re-ask it.
-    const mergedDraft = mergeDrafts(draft, incoming);
+    const mergedDraft = mergeDrafts(current.draft, incoming);
 
     setFormOverride(next);
     setDateOverride(nextDate);
     setDraftOverride(mergedDraft);
-    persist({ form: next, chosenDate: nextDate, draft: mergedDraft });
+    persist({ phase: "reading", form: next, chosenDate: nextDate, draft: mergedDraft });
     intake.dismiss();
     availability.reset();
     // Even an empty draft goes to Reading: a short form ordered by price
@@ -419,13 +454,26 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    */
   const provenance = useMemo(() => fieldProvenance(draft, edits), [draft, edits]);
   const applicableIds = useMemo(() => visibleFieldIds(input), [input]);
+
+  /**
+   * Which bucket a question sits in is decided by the NOTE, not by whether the
+   * organizer has since touched it.
+   *
+   * Using the edit-aware provenance meant that answering a question moved it:
+   * a switch inside the open "rest of the details" disclosure jumped to the
+   * top of the page under "Here's what I read from your note", unmounting from
+   * under the cursor mid-click. Correcting the last remaining one also emptied
+   * the disclosure, which took the working-title, organization and venue
+   * fields off the page with it.
+   */
+  const bucketProvenance = useMemo(() => fieldProvenance(draft, EMPTY_EDITS), [draft]);
   const knownIds = useMemo(
-    () => applicableIds.filter((id) => provenance[id] !== "blank"),
-    [applicableIds, provenance]
+    () => applicableIds.filter((id) => bucketProvenance[id] !== "blank"),
+    [applicableIds, bucketProvenance]
   );
   const askingIds = useMemo(
-    () => materialBlanks(input, provenance),
-    [input, provenance]
+    () => materialBlanks(input, bucketProvenance),
+    [input, bucketProvenance]
   );
   const restIds = useMemo(
     () => applicableIds.filter((id) => !knownIds.includes(id) && !askingIds.includes(id)),
@@ -459,8 +507,14 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
     set,
     setEngagementType,
     setChosenDate: (value: string) => {
+      // Recorded as an edit like every other control. Without it `startDate`
+      // stayed "blank", and since it is the one entry in ALWAYS_ASK it sat in
+      // "These would change the number" under "Your note did not say" forever,
+      // even after the organizer had picked the date.
+      const nextEdits = new Set(latest.current.edits).add("startDate" as FieldId);
       setDateOverride(value);
-      persist({ chosenDate: value });
+      setEditsOverride(nextEdits);
+      persist({ chosenDate: value, edits: nextEdits });
     },
     resetAvailability: availability.reset,
     organizer,
@@ -549,6 +603,7 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
             // Merged, not replaced: applyDraft only overwrites the fields the
             // incoming draft actually named.
             if (drafted) applyDraft(drafted);
+            return Boolean(drafted);
           }}
           onShowAll={() => setPhase("full")}
         />
