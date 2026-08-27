@@ -199,8 +199,13 @@ Rules, unchanged in behaviour from today's page:
 - `complexity` — speaking only.
 - `audienceProfile` — hidden for team building.
 - `participantFee`, `expectedPaidAttendees` — only when `ticketed`.
-- `region`, `travelCovered`, `accommodationCovered` — hidden when the chosen
-  format is remote (the engine already forces `online`).
+- `earlyStart`, `travelCovered`, `accommodationCovered` — hidden when the chosen
+  format is remote (`page.tsx:941`).
+- `region` stays **visible but disabled** for a remote format, with the
+  existing "Online — no travel" note (`page.tsx:733`, `:751`). It is not
+  hidden. `visibleFieldIds` returns it; the control's own `disabled` prop
+  handles the rest. A remote format must never surface `region` as a blank
+  worth asking about — `materialBlanks` excludes disabled fields.
 
 ### 6.2 `fieldProvenance(draft, edits): Record<FieldId, Status>`
 
