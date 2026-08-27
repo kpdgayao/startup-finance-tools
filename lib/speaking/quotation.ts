@@ -144,6 +144,18 @@ export interface QuotationInput {
   eventTitle?: string;
   organizationName?: string;
   venue?: string;
+  /**
+   * Who is asking, carried through to the inquiry email and the printed quote.
+   *
+   * Free text, like the three fields above, and priced by nothing: the engine
+   * never reads them. They exist because the finished quote used to arrive as
+   * an email from an unknown address about an unnamed organization, which is
+   * not something anybody can reply to.
+   */
+  contactName?: string;
+  contactRole?: string;
+  contactEmail?: string;
+  contactPhone?: string;
 }
 
 export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
@@ -171,6 +183,10 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   eventTitle: "",
   organizationName: "",
   venue: "",
+  contactName: "",
+  contactRole: "",
+  contactEmail: "",
+  contactPhone: "",
 };
 
 // ---------------------------------------------------------------------------

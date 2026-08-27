@@ -58,6 +58,22 @@ export function buildQuotationPrint(quote: Quotation, input: QuotationInput): st
             }`,
           ],
           ["Prepared for", esc(input.organizationName) || "—"],
+          // A forwarded quote reaches a desk that did not request it. Naming
+          // who did is what lets that desk ask the one question it always has
+          // — "who agreed to this?" — without coming back through me.
+          [
+            "Requested by",
+            [
+              input.contactName
+                ? `${esc(input.contactName)}${
+                    input.contactRole ? `, ${esc(input.contactRole)}` : ""
+                  }`
+                : "",
+              [esc(input.contactEmail), esc(input.contactPhone)].filter(Boolean).join(" · "),
+            ]
+              .filter(Boolean)
+              .join("<br>") || "—",
+          ],
           ["Event", esc(input.eventTitle) || "—"],
           ["Venue", esc(input.venue) || "—"],
           [

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { RotateCcw, Send } from "lucide-react";
+import { Check, Copy, RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { MarginNote } from "@/components/shared/margin-note";
@@ -55,6 +55,11 @@ import {
   clearStoredQuotation,
 } from "@/lib/speaking/use-quotation-storage";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
+import {
+  buildInquiryBody,
+  buildInquiryMailto,
+  contactComplete,
+} from "@/lib/speaking/inquiry";
 import {
   addDays,
   formatEngagementDate,
@@ -349,6 +354,13 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
       if (incoming.eventTitle) next.eventTitle = incoming.eventTitle.slice(0, 200);
       if (incoming.organizationName) next.organizationName = incoming.organizationName.slice(0, 200);
       if (incoming.venue) next.venue = incoming.venue.slice(0, 200);
+      // Free text like the three above, and outside FIELD_IDS, so these carry
+      // no provenance note — an organizer does not need telling that the name
+      // they signed off with is the name that was read.
+      if (incoming.contactName) next.contactName = incoming.contactName.slice(0, 200);
+      if (incoming.contactRole) next.contactRole = incoming.contactRole.slice(0, 200);
+      if (incoming.contactEmail) next.contactEmail = incoming.contactEmail.slice(0, 200);
+      if (incoming.contactPhone) next.contactPhone = incoming.contactPhone.slice(0, 200);
       return next;
     })(current.form);
 
@@ -368,37 +380,39 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
     setPhase("reading");
   };
 
-  const mailtoHref = useMemo(() => {
-    if (!quote) return `mailto:${INQUIRY_EMAIL}`;
-    const type = engagementTypeFor(input.engagementType);
-    const chosen = formatsFor(type.id).find((f) => f.id === input.format);
-    const chosenLabel = chosen ? formatLabel(chosen, type.id) : type.label;
-    const lines = [
-      `Quotation reference: ${quote.reference}`,
-      input.eventTitle ? `Event: ${input.eventTitle}` : null,
-      input.organizationName ? `Organization: ${input.organizationName}` : null,
-      input.venue ? `Venue: ${input.venue}` : null,
-      `Dates: ${quote.dates.map((d) => formatEngagementDate(d.date, { weekday: true })).join("; ")}`,
-      `Engagement: ${type.label}`,
-      `Format: ${chosenLabel}${input.sessions > 1 ? ` × ${input.sessions}` : ""}`,
-      `Participants: ${input.audienceSize}`,
-      "",
-      `Professional fee: ${formatPHP(quote.professionalFee)}`,
-      `Billed logistics: ${formatPHP(quote.reimbursablesBilled)}`,
-      `Total: ${formatPHP(quote.total)}`,
-      `Quote valid until ${formatEngagementDate(quote.validUntil)}.`,
-      "",
-      "Generated from the published rate card at startupfinance.tools/tools/speaker-quotation.",
-      "",
-      "Anything else you should know about this event:",
-      "",
-    ].filter((line): line is string => line !== null);
+  /**
+   * The inquiry itself is built in `lib/speaking/inquiry.ts` — it is the one
+   * output nobody sees before it is sent, so it is unit-tested rather than
+   * assembled inline here.
+   */
+  const mailtoHref = useMemo(
+    () => (quote ? buildInquiryMailto(INQUIRY_EMAIL, quote, input) : `mailto:${INQUIRY_EMAIL}`),
+    [quote, input]
+  );
+  const canSend = contactComplete(input);
 
-    const subject = `[Speaking] ${input.eventTitle || "Engagement inquiry"} — ${quote.reference}`;
-    return `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(lines.join("\n"))}`;
+  /**
+   * The same text, on the clipboard.
+   *
+   * A `mailto:` href is a URL, and several mail clients truncate a long one
+   * without saying so — a full brief runs close enough to that ceiling that
+   * the organizer needs a way to paste it that cannot be cut. It is also the
+   * only route on a machine with no mail client configured at all.
+   */
+  const [copied, setCopied] = useState(false);
+  const copyInquiry = useCallback(() => {
+    if (!quote) return;
+    void navigator.clipboard
+      ?.writeText(buildInquiryBody(quote, input))
+      .then(() => setCopied(true))
+      .catch(() => setCopied(false));
   }, [quote, input]);
+  // Reverts the tick without leaving a timer behind on unmount.
+  useEffect(() => {
+    if (!copied) return;
+    const id = window.setTimeout(() => setCopied(false), 2_000);
+    return () => window.clearTimeout(id);
+  }, [copied]);
 
   const audienceBand = audienceBandFor(input.audienceSize);
   const audienceProfile = audienceProfileFor(input.audienceProfile);
@@ -616,22 +630,50 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
       {phase === "full" && quoteBlock}
 
       {phase !== "opening" && quote && (
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
-        <p className="text-sm text-muted-foreground">
-          Quote {quote.reference} · valid until {formatEngagementDate(quote.validUntil)}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <ExportPDFButton
-            filename={`Speaking Quotation ${quote.reference}`}
-            buildPrintContent={() => buildQuotationPrint(quote, input)}
-          />
-          <Button asChild size="sm">
-            <a href={mailtoHref}>
-              <Send className="mr-2 h-4 w-4" />
-              Send this inquiry
-            </a>
-          </Button>
+      <div className="space-y-3 border-t border-rule pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Quote {quote.reference} · valid until {formatEngagementDate(quote.validUntil)}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {/* Ungated on purpose. Someone may legitimately want the numbers
+                without contacting anybody, and gating the PDF would make the
+                contact block feel like a toll rather than a courtesy. */}
+            <ExportPDFButton
+              filename={`Speaking Quotation ${quote.reference}`}
+              buildPrintContent={() => buildQuotationPrint(quote, input)}
+            />
+            <Button variant="outline" size="sm" onClick={copyInquiry}>
+              {copied ? (
+                <Check className="mr-2 h-4 w-4" />
+              ) : (
+                <Copy className="mr-2 h-4 w-4" />
+              )}
+              {copied ? "Copied" : "Copy inquiry"}
+            </Button>
+            {/* Rendered as a disabled BUTTON rather than a greyed link: an
+                anchor with `aria-disabled` is still followed on Enter, which
+                would open a blank mail draft anyway. */}
+            {canSend ? (
+              <Button asChild size="sm">
+                <a href={mailtoHref}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send this inquiry
+                </a>
+              </Button>
+            ) : (
+              <Button size="sm" disabled aria-describedby="send-gate">
+                <Send className="mr-2 h-4 w-4" />
+                Send this inquiry
+              </Button>
+            )}
+          </div>
         </div>
+        {!canSend && (
+          <p id="send-gate" className="text-right text-xs text-muted-foreground">
+            Add your name, organization and email above so I know who I am replying to.
+          </p>
+        )}
       </div>
       )}
 

@@ -28,8 +28,9 @@ import {
  * The order is load-bearing: `visibleFieldIds` filters this list rather than
  * building its own, so the form's reading order is defined in exactly one
  * place. The free-text identity fields (eventTitle, organizationName, venue)
- * are deliberately absent — they do not enter the price and have no QUESTIONS
- * entry.
+ * and the contact fields (contactName, contactRole, contactEmail,
+ * contactPhone) are deliberately absent — they do not enter the price and
+ * have no QUESTIONS entry.
  */
 export const FIELD_IDS = [
   "organizerType",
@@ -147,6 +148,10 @@ export interface IntakeDraft {
   eventTitle?: string;
   organizationName?: string;
   venue?: string;
+  contactName?: string;
+  contactRole?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   assumptions: IntakeAssumption[];
 }
 

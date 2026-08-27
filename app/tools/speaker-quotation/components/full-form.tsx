@@ -7,6 +7,7 @@ import { DetailSection } from "./detail-section";
 import {
   QuotationFields,
   IdentityFields,
+  ContactFields,
   CARD_ONE,
   CARD_TWO_BEFORE_CALENDAR,
   CARD_TWO_AFTER_CALENDAR,
@@ -100,6 +101,14 @@ export function FullForm({ ctx, availability, ready }: FullFormProps) {
         <IdentityFields ctx={ctx} />
         <QuotationFields ids={visible(DETAILS_AFTER_IDENTITY)} ctx={ctx} />
       </DetailSection>
+
+      {/* Last, and outside the collapsed section: it is the block the send
+          button waits on, so it belongs immediately above it. */}
+      <Card>
+        <CardContent className="pt-6">
+          <ContactFields ctx={ctx} />
+        </CardContent>
+      </Card>
     </>
   );
 }

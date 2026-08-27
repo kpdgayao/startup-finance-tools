@@ -7,7 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import type { FieldId } from "@/lib/speaking/intake-state";
 import { AvailabilityPanel } from "./availability-panel";
 import { DetailSection } from "./detail-section";
-import { QuotationFields, IdentityFields, type FieldContext } from "./quotation-fields";
+import {
+  QuotationFields,
+  IdentityFields,
+  ContactFields,
+  Eyebrow,
+  type FieldContext,
+} from "./quotation-fields";
 
 const MAX_CHARS = 4_000;
 
@@ -21,15 +27,6 @@ const MAX_CHARS = 4_000;
  * placeholder invites.
  */
 const MIN_CHARS = 20;
-
-/** A section heading, in the eyebrow style the rest of the page uses. */
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-      {children}
-    </p>
-  );
-}
 
 interface ReadingPanelProps {
   ctx: FieldContext;
@@ -170,6 +167,10 @@ export function ReadingPanel({
           you send the inquiry.
         </p>
       </section>
+
+      <div className="border-t border-rule pt-6">
+        <ContactFields ctx={ctx} />
+      </div>
 
       <div className="border-t border-rule pt-4">
         <button
