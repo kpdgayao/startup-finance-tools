@@ -1131,6 +1131,24 @@ export function formatLabel(format: EngagementFormat, type: EngagementTypeId): s
 }
 
 /** The formats offered for one engagement type. */
+/**
+ * The format an engagement will actually be PRICED at.
+ *
+ * Deliberately unscoped by engagement type, and deliberately falling back to
+ * the first format rather than the last offered one: this is what the pricing
+ * engine does, and every surface that asks "is this remote?" has to agree with
+ * the engine or it describes an engagement that was not the one quoted. Three
+ * private copies of this had drifted from it — a stranded format id restored
+ * from an older build's localStorage priced a webinar with no travel while the
+ * inquiry email printed a province, a hotel night and a van.
+ *
+ * `formatsFor` is the other question — which formats a given engagement type
+ * may OFFER — and is what the dropdown should keep using.
+ */
+export function resolveFormat(id: string): EngagementFormat {
+  return ENGAGEMENT_FORMATS.find((f) => f.id === id) ?? ENGAGEMENT_FORMATS[0];
+}
+
 export function formatsFor(type: EngagementTypeId): EngagementFormat[] {
   return ENGAGEMENT_FORMATS.filter((f) => f.types.includes(type));
 }

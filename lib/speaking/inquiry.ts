@@ -23,6 +23,7 @@ import {
   formatLabel,
   formatsFor,
   organizerTypeFor,
+  resolveFormat,
   outputOptionFor,
   preparationOptionFor,
   regionFor,
@@ -46,18 +47,12 @@ function text(value: string | undefined): string | undefined {
 }
 
 /**
- * Whether the engine's chosen format is remote, resolved the way the engine
- * resolves it — falling back to the last offered format when the current id
- * is stranded by an engagement-type change.
- *
- * Reading the raw dropdown instead would put a hotel night and a province in
- * an inquiry about a webinar.
+ * Deliberately loose: it rejects what cannot receive mail, not what looks
+ * unusual. Exported so the field's own error state and the send gate ask the
+ * same question — a field showing no error beside a button disabled for that
+ * field is worse than either alone.
  */
-function isRemote(input: QuotationInput): boolean {
-  const allowed = formatsFor(input.engagementType);
-  const chosen = allowed.find((f) => f.id === input.format) ?? allowed[allowed.length - 1];
-  return Boolean(chosen.remote);
-}
+export const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
  * Is there enough here to reply to?
@@ -72,7 +67,7 @@ export function contactComplete(input: QuotationInput): boolean {
     text(input.contactName) &&
       text(input.organizationName) &&
       email &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)
+      EMAIL_SHAPE.test(email)
   );
 }
 
@@ -86,15 +81,33 @@ export function buildInquiryBody(quote: Quotation, input: QuotationInput): strin
   const type = engagementTypeFor(input.engagementType);
   const chosen = formatsFor(type.id).find((f) => f.id === input.format);
   const chosenLabel = chosen ? formatLabel(chosen, type.id) : type.label;
-  const remote = isRemote(input);
+  const remote = Boolean(resolveFormat(input.format).remote);
   const facilitation = type.id === "facilitation";
   const teamBuilding = type.id === "team-building";
+
+  /**
+   * How many people the engine believes will actually pay.
+   *
+   * `expectedPaidAttendees` defaults to 0, and the field's own placeholder is
+   * the participant count — 0 means "the same as the room". The engine reads
+   * it that way (`raw.expectedPaidAttendees > 0 ? ... : audienceSize`), so
+   * printing the raw 0 sent an email claiming nobody would pay, stapled to a
+   * fee carrying a revenue-share uplift computed on a full room.
+   */
+  const paidAttendees =
+    input.expectedPaidAttendees > 0 ? input.expectedPaidAttendees : input.audienceSize;
 
   const name = text(input.contactName);
   const role = text(input.contactRole);
   const email = text(input.contactEmail);
   const phone = text(input.contactPhone);
-  const rateBasis = `${quote.topicTier} (${formatPHP(quote.dayRate)}/day)`;
+  // `quote.topicTier` is the facilitation scope for facilitation and the
+  // COMPLEXITY tier otherwise — including for team building, which is never
+  // asked the complexity question at all (visibleFieldIds filters it out).
+  // Naming a tier there would attribute the day rate to a setting the
+  // organizer never saw and that did not produce it.
+  const dayRate = `${formatPHP(quote.dayRate)}/day`;
+  const rateBasis = `${quote.topicTier} (${dayRate})`;
 
   const sections: Array<[string, Array<string | null>]> = [
     [
@@ -128,11 +141,11 @@ export function buildInquiryBody(quote: Quotation, input: QuotationInput): strin
         facilitation ? `Preparation: ${preparationOptionFor(input.preparation).label}` : null,
         facilitation ? `Written output: ${outputOptionFor(input.output).label}` : null,
         facilitation || teamBuilding ? null : `Subject tier: ${rateBasis}`,
-        teamBuilding ? `Rate basis: ${rateBasis}` : null,
+        teamBuilding ? `Day rate: ${dayRate}` : null,
         input.ticketed
-          ? `Ticketed: ${formatPHP(input.participantFee)} per participant, ${input.expectedPaidAttendees.toLocaleString(
+          ? `Ticketed: ${formatPHP(input.participantFee)} per participant, ${paidAttendees.toLocaleString(
               "en-PH"
-            )} expected to pay`
+            )} expected to pay (${formatPHP(quote.projectedRevenue)} in registrations)`
           : null,
         input.budget > 0 ? `Our stated budget: ${formatPHP(input.budget)}` : null,
       ],
@@ -189,6 +202,19 @@ export function buildInquiryBody(quote: Quotation, input: QuotationInput): strin
     .join("\n\n");
 
   return `${body}\n\nAnything else you should know about this event:\n\n`;
+}
+
+/**
+ * Whether this href is long enough that a mail client may cut it.
+ *
+ * A loaded inquiry — facilitation, four add-ons, ticketing, a budget and all
+ * the logistics lines — measures around 2,065 characters, so this is not a
+ * theoretical case. The peso sign alone costs nine characters once encoded.
+ * The page shows the organizer the Copy route when this is true rather than
+ * letting them send something that arrives cut off mid-sentence.
+ */
+export function exceedsMailtoLimit(href: string): boolean {
+  return href.length > MAILTO_SAFE_LENGTH;
 }
 
 /** The finished `mailto:` href, subject and body encoded. */

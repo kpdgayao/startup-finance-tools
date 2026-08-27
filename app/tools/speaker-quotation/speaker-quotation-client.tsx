@@ -30,6 +30,7 @@ import {
   outputOptionFor,
   preparationOptionFor,
   formatsFor,
+  resolveFormat,
   type AddOnId,
   type AudienceProfileId,
   type ComplexityId,
@@ -59,6 +60,7 @@ import {
   buildInquiryBody,
   buildInquiryMailto,
   contactComplete,
+  exceedsMailtoLimit,
 } from "@/lib/speaking/inquiry";
 import {
   addDays,
@@ -275,7 +277,10 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
   const preparationDaysLabel = dayLabel(preparationOption.days);
   const outputDaysLabel = dayLabel(outputOption.days);
 
-  const isRemote = format.remote;
+  // Resolved the way the ENGINE resolves it, not from the display `format`
+  // above: the dropdown clamps a stranded id to an offered one, the engine
+  // does not, and it is the engine that decides whether travel is charged.
+  const isRemote = resolveFormat(input.format).remote;
 
   const ready = Boolean(now) && isValidISODate(startDate);
   // Shown before a quote exists, so it cannot read quote.dayEquivalents.
@@ -390,6 +395,24 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
     [quote, input]
   );
   const canSend = contactComplete(input);
+  const mailtoTooLong = exceedsMailtoLimit(mailtoHref);
+
+  /**
+   * Sends the reader to the first contact field that is still missing.
+   *
+   * The gate message alone is not enough: someone who cannot see the form
+   * needs to arrive AT the field, not be told a block exists somewhere above.
+   */
+  const focusContactGap = useCallback(() => {
+    const id = !input.contactName?.trim()
+      ? "contact-name"
+      : !input.organizationName?.trim()
+        ? "organization"
+        : "contact-email";
+    const field = document.getElementById(id);
+    field?.scrollIntoView({ block: "center", behavior: "smooth" });
+    (field as HTMLInputElement | null)?.focus({ preventScroll: true });
+  }, [input.contactName, input.organizationName]);
 
   /**
    * The same text, on the clipboard.
@@ -399,20 +422,30 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    * the organizer needs a way to paste it that cannot be cut. It is also the
    * only route on a machine with no mail client configured at all.
    */
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const copied = copyState === "copied";
   const copyInquiry = useCallback(() => {
     if (!quote) return;
-    void navigator.clipboard
-      ?.writeText(buildInquiryBody(quote, input))
-      .then(() => setCopied(true))
-      .catch(() => setCopied(false));
+    const body = buildInquiryBody(quote, input);
+    // `navigator.clipboard` is undefined on a non-secure origin, and a write
+    // can be refused outright (permission, unfocused document). Both used to
+    // leave the button doing visibly nothing — a silent failure on the button
+    // that exists BECAUSE the other route can fail silently.
+    const write = navigator.clipboard?.writeText(body);
+    if (!write) {
+      setCopyState("failed");
+      return;
+    }
+    void write.then(() => setCopyState("copied")).catch(() => setCopyState("failed"));
   }, [quote, input]);
-  // Reverts the tick without leaving a timer behind on unmount.
+  // Reverts the tick without leaving a timer behind on unmount. The failure
+  // state is NOT auto-cleared: it carries instructions the reader needs time
+  // to act on.
   useEffect(() => {
-    if (!copied) return;
-    const id = window.setTimeout(() => setCopied(false), 2_000);
+    if (copyState !== "copied") return;
+    const id = window.setTimeout(() => setCopyState("idle"), 2_000);
     return () => window.clearTimeout(id);
-  }, [copied]);
+  }, [copyState]);
 
   const audienceBand = audienceBandFor(input.audienceSize);
   const audienceProfile = audienceProfileFor(input.audienceProfile);
@@ -651,9 +684,12 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
               )}
               {copied ? "Copied" : "Copy inquiry"}
             </Button>
-            {/* Rendered as a disabled BUTTON rather than a greyed link: an
-                anchor with `aria-disabled` is still followed on Enter, which
-                would open a blank mail draft anyway. */}
+            {/* Not a `disabled` button: a disabled control is removed from
+                the tab order, so the one explanation of WHY sending is
+                blocked was unreachable to exactly the keyboard and screen
+                reader users who cannot see the empty fields either. It stays
+                focusable, announces itself as disabled, and sends the reader
+                to the first field that is missing. */}
             {canSend ? (
               <Button asChild size="sm">
                 <a href={mailtoHref}>
@@ -662,7 +698,13 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
                 </a>
               </Button>
             ) : (
-              <Button size="sm" disabled aria-describedby="send-gate">
+              <Button
+                size="sm"
+                aria-disabled
+                aria-describedby="send-gate"
+                className="opacity-50"
+                onClick={focusContactGap}
+              >
                 <Send className="mr-2 h-4 w-4" />
                 Send this inquiry
               </Button>
@@ -672,6 +714,18 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
         {!canSend && (
           <p id="send-gate" className="text-right text-xs text-muted-foreground">
             Add your name, organization and email above so I know who I am replying to.
+          </p>
+        )}
+        {mailtoTooLong && copyState !== "failed" && (
+          <p className="text-right text-xs text-muted-foreground">
+            This inquiry is a long one. Some mail apps cut long links off without saying so — if
+            the draft looks short, use Copy inquiry and paste it instead.
+          </p>
+        )}
+        {copyState === "failed" && (
+          <p className="border-l-[2px] border-bad pl-3 text-xs text-bad" role="alert">
+            Your browser would not let me reach the clipboard. Export the PDF instead, or use
+            Send this inquiry to open the message in your mail app.
           </p>
         )}
       </div>

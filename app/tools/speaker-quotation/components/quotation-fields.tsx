@@ -49,6 +49,7 @@ import {
   type RegionId,
 } from "@/lib/speaking/rate-card";
 import { QUESTIONS } from "@/lib/speaking/questions";
+import { EMAIL_SHAPE } from "@/lib/speaking/inquiry";
 import type { BudgetFit, Quotation, QuotationInput } from "@/lib/speaking/quotation";
 import { isValidISODate } from "@/lib/speaking/availability";
 import { type FieldId, isFieldDisabled } from "@/lib/speaking/intake-state";
@@ -921,7 +922,7 @@ export function ContactFields({ ctx }: { ctx: FieldContext }) {
   const email = (input.contactEmail ?? "").trim();
   // Shown only once there is something to be wrong about. Colouring an
   // untouched empty field red is how a form tells someone off for arriving.
-  const emailMalformed = email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  const emailMalformed = email.length > 0 && !EMAIL_SHAPE.test(email);
 
   return (
     <section className="space-y-4">

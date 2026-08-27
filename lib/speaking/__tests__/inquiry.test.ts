@@ -3,9 +3,12 @@ import {
   buildInquiryBody,
   buildInquirySubject,
   contactComplete,
+  exceedsMailtoLimit,
   MAILTO_SAFE_LENGTH,
 } from "@/lib/speaking/inquiry";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
+import { complexityTierFor } from "@/lib/speaking/rate-card";
+import { formatPHP } from "@/lib/utils";
 
 /**
  * The inquiry email is the only thing that actually leaves this page. Whatever
@@ -187,56 +190,69 @@ describe("mailto length", () => {
    * worst of all — truncate it somewhere around 2,000 characters, and a
    * truncated inquiry arrives cut off mid-sentence with no sign anything is
    * missing. The Copy button exists because of this; the body still has to
-   * fit for the common case.
+   * fit for the common case, and when it cannot, the part that survives a
+   * cut has to be the part worth keeping.
    */
-  it("stays under a mail client's URL ceiling with every field filled in", () => {
-    const maximal: QuotationInput = {
-      ...base,
-      engagementType: "facilitation",
-      facilitationScope: "board",
-      preparation: "interviews",
-      output: "plan",
-      format: "multi-day",
-      sessions: 3,
-      organizerType: "government",
-      region: "visayas",
-      audienceSize: 250,
-      audienceProfile: "executives",
-      ticketed: true,
-      participantFee: 3_500,
-      expectedPaidAttendees: 200,
-      budget: 500_000,
-      addOns: ADD_ON_MAX,
-      invoiceRequired: true,
-      returningClient: true,
-      travelCovered: false,
-      accommodationCovered: false,
-      earlyStart: true,
-      eventTitle: "A".repeat(200),
-      organizationName: "B".repeat(200),
-      venue: "C".repeat(200),
-      contactName: "D".repeat(200),
-      contactRole: "E".repeat(200),
-      contactEmail: "F".repeat(190) + "@x.com",
-      contactPhone: "G".repeat(200),
-    };
-    const quote = buildQuotation(maximal);
-    const href = `mailto:x@y.com?subject=${encodeURIComponent(
-      buildInquirySubject(quote, maximal)
-    )}&body=${encodeURIComponent(buildInquiryBody(quote, maximal))}`;
+  const hrefFor = (input: QuotationInput) => {
+    const quote = buildQuotation(input);
+    return `mailto:x@y.com?subject=${encodeURIComponent(
+      buildInquirySubject(quote, input)
+    )}&body=${encodeURIComponent(buildInquiryBody(quote, input))}`;
+  };
 
-    // Not a claim that this maximal case fits — it cannot, with 1,400
-    // characters of free text alone. The claim is that a REALISTIC one does.
-    const realistic = buildQuotation(base);
-    const realisticHref = `mailto:x@y.com?subject=${encodeURIComponent(
-      buildInquirySubject(realistic, base)
-    )}&body=${encodeURIComponent(buildInquiryBody(realistic, base))}`;
-    expect(realisticHref.length).toBeLessThan(MAILTO_SAFE_LENGTH);
-    expect(href.length).toBeGreaterThan(0);
+  it("fits inside a mail client's URL ceiling for a realistic inquiry", () => {
+    expect(hrefFor(base).length).toBeLessThan(MAILTO_SAFE_LENGTH);
+  });
+
+  it("flags a fully-specified inquiry as too long, rather than sending it cut off", () => {
+    // Measured at ~2,065 characters: facilitation, four add-ons, ticketing, a
+    // budget and every logistics line. Not a theoretical maximum — the peso
+    // sign alone costs nine characters once encoded. The page steers this
+    // organizer to Copy instead of letting Outlook truncate it silently.
+    expect(
+      exceedsMailtoLimit(hrefFor({
+        ...base,
+        engagementType: "facilitation",
+        facilitationScope: "board",
+        preparation: "interviews",
+        output: "plan",
+        format: "full-day",
+        sessions: 3,
+        organizerType: "government",
+        region: "visayas-mindanao",
+        audienceSize: 250,
+        ticketed: true,
+        participantFee: 3_500,
+        expectedPaidAttendees: 200,
+        budget: 500_000,
+        addOns: ["workbook", "recording-public", "assessment", "clinic"],
+        invoiceRequired: true,
+        returningClient: true,
+        travelCovered: false,
+        accommodationCovered: false,
+        earlyStart: true,
+      }))
+    ).toBe(true);
+  });
+
+  it("does not flag an ordinary one", () => {
+    expect(exceedsMailtoLimit(hrefFor(base))).toBe(false);
+  });
+
+  it("keeps the sender inside the first 400 characters, so a truncation cannot eat it", () => {
+    // 200 chars each of title, organization, venue, name, role and phone is
+    // past any client's ceiling on purpose: the guarantee under test is the
+    // ORDER, which is what decides whether a cut email is still answerable.
+    const body = buildInquiryBody(
+      buildQuotation({ ...base, eventTitle: "A".repeat(200), venue: "C".repeat(200) }),
+      { ...base, eventTitle: "A".repeat(200), venue: "C".repeat(200) }
+    );
+    expect(body.indexOf("Maria Santos")).toBeLessThan(400);
+    expect(body.indexOf("maria@dtiregion1.gov.ph")).toBeLessThan(400);
+    expect(body.indexOf("Organization type:")).toBeLessThan(400);
   });
 });
 
-const ADD_ON_MAX = ["workbook", "recording-public", "assessment", "clinic"] as QuotationInput["addOns"];
 
 describe("contactComplete", () => {
   it("is false until a name, an organization and a plausible email are all there", () => {
@@ -257,5 +273,64 @@ describe("contactComplete", () => {
   it("is true once the three required fields are there, with or without the optional two", () => {
     expect(contactComplete(base)).toBe(true);
     expect(contactComplete({ ...base, contactRole: "", contactPhone: "" })).toBe(true);
+  });
+});
+
+describe("what the engine actually priced", () => {
+  it("prints the paying headcount the engine used, not a default 0", () => {
+    // The field defaults to 0 and its placeholder is the participant count:
+    // 0 means "everyone in the room". Printing the raw 0 sent an email saying
+    // nobody pays, attached to a fee carrying a revenue-share uplift computed
+    // on a full room.
+    const input = { ...base, ticketed: true, participantFee: 1_500, expectedPaidAttendees: 0 };
+    const quote = buildQuotation(input);
+    const body = buildInquiryBody(quote, input);
+
+    expect(body).not.toMatch(/0 expected to pay/);
+    expect(body).toMatch(new RegExp(`${input.audienceSize} expected to pay`));
+    expect(body).toContain(formatPHP(quote.projectedRevenue));
+  });
+
+  it("honours an explicit paying headcount below the room size", () => {
+    const input = { ...base, ticketed: true, participantFee: 1_500, expectedPaidAttendees: 12 };
+    expect(buildInquiryBody(buildQuotation(input), input)).toMatch(/12 expected to pay/);
+  });
+
+  it("gives team building a day rate but never a subject tier it was not asked", () => {
+    // `quote.topicTier` falls back to the complexity label for team building,
+    // and the complexity question is filtered out of the form entirely there.
+    const input: QuotationInput = { ...base, engagementType: "team-building", format: "full-day" };
+    const body = buildInquiryBody(buildQuotation(input), input);
+
+    expect(body).toMatch(/Day rate: /);
+    expect(body).not.toMatch(/Subject tier:/);
+    expect(body).not.toContain(complexityTierFor(base.complexity).label);
+  });
+
+  it("reads remote from the format the ENGINE resolved, not the offered list", () => {
+    // A format id stranded by an older build: the offered-list fallback said
+    // "not remote" while the engine priced a webinar with no travel at all.
+    const input = { ...base, format: "webinar" as const, engagementType: "facilitation" as const };
+    const body = buildInquiryBody(buildQuotation(input), input);
+    expect(body).toContain("Location: online, no travel");
+    expect(body).not.toMatch(/Travel:/);
+  });
+});
+
+describe("the reference an organizer quotes back", () => {
+  it("does not move when the organization name is typed in last", () => {
+    // organizationName is now required and filled in the LAST block on the
+    // page. Seeding the reference with it meant a PDF exported before that
+    // block and the email sent after it carried two different codes for one
+    // quote.
+    const before = buildQuotation({ ...base, organizationName: "" });
+    const after = buildQuotation({ ...base, organizationName: "DTI Region 1" });
+    expect(after.reference).toBe(before.reference);
+  });
+
+  it("still moves when something that was actually priced changes", () => {
+    const a = buildQuotation(base);
+    const b = buildQuotation({ ...base, audienceSize: base.audienceSize + 100 });
+    expect(a.reference).not.toBe(b.reference);
   });
 });

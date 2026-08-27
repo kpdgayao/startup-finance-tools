@@ -28,6 +28,7 @@ import {
   DATE_HOLD_DAYS,
   DESK_DAY_FACTOR,
   ENGAGEMENT_FORMATS,
+  resolveFormat,
   EWT_RATE,
   EWT_RATE_FIRM,
   HONORARIUM_DAY_CEILING,
@@ -435,10 +436,16 @@ function referenceFor(input: QuotationInput): string {
     [...input.addOns].sort().join(","),
     input.invoiceRequired ? "INV" : "NOINV",
     input.returningClient ? "RETURNING" : "NEW",
-    // The budget is deliberately absent: it moves nothing, so two quotes that
-    // differ only in what the organizer said they could afford are the same
-    // quote and should share a reference.
-    input.organizationName ?? "",
+    // The budget and the free-text fields are deliberately absent: none of
+    // them moves the price, so two quotes that differ only in what the
+    // organizer said they could afford — or in who they later said they were
+    // — are the same quote and should share a reference.
+    //
+    // organizationName used to seed this. It stopped being safe the moment
+    // that field moved into the required contact block, which is filled LAST:
+    // an organizer could export the PDF, forward it to finance, then type
+    // their organization and send an inquiry quoting a different code for the
+    // same quote.
   ].join("|");
 
   let hash = 0x811c9dc5;
@@ -479,8 +486,7 @@ function scheduleFor(dates: string[]): Quotation["schedule"] {
  * function — hence the split, which is what keeps that from recursing.
  */
 function priceEngagement(raw: QuotationInput): Quotation {
-  const format =
-    ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
+  const format = resolveFormat(raw.format);
   const engagementType = engagementTypeFor(raw.engagementType);
   const organizer = organizerTypeFor(raw.organizerType);
   const complexity = complexityTierFor(raw.complexity);
@@ -1114,8 +1120,7 @@ function assessBudget(raw: QuotationInput, quote: Quotation): BudgetFit | null {
   }
 
   const engagementType = engagementTypeFor(raw.engagementType);
-  const currentFormat =
-    ENGAGEMENT_FORMATS.find((f) => f.id === raw.format) ?? ENGAGEMENT_FORMATS[0];
+  const currentFormat = resolveFormat(raw.format);
   const offered = ENGAGEMENT_FORMATS.filter((f) => f.types.includes(engagementType.id));
   const remoteFormat = offered.find((f) => f.remote);
   const shorterFormat = offered

@@ -152,16 +152,25 @@ const draftSchema = z.object({
   contactRole: z.string().max(200).optional(),
   contactEmail: z.string().max(200).optional(),
   contactPhone: z.string().max(200).optional(),
+  /**
+   * Deliberately NOT `z.enum(FIELD_IDS)`.
+   *
+   * `safeParse` is all-or-nothing, and a failure here 502s and throws away
+   * every field the model correctly extracted. The prompt tells it to put
+   * every inference in this array, and the tool schema now also exposes four
+   * writable fields that are not in FIELD_IDS — so one note naming
+   * `contactRole` would have cost the organizer the whole reading. Unknown
+   * ids are filtered out below instead; `fieldProvenance` already ignores a
+   * note whose field the draft never set.
+   */
   assumptions: z
-    .array(
-      z.object({
-        field: z.enum(FIELD_IDS as unknown as [string, ...string[]]),
-        note: z.string().max(300),
-      })
-    )
+    .array(z.object({ field: z.string().max(64), note: z.string().max(300) }))
     .max(12)
+    .catch([])
     .default([]),
 });
+
+const KNOWN_FIELDS: ReadonlySet<string> = new Set(FIELD_IDS);
 
 function systemPrompt(today: string): string {
   return `You read an event organizer's description of a speaking engagement and fill in a structured form for them.
@@ -266,7 +275,17 @@ export async function POST(request: Request) {
       );
     }
 
-    return Response.json({ draft: draft.data }, { headers });
+    // A note pointing at a control that is not on the form reads as a bug, so
+    // the unknown ones are dropped rather than shown or trusted.
+    return Response.json(
+      {
+        draft: {
+          ...draft.data,
+          assumptions: draft.data.assumptions.filter((a) => KNOWN_FIELDS.has(a.field)),
+        },
+      },
+      { headers }
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to draft the form.";
     return Response.json({ error: message }, { status: 500, headers });
