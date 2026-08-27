@@ -39,7 +39,13 @@ import {
   type OrganizerTypeId,
   type RegionId,
 } from "@/lib/speaking/rate-card";
-import { type FieldId } from "@/lib/speaking/intake-state";
+import {
+  fieldProvenance,
+  assumptionFor,
+  materialBlanks,
+  visibleFieldIds,
+  type FieldId,
+} from "@/lib/speaking/intake-state";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
   addDays,
@@ -55,6 +61,7 @@ import {
 import { type FieldContext } from "./components/quotation-fields";
 import { FullForm } from "./components/full-form";
 import { OpeningPanel } from "./components/opening-panel";
+import { ReadingPanel } from "./components/reading-panel";
 import { QuotationSummary } from "./components/quotation-summary";
 import { buildQuotationPrint } from "./print";
 
@@ -335,6 +342,39 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
   const leadFactor = quote?.lines.find((l) => l.id === "lead-time")?.factor ?? 1;
 
   /**
+   * The three buckets the reading panel renders: what the note answered, what
+   * is still worth asking, and what is left on sensible defaults.
+   *
+   * `materialBlanks` re-quotes once per candidate value, so it is memoized on
+   * the same input as `quote` rather than recomputed inside a render loop.
+   */
+  const provenance = useMemo(() => fieldProvenance(draft, edits), [draft, edits]);
+  const applicableIds = useMemo(() => visibleFieldIds(input), [input]);
+  const knownIds = useMemo(
+    () => applicableIds.filter((id) => provenance[id] !== "blank"),
+    [applicableIds, provenance]
+  );
+  const askingIds = useMemo(
+    () => materialBlanks(input, provenance),
+    [input, provenance]
+  );
+  const restIds = useMemo(
+    () => applicableIds.filter((id) => !knownIds.includes(id) && !askingIds.includes(id)),
+    [applicableIds, knownIds, askingIds]
+  );
+  const noteFor = useCallback((id: FieldId) => assumptionFor(draft, id), [draft]);
+
+  /** The quote itself, rendered in a different position by each phase. */
+  const quoteBlock = quote ? (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
+      <div className="min-w-0">
+        <QuotationSummary quote={quote} />
+      </div>
+      <MarginNote toolId="speaker-quotation" className="lg:pt-2" />
+    </div>
+  ) : null;
+
+  /**
    * Everything the controls need, resolved once, here, the way the engine
    * resolves it. The registry never recomputes any of it — see FieldContext.
    */
@@ -409,18 +449,37 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
         />
       )}
 
+      {/* In Reading the number comes FIRST, then the corrections. In Full the
+          form comes first, as it always has — someone who chose the form over
+          the prose box is filling it in, not reviewing a reading of it. */}
+      {phase === "reading" && quoteBlock}
+
+      {phase === "reading" && (
+        <ReadingPanel
+          ctx={fieldContext}
+          knownIds={knownIds}
+          askingIds={askingIds}
+          restIds={restIds}
+          noteFor={noteFor}
+          availability={availability}
+          ready={ready}
+          isDrafting={intake.isDrafting}
+          error={intake.error}
+          onMore={async (text) => {
+            const drafted = await intake.requestDraft(text, now);
+            // Merged, not replaced: applyDraft only overwrites the fields the
+            // incoming draft actually named.
+            if (drafted) applyDraft(drafted);
+          }}
+          onShowAll={() => setPhase("full")}
+        />
+      )}
+
       {phase === "full" && (
         <FullForm ctx={fieldContext} availability={availability} ready={ready} />
       )}
 
-      {quote && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
-          <div className="min-w-0">
-            <QuotationSummary quote={quote} />
-          </div>
-          <MarginNote toolId="speaker-quotation" className="lg:pt-2" />
-        </div>
-      )}
+      {phase === "full" && quoteBlock}
 
       {quote && (
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
