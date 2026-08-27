@@ -127,8 +127,11 @@ describe("the form asks a manageable number of questions up front", () => {
   // the questions that do not move the number live behind one disclosure with
   // sensible defaults, rather than being spread across more steps.
   it("keeps the optional questions behind a disclosure", () => {
-    const page = readFileSync(join(ROOT, "app/tools/speaker-quotation/page.tsx"), "utf8");
-    expect(page, "the optional questions should sit inside a DetailSection").toMatch(
+    const form = readFileSync(
+      join(ROOT, "app/tools/speaker-quotation/components/full-form.tsx"),
+      "utf8"
+    );
+    expect(form, "the optional questions should sit inside a DetailSection").toMatch(
       /<DetailSection/
     );
 

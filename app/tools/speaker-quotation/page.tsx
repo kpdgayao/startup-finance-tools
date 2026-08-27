@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { MarginNote } from "@/components/shared/margin-note";
 import { RelatedTools } from "@/components/shared/related-tools";
@@ -40,7 +39,7 @@ import {
   type OrganizerTypeId,
   type RegionId,
 } from "@/lib/speaking/rate-card";
-import { visibleFieldIds, type FieldId } from "@/lib/speaking/intake-state";
+import { type FieldId } from "@/lib/speaking/intake-state";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
 import {
   addDays,
@@ -53,21 +52,10 @@ import {
   useIntakeDraft,
   type IntakeDraft,
 } from "@/lib/speaking/use-quotation-assist";
-import {
-  QuotationFields,
-  IdentityFields,
-  CARD_ONE,
-  CARD_TWO_BEFORE_CALENDAR,
-  CARD_TWO_AFTER_CALENDAR,
-  CARD_THREE,
-  DETAILS_BEFORE_IDENTITY,
-  DETAILS_AFTER_IDENTITY,
-  type FieldContext,
-} from "./components/quotation-fields";
-import { AvailabilityPanel } from "./components/availability-panel";
+import { type FieldContext } from "./components/quotation-fields";
+import { FullForm } from "./components/full-form";
 import { IntakeAssistant } from "./components/intake-assistant";
 import { QuotationSummary } from "./components/quotation-summary";
-import { DetailSection } from "./components/detail-section";
 import { buildQuotationPrint } from "./print";
 
 const INQUIRY_EMAIL = "hello@startupfinance.tools";
@@ -98,6 +86,14 @@ function today(): string {
 const subscribeToNothing = () => () => {};
 const serverToday = () => "";
 
+/**
+ * Which of the three states the page is in.
+ *
+ * One URL, no navigation: the quote is computed the same way in all three, and
+ * only the questions around it change.
+ */
+type Phase = "opening" | "reading" | "full";
+
 /** The answers the organizer gives. `today` and `startDate` are derived, not stored. */
 type FormState = Omit<QuotationInput, "today" | "startDate">;
 
@@ -105,6 +101,22 @@ export default function SpeakerQuotationPage() {
   const now = useSyncExternalStore(subscribeToNothing, today, serverToday);
 
   const [form, setForm] = useState<FormState>({ ...DEFAULT_INPUT });
+  /**
+   * Which state the page is in. Opening and Reading arrive in later tasks;
+   * until then every visitor gets the full form, exactly as before.
+   */
+  const [phase, setPhase] = useState<Phase>("full");
+  /**
+   * Fields the organizer has changed by hand. An assumption note beside one of
+   * them stops being true the moment they correct it.
+   */
+  const [edits, setEdits] = useState<ReadonlySet<FieldId>>(() => new Set());
+  /**
+   * The draft is RETAINED rather than dismissed after it is applied. Without
+   * it the page cannot tell "the model read this from their note" from "this
+   * is still DEFAULT_INPUT", which is the whole basis of the reading panel.
+   */
+  const [draft, setDraft] = useState<IntakeDraft | null>(null);
   // Null until the organizer picks a date, so the default stays relative to
   // today rather than to whenever this component first rendered.
   const [chosenDate, setChosenDate] = useState<string | null>(null);
@@ -121,6 +133,9 @@ export default function SpeakerQuotationPage() {
 
   const set = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    setEdits((prev) =>
+      prev.has(key as FieldId) ? prev : new Set(prev).add(key as FieldId)
+    );
   }, []);
 
   /**
@@ -169,6 +184,8 @@ export default function SpeakerQuotationPage() {
   const handleReset = () => {
     setForm({ ...DEFAULT_INPUT });
     setChosenDate(null);
+    setEdits(new Set());
+    setDraft(null);
     availability.reset();
     intake.dismiss();
     ai.reset();
@@ -231,6 +248,7 @@ export default function SpeakerQuotationPage() {
       if (draft.venue) next.venue = draft.venue.slice(0, 200);
       return next;
     });
+    setDraft(draft);
     intake.dismiss();
     availability.reset();
   };
@@ -346,14 +364,6 @@ export default function SpeakerQuotationPage() {
     isRemote,
   };
 
-  /**
-   * Which of a group's questions apply to this engagement. The conditionals
-   * that used to wrap each control in the JSX live in `visibleFieldIds` now,
-   * so the full form and the reading panel cannot disagree about what applies.
-   */
-  const applicable = visibleFieldIds(input);
-  const visible = (group: FieldId[]) => group.filter((id) => applicable.includes(id));
-
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -392,67 +402,9 @@ export default function SpeakerQuotationPage() {
         onDismiss={intake.dismiss}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Who is asking, and what for?</CardTitle>
-          <CardDescription>
-            These are the answers that set the rate. Everything after them only adjusts it.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* First, before any rate is shown anywhere on the page.
-              It used to sit two cards further down, which meant the first
-              number a visitor met was the DEAREST sector's day rate, quoted
-              before they had said a word about themselves — a school or an
-              NGO had to read the corporate number and then work downwards.
-              Asking who is asking first means every figure below is already
-              the reader's own. */}
-          <QuotationFields ids={visible(CARD_ONE)} ctx={fieldContext} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>When and where</CardTitle>
-          <CardDescription>
-            I will check the date against my calendar before you go any further.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <QuotationFields ids={visible(CARD_TWO_BEFORE_CALENDAR)} ctx={fieldContext} />
-          <AvailabilityPanel
-            report={availability.report}
-            isChecking={availability.isChecking}
-            error={availability.error}
-            onCheck={() => availability.check(startDate, input.sessions)}
-            disabled={!ready}
-          />
-
-          <QuotationFields ids={visible(CARD_TWO_AFTER_CALENDAR)} ctx={fieldContext} />
-
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>And a little more about you</CardTitle>
-          <CardDescription>
-            Whether we have met before, whether participants pay, and what you have to work with.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <QuotationFields ids={visible(CARD_THREE)} ctx={fieldContext} />
-        </CardContent>
-      </Card>
-
-      <DetailSection
-        title="Anything else I should know?"
-        summary="Room size, the venue, travel arrangements, invoicing, extras. All optional — the quote above already assumes sensible answers, and everything you set here shows on it."
-      >
-            <QuotationFields ids={visible(DETAILS_BEFORE_IDENTITY)} ctx={fieldContext} />
-            <IdentityFields ctx={fieldContext} />
-            <QuotationFields ids={visible(DETAILS_AFTER_IDENTITY)} ctx={fieldContext} />
-      </DetailSection>
+      {phase === "full" && (
+        <FullForm ctx={fieldContext} availability={availability} ready={ready} />
+      )}
 
       {quote && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
