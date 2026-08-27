@@ -9,7 +9,7 @@ as its own line. This file covers the parts you maintain.
 | Variable | Required | What it does |
 | --- | --- | --- |
 | `SPEAKER_CALENDAR_ICS_URL` | No | Private iCal feed used for the calendar check. Without it the check falls back to the manual blackout list and says so on the page. |
-| `ANTHROPIC_API_KEY` | No | Powers the optional "fill in the form for me" step and the AI explanation. Without it the form still works; those two buttons return a clear error. |
+| `ANTHROPIC_API_KEY` | No, but it decides how the page opens | Reads an organizer's description into the form, and powers the AI explanation. **Without it the page opens on the full form instead of the prose box** — silently, with no error and no dead button. See "The three states" below. |
 | `ANTHROPIC_MODEL` | No | Defaults to `claude-haiku-4-5-20251001`. |
 
 ### Getting the calendar URL
@@ -35,6 +35,79 @@ Other behavior worth knowing:
 - Events marked cancelled, or marked "free" (`TRANSP:TRANSPARENT`), do not block.
 - Daily and weekly recurrences expand up to 400 days. Monthly and yearly rules
   only block their first occurrence.
+
+## The three states
+
+The page is a state machine on one URL. No routing, no navigation, and the
+quote is computed the same way in all three.
+
+| State | When | What it shows |
+| --- | --- | --- |
+| **Opening** | No stored answers, and `ANTHROPIC_API_KEY` is set | One question: paste the note you sent, or describe the event. A skip link goes straight to Full. |
+| **Reading** | The description has been read, or the browser has stored answers from an earlier visit | The **number first**, then what the note answered, then only the blanks that would materially move the total, then everything else behind one disclosure. |
+| **Full** | The skip link, "show me every question", or no API key | Every question in one scroll — the form as it has always been. |
+
+Full never falls back to Opening. Somebody who chose the form has chosen it.
+
+**Why the number comes before the corrections.** This page is sent to people
+who have already written asking what it would cost. They have decided they
+want the engagement and are trying to find a figure they can forward for
+approval. Making them finish a form first is what the three states exist to
+stop.
+
+### Which follow-up questions get asked
+
+Nothing decides this by hand, and the model is not asked. `materialBlanks()` in
+`lib/speaking/intake-state.ts` re-quotes across each unanswered field's
+plausible values and measures the spread in the total. Anything that can move
+it by more than 5%, or ₱5,000, whichever is larger, is worth asking; the rest
+falls through to its default. Ranked biggest-first, capped at five.
+
+The date is pinned first regardless — it sets the lead-time band, the weekday
+premium and the calendar check at once, and there is no honest quote without
+one. A blank budget is never asked about: not stating one IS the answer.
+
+A hand-written priority list would have drifted from the rate card the first
+time a multiplier moved, and could not know that audience size matters for a
+hall and not for a boardroom.
+
+## Stored answers
+
+Answers persist to `localStorage` under **`sft-speaker-quotation`** — the form,
+the chosen date, the retained draft, and which fields the organizer corrected
+by hand. Someone arriving with stored answers lands in **Reading**, on their
+own quote, rather than on either blank state: the second visit that matters is
+the organizer coming back after their sponsor named a figure.
+
+The reset button clears the key. Nothing is transmitted — the quote is computed
+in the browser and reaches you only when the organizer presses send.
+
+State is *derived* from storage rather than copied into `useState`. Do not
+"fix" this into a `useEffect` that restores on mount: that pattern is what
+makes `pnpm lint` fail in `compliance-checklist`, `fundraising-guide`,
+`ecosystem-banner` and `theme-toggle` today, and it would also mismatch the
+server render.
+
+## The intake endpoint
+
+`POST /api/speaking/intake` returns a draft whose **`assumptions` are
+`{ field, note }` pairs**, not free text — each note is rendered beside the
+control it is about, so a misreading is corrected where it happened. An
+assumption naming a field the draft did not actually set is dropped rather
+than shown against an empty control.
+
+The model is told to list only what it **inferred**. Something the organizer
+stated outright is filled in silently: a note against a plain statement reads
+as though you doubted them, and buries the two or three readings that deserve
+a second look.
+
+There is no `questions` field. The form derives what is still missing (above),
+which cannot drift and does not cost tokens.
+
+Rate limit is **10 per minute**. The "anything else I should know?" box spends
+from the same budget, so five was enough for one pass at a form and not for a
+conversation. When it trips, the page says so and points at the answers rather
+than returning a bare 429.
 
 ## Holding dates by hand
 
