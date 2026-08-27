@@ -41,7 +41,8 @@ import {
 } from "@/lib/speaking/rate-card";
 import {
   fieldProvenance,
-  assumptionFor,
+  noteToShow,
+  mergeDrafts,
   materialBlanks,
   visibleFieldIds,
   type FieldId,
@@ -263,63 +264,68 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
    * rate card, but they arrive here as plain strings, so each is checked
    * against the live option list before it is accepted.
    */
-  const applyDraft = (draft: IntakeDraft) => {
+  const applyDraft = (incoming: IntakeDraft) => {
     const nextDate =
-      draft.startDate && isValidISODate(draft.startDate) ? draft.startDate : chosenDate;
+      incoming.startDate && isValidISODate(incoming.startDate) ? incoming.startDate : chosenDate;
     const next = ((prev: FormState) => {
       const next = { ...prev };
-      if (draft.engagementType && ENGAGEMENT_TYPES.some((t) => t.id === draft.engagementType))
-        next.engagementType = draft.engagementType as EngagementTypeId;
+      if (incoming.engagementType && ENGAGEMENT_TYPES.some((t) => t.id === incoming.engagementType))
+        next.engagementType = incoming.engagementType as EngagementTypeId;
       if (
-        draft.facilitationScope &&
-        FACILITATION_SCOPES.some((f) => f.id === draft.facilitationScope)
+        incoming.facilitationScope &&
+        FACILITATION_SCOPES.some((f) => f.id === incoming.facilitationScope)
       )
-        next.facilitationScope = draft.facilitationScope as FacilitationScopeId;
-      if (draft.preparation && PREPARATION_OPTIONS.some((o) => o.id === draft.preparation))
-        next.preparation = draft.preparation;
-      if (draft.output && OUTPUT_OPTIONS.some((o) => o.id === draft.output))
-        next.output = draft.output;
+        next.facilitationScope = incoming.facilitationScope as FacilitationScopeId;
+      if (incoming.preparation && PREPARATION_OPTIONS.some((o) => o.id === incoming.preparation))
+        next.preparation = incoming.preparation;
+      if (incoming.output && OUTPUT_OPTIONS.some((o) => o.id === incoming.output))
+        next.output = incoming.output;
       // Checked against the type the draft chose, not the one on screen.
       const allowed = formatsFor(next.engagementType);
-      if (draft.format && allowed.some((f) => f.id === draft.format))
-        next.format = draft.format as EngagementFormatId;
+      if (incoming.format && allowed.some((f) => f.id === incoming.format))
+        next.format = incoming.format as EngagementFormatId;
       else if (!allowed.some((f) => f.id === next.format))
         next.format = allowed[allowed.length - 1].id;
-      if (draft.complexity && COMPLEXITY_TIERS.some((c) => c.id === draft.complexity))
-        next.complexity = draft.complexity as ComplexityId;
-      if (draft.organizerType && ORGANIZER_TYPES.some((o) => o.id === draft.organizerType))
-        next.organizerType = draft.organizerType as OrganizerTypeId;
-      if (draft.region && REGIONS.some((r) => r.id === draft.region))
-        next.region = draft.region as RegionId;
-      if (draft.addOns)
-        next.addOns = draft.addOns.filter((id): id is AddOnId =>
+      if (incoming.complexity && COMPLEXITY_TIERS.some((c) => c.id === incoming.complexity))
+        next.complexity = incoming.complexity as ComplexityId;
+      if (incoming.organizerType && ORGANIZER_TYPES.some((o) => o.id === incoming.organizerType))
+        next.organizerType = incoming.organizerType as OrganizerTypeId;
+      if (incoming.region && REGIONS.some((r) => r.id === incoming.region))
+        next.region = incoming.region as RegionId;
+      if (incoming.addOns)
+        next.addOns = incoming.addOns.filter((id): id is AddOnId =>
           ADD_ONS.some((a) => a.id === id)
         );
-      if (typeof draft.sessions === "number") next.sessions = draft.sessions;
-      if (typeof draft.audienceSize === "number") next.audienceSize = draft.audienceSize;
-      if (draft.audienceProfile && AUDIENCE_PROFILES.some((p) => p.id === draft.audienceProfile))
-        next.audienceProfile = draft.audienceProfile as AudienceProfileId;
-      if (typeof draft.ticketed === "boolean") next.ticketed = draft.ticketed;
-      if (typeof draft.participantFee === "number") next.participantFee = draft.participantFee;
-      if (typeof draft.expectedPaidAttendees === "number")
-        next.expectedPaidAttendees = draft.expectedPaidAttendees;
-      if (typeof draft.budget === "number") next.budget = draft.budget;
-      if (typeof draft.earlyStart === "boolean") next.earlyStart = draft.earlyStart;
-      if (typeof draft.invoiceRequired === "boolean")
-        next.invoiceRequired = draft.invoiceRequired;
-      if (typeof draft.travelCovered === "boolean") next.travelCovered = draft.travelCovered;
-      if (typeof draft.accommodationCovered === "boolean")
-        next.accommodationCovered = draft.accommodationCovered;
-      if (draft.eventTitle) next.eventTitle = draft.eventTitle.slice(0, 200);
-      if (draft.organizationName) next.organizationName = draft.organizationName.slice(0, 200);
-      if (draft.venue) next.venue = draft.venue.slice(0, 200);
+      if (typeof incoming.sessions === "number") next.sessions = incoming.sessions;
+      if (typeof incoming.audienceSize === "number") next.audienceSize = incoming.audienceSize;
+      if (incoming.audienceProfile && AUDIENCE_PROFILES.some((p) => p.id === incoming.audienceProfile))
+        next.audienceProfile = incoming.audienceProfile as AudienceProfileId;
+      if (typeof incoming.ticketed === "boolean") next.ticketed = incoming.ticketed;
+      if (typeof incoming.participantFee === "number") next.participantFee = incoming.participantFee;
+      if (typeof incoming.expectedPaidAttendees === "number")
+        next.expectedPaidAttendees = incoming.expectedPaidAttendees;
+      if (typeof incoming.budget === "number") next.budget = incoming.budget;
+      if (typeof incoming.earlyStart === "boolean") next.earlyStart = incoming.earlyStart;
+      if (typeof incoming.invoiceRequired === "boolean")
+        next.invoiceRequired = incoming.invoiceRequired;
+      if (typeof incoming.travelCovered === "boolean") next.travelCovered = incoming.travelCovered;
+      if (typeof incoming.accommodationCovered === "boolean")
+        next.accommodationCovered = incoming.accommodationCovered;
+      if (incoming.eventTitle) next.eventTitle = incoming.eventTitle.slice(0, 200);
+      if (incoming.organizationName) next.organizationName = incoming.organizationName.slice(0, 200);
+      if (incoming.venue) next.venue = incoming.venue.slice(0, 200);
       return next;
     })(form);
 
+    // Merged, not replaced. A follow-up sentence describes one field, not the
+    // whole engagement — overwriting the draft made the page forget what the
+    // first note had answered and re-ask it.
+    const mergedDraft = mergeDrafts(draft, incoming);
+
     setFormOverride(next);
     setDateOverride(nextDate);
-    setDraftOverride(draft);
-    persist({ form: next, chosenDate: nextDate, draft });
+    setDraftOverride(mergedDraft);
+    persist({ form: next, chosenDate: nextDate, draft: mergedDraft });
     intake.dismiss();
     availability.reset();
     // Even an empty draft goes to Reading: a short form ordered by price
@@ -425,7 +431,10 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
     () => applicableIds.filter((id) => !knownIds.includes(id) && !askingIds.includes(id)),
     [applicableIds, knownIds, askingIds]
   );
-  const noteFor = useCallback((id: FieldId) => assumptionFor(draft, id), [draft]);
+  const noteFor = useCallback(
+    (id: FieldId) => noteToShow(draft, provenance, id),
+    [draft, provenance]
+  );
 
   /** The quote itself, rendered in a different position by each phase. */
   const quoteBlock = quote ? (
@@ -515,6 +524,10 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
         />
       )}
 
+      {/* Everything below the opening panel hangs off `quote`, which exists
+          from the first render because the engine always has defaults. Gating
+          it on the phase as well is what stops an organizer meeting an Export
+          PDF button and a quote reference before they have said a word. */}
       {/* In Reading the number comes FIRST, then the corrections. In Full the
           form comes first, as it always has — someone who chose the form over
           the prose box is filling it in, not reviewing a reading of it. */}
@@ -547,7 +560,7 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
 
       {phase === "full" && quoteBlock}
 
-      {quote && (
+      {phase !== "opening" && quote && (
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
         <p className="text-sm text-muted-foreground">
           Quote {quote.reference} · valid until {formatEngagementDate(quote.validUntil)}
@@ -567,7 +580,7 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
       </div>
       )}
 
-      {quote && (
+      {phase !== "opening" && quote && (
       <AiInsightsPanel
         label="What does this quote mean?"
         explanation={ai.explanation}

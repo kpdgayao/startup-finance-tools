@@ -150,6 +150,40 @@ export interface IntakeDraft {
   assumptions: IntakeAssumption[];
 }
 
+/**
+ * Fold a second reading into the first.
+ *
+ * The organizer can come back with "actually we cannot cover the hotel", and
+ * that sentence describes one field, not the whole engagement. Replacing the
+ * draft wholesale made the page forget everything the original note had
+ * answered: eleven read fields collapsed to two, and it re-asked four
+ * questions the organizer had already answered in their first paragraph.
+ *
+ * The form is merged separately, by the page. This merges the PROVENANCE, so
+ * an answer stays attributed to whichever message actually gave it.
+ */
+export function mergeDrafts(prev: IntakeDraft | null, incoming: IntakeDraft): IntakeDraft {
+  if (!prev) return incoming;
+
+  const merged = { ...prev } as IntakeDraft;
+  const named = new Set<string>();
+  for (const [key, value] of Object.entries(incoming)) {
+    if (key === "assumptions" || value === undefined) continue;
+    (merged as unknown as Record<string, unknown>)[key] = value;
+    named.add(key);
+  }
+
+  // A field the new message spoke about takes the new message's note — or no
+  // note at all, if it stated the thing outright this time.
+  merged.assumptions = [
+    ...incoming.assumptions,
+    ...prev.assumptions.filter(
+      (a) => !named.has(a.field) && !incoming.assumptions.some((b) => b.field === a.field)
+    ),
+  ];
+  return merged;
+}
+
 export type FieldStatus = "read" | "assumed" | "blank" | "edited";
 
 /**
@@ -183,6 +217,24 @@ export function fieldProvenance(
 /** The note attached to a field, or null when there is none. */
 export function assumptionFor(draft: IntakeDraft | null, id: FieldId): string | null {
   return draft?.assumptions.find((a) => a.field === id)?.note ?? null;
+}
+
+/**
+ * The note to actually render beside a control — which is NOT the same as the
+ * note the draft carries.
+ *
+ * Only an `assumed` field shows one. A `read` field was stated outright and
+ * needs no explanation, and an `edited` field must lose its note the moment
+ * the organizer corrects it: leaving it up printed "I set this to 2 full-day
+ * sessions" beside a field reading 3, which is worse than showing nothing,
+ * because it is confidently wrong about what the page is currently pricing.
+ */
+export function noteToShow(
+  draft: IntakeDraft | null,
+  provenance: Record<FieldId, FieldStatus>,
+  id: FieldId
+): string | null {
+  return provenance[id] === "assumed" ? assumptionFor(draft, id) : null;
 }
 
 /**

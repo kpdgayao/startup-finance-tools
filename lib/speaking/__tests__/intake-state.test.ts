@@ -8,6 +8,8 @@ import {
   isFieldDisabled,
   fieldProvenance,
   assumptionFor,
+  noteToShow,
+  mergeDrafts,
   type FieldId,
   type IntakeDraft,
   type FieldStatus,
@@ -227,5 +229,97 @@ describe("the field registry", () => {
       "utf8"
     );
     expect(page).not.toContain("<RateFactorField");
+  });
+});
+
+describe("noteToShow", () => {
+  const withNote = () =>
+    draft({
+      sessions: 2,
+      organizerType: "cooperative",
+      assumptions: [
+        { field: "sessions", note: "You described a two-day training." },
+        { field: "organizerType", note: "Read 'our co-op' as a cooperative." },
+      ],
+    });
+
+  it("shows the note on a field the model inferred", () => {
+    const p = fieldProvenance(withNote(), new Set());
+    expect(noteToShow(withNote(), p, "sessions")).toBe("You described a two-day training.");
+  });
+
+  it("drops the note the moment the organizer corrects the field", () => {
+    // The note said "I set this to 2 full-day sessions" beside a field the
+    // organizer had just changed to 3 — confidently wrong about what the page
+    // was pricing, which is worse than showing nothing.
+    const p = fieldProvenance(withNote(), new Set<FieldId>(["sessions"]));
+    expect(noteToShow(withNote(), p, "sessions")).toBeNull();
+    // ...and leaves its neighbours alone.
+    expect(noteToShow(withNote(), p, "organizerType")).not.toBeNull();
+  });
+
+  it("shows nothing on a field that was stated outright", () => {
+    const d = draft({ sessions: 2 });
+    expect(noteToShow(d, fieldProvenance(d, new Set()), "sessions")).toBeNull();
+  });
+
+  it("shows nothing on a blank field", () => {
+    expect(noteToShow(null, fieldProvenance(null, new Set()), "region")).toBeNull();
+  });
+});
+
+describe("mergeDrafts", () => {
+  const first = () =>
+    draft({
+      organizerType: "corporate",
+      sessions: 2,
+      accommodationCovered: true,
+      assumptions: [
+        { field: "sessions", note: "You described a two-day training." },
+        { field: "organizerType", note: "A rural bank, so corporate." },
+      ],
+    });
+
+  it("keeps what the first note answered", () => {
+    // The regression this exists for: a one-line follow-up replaced the whole
+    // draft, so eleven read fields collapsed to two and the page re-asked
+    // four questions the organizer had already answered.
+    const merged = mergeDrafts(first(), draft({ accommodationCovered: false }));
+    expect(merged.organizerType).toBe("corporate");
+    expect(merged.sessions).toBe(2);
+  });
+
+  it("lets the newer message win on what it actually mentions", () => {
+    const merged = mergeDrafts(first(), draft({ accommodationCovered: false }));
+    expect(merged.accommodationCovered).toBe(false);
+  });
+
+  it("keeps the earlier notes for fields the follow-up did not mention", () => {
+    const merged = mergeDrafts(first(), draft({ accommodationCovered: false }));
+    expect(merged.assumptions.map((a) => a.field).sort()).toEqual([
+      "organizerType",
+      "sessions",
+    ]);
+  });
+
+  it("replaces a note when the follow-up speaks about that field again", () => {
+    const merged = mergeDrafts(
+      first(),
+      draft({ sessions: 3, assumptions: [{ field: "sessions", note: "Three days now." }] })
+    );
+    expect(merged.sessions).toBe(3);
+    expect(merged.assumptions.filter((a) => a.field === "sessions")).toHaveLength(1);
+    expect(merged.assumptions.find((a) => a.field === "sessions")?.note).toBe("Three days now.");
+  });
+
+  it("drops a stale note when the follow-up states the field outright", () => {
+    const merged = mergeDrafts(first(), draft({ sessions: 4 }));
+    expect(merged.sessions).toBe(4);
+    expect(merged.assumptions.some((a) => a.field === "sessions")).toBe(false);
+  });
+
+  it("returns the incoming draft when there is nothing to merge into", () => {
+    const d = draft({ sessions: 1 });
+    expect(mergeDrafts(null, d)).toEqual(d);
   });
 });
