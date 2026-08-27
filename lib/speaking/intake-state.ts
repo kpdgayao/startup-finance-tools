@@ -7,8 +7,20 @@
  * "use client" directive, a React import, or a browser API.
  */
 
-import { type QuotationInput } from "./quotation";
-import { formatsFor } from "./rate-card";
+import { buildQuotation, type QuotationInput } from "./quotation";
+import {
+  formatsFor,
+  ADD_ONS,
+  AUDIENCE_BANDS,
+  AUDIENCE_PROFILES,
+  COMPLEXITY_TIERS,
+  ENGAGEMENT_TYPES,
+  FACILITATION_SCOPES,
+  ORGANIZER_TYPES,
+  OUTPUT_OPTIONS,
+  PREPARATION_OPTIONS,
+  REGIONS,
+} from "./rate-card";
 
 /**
  * Every priced question, in the order the full form shows them.
@@ -171,4 +183,130 @@ export function fieldProvenance(
 /** The note attached to a field, or null when there is none. */
 export function assumptionFor(draft: IntakeDraft | null, id: FieldId): string | null {
   return draft?.assumptions.find((a) => a.field === id)?.note ?? null;
+}
+
+/**
+ * How much a blank has to be able to move the total before it is worth a
+ * question. Whichever is larger: small engagements are protected by the
+ * percentage, large ones by the peso floor.
+ */
+const MATERIAL_SHARE = 0.05;
+const MATERIAL_FLOOR = 5_000;
+
+/** Past five, the short section stops being short, which is the point of it. */
+const MAX_QUESTIONS = 5;
+
+/**
+ * A date is not a price factor you can default your way past: it sets the
+ * lead-time band, the weekday premium and the calendar check all at once, and
+ * there is no honest quote without one. Pinned first rather than ranked.
+ */
+const ALWAYS_ASK: FieldId[] = ["startDate"];
+
+/**
+ * A blank budget is an answer — it means "I have not been given one" — and
+ * `assessBudget` correctly does nothing with it. Asking would read as fishing.
+ */
+const NEVER_ASK: FieldId[] = ["budget"];
+
+/**
+ * The audience ladder, probed at each band's ceiling. The open-ended top band
+ * is probed at twice the last finite ceiling rather than at a typed figure, so
+ * re-banding the rate card cannot leave a stale number here.
+ */
+const AUDIENCE_PROBES = AUDIENCE_BANDS.map((band, i) =>
+  Number.isFinite(band.max) ? band.max : AUDIENCE_BANDS[i - 1].max * 2
+);
+
+/** The values worth trying for one field. Fewer than two means "do not probe". */
+function probesFor(id: FieldId, input: QuotationInput): Partial<QuotationInput>[] {
+  switch (id) {
+    case "organizerType":
+      return ORGANIZER_TYPES.map((o) => ({ organizerType: o.id }));
+    case "engagementType":
+      return ENGAGEMENT_TYPES.map((t) => ({ engagementType: t.id }));
+    case "format":
+      return formatsFor(input.engagementType).map((f) => ({ format: f.id }));
+    case "complexity":
+      return COMPLEXITY_TIERS.map((c) => ({ complexity: c.id }));
+    case "facilitationScope":
+      return FACILITATION_SCOPES.map((s) => ({ facilitationScope: s.id }));
+    case "preparation":
+      return PREPARATION_OPTIONS.map((o) => ({ preparation: o.id }));
+    case "output":
+      return OUTPUT_OPTIONS.map((o) => ({ output: o.id }));
+    case "region":
+      return REGIONS.map((r) => ({ region: r.id }));
+    case "audienceProfile":
+      return AUDIENCE_PROFILES.map((p) => ({ audienceProfile: p.id }));
+    case "audienceSize":
+      return AUDIENCE_PROBES.map((audienceSize) => ({ audienceSize }));
+    case "sessions":
+      return [1, 2, 3].map((sessions) => ({ sessions }));
+    case "addOns":
+      return [{ addOns: [] }, ...ADD_ONS.map((a) => ({ addOns: [a.id] }))];
+    case "ticketed":
+      return [{ ticketed: false }, { ticketed: true }];
+    case "returningClient":
+      return [{ returningClient: false }, { returningClient: true }];
+    case "earlyStart":
+      return [{ earlyStart: false }, { earlyStart: true }];
+    case "travelCovered":
+      return [{ travelCovered: false }, { travelCovered: true }];
+    case "accommodationCovered":
+      return [{ accommodationCovered: false }, { accommodationCovered: true }];
+    case "invoiceRequired":
+      return [{ invoiceRequired: false }, { invoiceRequired: true }];
+    // Only meaningful once ticketed is true, and then the fee is asked as part
+    // of that branch rather than ranked against unrelated factors.
+    case "participantFee":
+    case "expectedPaidAttendees":
+    case "startDate":
+    case "budget":
+      return [];
+  }
+}
+
+/** The spread in the total across everything this field could be. */
+function spreadFor(id: FieldId, input: QuotationInput): number {
+  const probes = probesFor(id, input);
+  if (probes.length < 2) return 0;
+  const totals = probes.map((probe) => buildQuotation({ ...input, ...probe }).total);
+  return Math.max(...totals) - Math.min(...totals);
+}
+
+/**
+ * The unanswered questions that would actually change the number, biggest
+ * first, capped.
+ *
+ * Derived rather than authored: a hand-written priority list would drift from
+ * the rate card the first time a multiplier moved, and it could not know that
+ * audience size matters for a hall and not for a boardroom.
+ */
+export function materialBlanks(
+  input: QuotationInput,
+  provenance: Record<FieldId, FieldStatus>
+): FieldId[] {
+  const applicable = new Set(visibleFieldIds(input));
+  const candidates = FIELD_IDS.filter(
+    (id) =>
+      provenance[id] === "blank" &&
+      applicable.has(id) &&
+      !isFieldDisabled(id, input) &&
+      !NEVER_ASK.includes(id)
+  );
+
+  const pinned = candidates.filter((id) => ALWAYS_ASK.includes(id));
+
+  const total = buildQuotation(input).total;
+  const threshold = Math.max(total * MATERIAL_SHARE, MATERIAL_FLOOR);
+
+  const ranked = candidates
+    .filter((id) => !ALWAYS_ASK.includes(id))
+    .map((id) => ({ id, spread: spreadFor(id, input) }))
+    .filter((c) => c.spread >= threshold)
+    .sort((a, b) => b.spread - a.spread)
+    .map((c) => c.id);
+
+  return [...pinned, ...ranked].slice(0, MAX_QUESTIONS);
 }

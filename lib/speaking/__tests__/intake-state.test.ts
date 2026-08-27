@@ -8,6 +8,8 @@ import {
   assumptionFor,
   type FieldId,
   type IntakeDraft,
+  type FieldStatus,
+  materialBlanks,
 } from "@/lib/speaking/intake-state";
 import { QUESTIONS } from "@/lib/speaking/questions";
 
@@ -147,5 +149,58 @@ describe("assumptionFor", () => {
   it("returns null when there is no note, and for a null draft", () => {
     expect(assumptionFor(draft({ region: "baguio" }), "region")).toBeNull();
     expect(assumptionFor(null, "region")).toBeNull();
+  });
+});
+
+const allBlank = () => fieldProvenance(null, new Set());
+
+describe("materialBlanks", () => {
+  it("always asks for the date when it is blank, first", () => {
+    expect(materialBlanks(input(), allBlank())[0]).toBe("startDate");
+  });
+
+  it("asks for the sector, which is the largest lever on the rate card", () => {
+    expect(materialBlanks(input(), allBlank())).toContain("organizerType");
+  });
+
+  it("never asks for the budget - a blank budget is an answer", () => {
+    expect(materialBlanks(input(), allBlank())).not.toContain("budget");
+  });
+
+  it("does not ask about a field that is already read", () => {
+    const p = fieldProvenance(draft({ organizerType: "cooperative" }), new Set());
+    expect(materialBlanks(input({ organizerType: "cooperative" }), p)).not.toContain(
+      "organizerType"
+    );
+  });
+
+  it("does not ask about a field that does not apply", () => {
+    const facilitation = input({ engagementType: "facilitation" });
+    expect(materialBlanks(facilitation, allBlank())).not.toContain("complexity");
+  });
+
+  it("does not ask about a disabled field", () => {
+    const remote = input({ engagementType: "speaking", format: "webinar" });
+    expect(materialBlanks(remote, allBlank())).not.toContain("region");
+  });
+
+  it("leaves the small switches out", () => {
+    expect(materialBlanks(input(), allBlank())).not.toContain("invoiceRequired");
+  });
+
+  it("returns at most five", () => {
+    expect(materialBlanks(input(), allBlank()).length).toBeLessThanOrEqual(5);
+  });
+
+  it("orders by how much the answer could move the total", () => {
+    const ids = materialBlanks(input(), allBlank());
+    expect(ids[0]).toBe("startDate");
+    expect(ids.length).toBeGreaterThan(1);
+  });
+
+  it("returns nothing when everything is answered", () => {
+    const answered = {} as Record<FieldId, FieldStatus>;
+    for (const id of FIELD_IDS) answered[id] = "read";
+    expect(materialBlanks(input(), answered)).toEqual([]);
   });
 });
