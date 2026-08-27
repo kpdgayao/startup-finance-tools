@@ -49,10 +49,25 @@ import {
   type RegionId,
 } from "@/lib/speaking/rate-card";
 import { QUESTIONS } from "@/lib/speaking/questions";
+import { EMAIL_SHAPE } from "@/lib/speaking/inquiry";
 import type { BudgetFit, Quotation, QuotationInput } from "@/lib/speaking/quotation";
 import { isValidISODate } from "@/lib/speaking/availability";
 import { type FieldId, isFieldDisabled } from "@/lib/speaking/intake-state";
 import { RateFactorField } from "./rate-factor-field";
+
+/**
+ * A section heading, in the eyebrow style the rest of the page uses.
+ *
+ * Lives here rather than in reading-panel because the full form needs it too,
+ * now that the contact block appears in both.
+ */
+export function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+      {children}
+    </p>
+  );
+}
 
 /** The answers the organizer gives. `today` and `startDate` are derived, not stored. */
 export type FormState = Omit<QuotationInput, "today" | "startDate">;
@@ -853,11 +868,15 @@ function renderField(id: FieldId, ctx: FieldContext, note: string | null) {
 }
 
 /**
- * The three free-text fields that never enter the price.
+ * The free-text fields that never enter the price.
  *
  * Kept out of the registry — they have no QUESTIONS entry and no impact chip —
  * but shared between the full form and the reading panel so the markup exists
  * once.
+ *
+ * `organizationName` used to live here and has moved to ContactFields. Sitting
+ * in a collapsed "rest of the details" section is why it arrived blank on most
+ * inquiries, which left the person replying with a fee and no idea who for.
  */
 export function IdentityFields({ ctx }: { ctx: FieldContext }) {
   const { input, set } = ctx;
@@ -877,16 +896,6 @@ export function IdentityFields({ ctx }: { ctx: FieldContext }) {
         </p>
       </div>
       <div className="border-t border-rule pt-4">
-        <Label htmlFor="organization">Organization</Label>
-        <Input
-          id="organization"
-          value={input.organizationName ?? ""}
-          onChange={(e) => set("organizationName", e.target.value.slice(0, 200))}
-          placeholder="Who the quote is addressed to"
-          className="mt-2"
-        />
-      </div>
-      <div className="border-t border-rule pt-4">
         <Label htmlFor="venue">Venue</Label>
         <Input
           id="venue"
@@ -897,6 +906,113 @@ export function IdentityFields({ ctx }: { ctx: FieldContext }) {
         />
       </div>
     </>
+  );
+}
+
+/**
+ * Who is asking.
+ *
+ * Deliberately NOT inside the collapsed details section, and deliberately
+ * above the send button rather than beside the venue: this is the block that
+ * decides whether a finished quote can be replied to at all. Name, email and
+ * organization gate the send (see `contactComplete`); role and phone do not.
+ */
+export function ContactFields({ ctx }: { ctx: FieldContext }) {
+  const { input, set } = ctx;
+  const email = (input.contactEmail ?? "").trim();
+  // Shown only once there is something to be wrong about. Colouring an
+  // untouched empty field red is how a form tells someone off for arriving.
+  const emailMalformed = email.length > 0 && !EMAIL_SHAPE.test(email);
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <Eyebrow>Who&rsquo;s asking</Eyebrow>
+        <p className="mt-2 text-sm text-muted-foreground">
+          So I know who I am replying to, and can pitch the reply to the right organization.
+          Nothing here changes the price, and it stays in this browser until you send the
+          inquiry yourself.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="contact-name">
+            Your name <span className="text-muted-foreground">*</span>
+          </Label>
+          <Input
+            id="contact-name"
+            autoComplete="name"
+            value={input.contactName ?? ""}
+            onChange={(e) => set("contactName", e.target.value.slice(0, 200))}
+            placeholder="e.g. Maria Santos"
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="organization">
+            Organization <span className="text-muted-foreground">*</span>
+          </Label>
+          <Input
+            id="organization"
+            autoComplete="organization"
+            value={input.organizationName ?? ""}
+            onChange={(e) => set("organizationName", e.target.value.slice(0, 200))}
+            placeholder="Who the quote is addressed to"
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="contact-email">
+            Email <span className="text-muted-foreground">*</span>
+          </Label>
+          <Input
+            id="contact-email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={input.contactEmail ?? ""}
+            onChange={(e) => set("contactEmail", e.target.value.slice(0, 200))}
+            placeholder="e.g. maria@organization.ph"
+            aria-invalid={emailMalformed || undefined}
+            aria-describedby={emailMalformed ? "contact-email-error" : undefined}
+            className="mt-2"
+          />
+          {emailMalformed && (
+            <p
+              id="contact-email-error"
+              className="mt-1.5 border-l-[2px] border-bad pl-3 text-xs text-bad"
+            >
+              That does not look like a complete email address.
+            </p>
+          )}
+        </div>
+        <div>
+          <Label htmlFor="contact-role">Your role</Label>
+          <Input
+            id="contact-role"
+            autoComplete="organization-title"
+            value={input.contactRole ?? ""}
+            onChange={(e) => set("contactRole", e.target.value.slice(0, 200))}
+            placeholder="e.g. Training Officer"
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="contact-phone">Mobile</Label>
+          <Input
+            id="contact-phone"
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
+            value={input.contactPhone ?? ""}
+            onChange={(e) => set("contactPhone", e.target.value.slice(0, 200))}
+            placeholder="e.g. 0917 123 4567"
+            className="mt-2"
+          />
+        </div>
+      </div>
+    </section>
   );
 }
 

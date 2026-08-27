@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { RotateCcw, Send } from "lucide-react";
+import { Check, Copy, RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
 import { MarginNote } from "@/components/shared/margin-note";
@@ -30,6 +30,7 @@ import {
   outputOptionFor,
   preparationOptionFor,
   formatsFor,
+  resolveFormat,
   type AddOnId,
   type AudienceProfileId,
   type ComplexityId,
@@ -55,6 +56,12 @@ import {
   clearStoredQuotation,
 } from "@/lib/speaking/use-quotation-storage";
 import { buildQuotation, DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
+import {
+  buildInquiryBody,
+  buildInquiryMailto,
+  contactComplete,
+  exceedsMailtoLimit,
+} from "@/lib/speaking/inquiry";
 import {
   addDays,
   formatEngagementDate,
@@ -270,7 +277,10 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
   const preparationDaysLabel = dayLabel(preparationOption.days);
   const outputDaysLabel = dayLabel(outputOption.days);
 
-  const isRemote = format.remote;
+  // Resolved the way the ENGINE resolves it, not from the display `format`
+  // above: the dropdown clamps a stranded id to an offered one, the engine
+  // does not, and it is the engine that decides whether travel is charged.
+  const isRemote = resolveFormat(input.format).remote;
 
   const ready = Boolean(now) && isValidISODate(startDate);
   // Shown before a quote exists, so it cannot read quote.dayEquivalents.
@@ -349,6 +359,13 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
       if (incoming.eventTitle) next.eventTitle = incoming.eventTitle.slice(0, 200);
       if (incoming.organizationName) next.organizationName = incoming.organizationName.slice(0, 200);
       if (incoming.venue) next.venue = incoming.venue.slice(0, 200);
+      // Free text like the three above, and outside FIELD_IDS, so these carry
+      // no provenance note — an organizer does not need telling that the name
+      // they signed off with is the name that was read.
+      if (incoming.contactName) next.contactName = incoming.contactName.slice(0, 200);
+      if (incoming.contactRole) next.contactRole = incoming.contactRole.slice(0, 200);
+      if (incoming.contactEmail) next.contactEmail = incoming.contactEmail.slice(0, 200);
+      if (incoming.contactPhone) next.contactPhone = incoming.contactPhone.slice(0, 200);
       return next;
     })(current.form);
 
@@ -368,37 +385,67 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
     setPhase("reading");
   };
 
-  const mailtoHref = useMemo(() => {
-    if (!quote) return `mailto:${INQUIRY_EMAIL}`;
-    const type = engagementTypeFor(input.engagementType);
-    const chosen = formatsFor(type.id).find((f) => f.id === input.format);
-    const chosenLabel = chosen ? formatLabel(chosen, type.id) : type.label;
-    const lines = [
-      `Quotation reference: ${quote.reference}`,
-      input.eventTitle ? `Event: ${input.eventTitle}` : null,
-      input.organizationName ? `Organization: ${input.organizationName}` : null,
-      input.venue ? `Venue: ${input.venue}` : null,
-      `Dates: ${quote.dates.map((d) => formatEngagementDate(d.date, { weekday: true })).join("; ")}`,
-      `Engagement: ${type.label}`,
-      `Format: ${chosenLabel}${input.sessions > 1 ? ` × ${input.sessions}` : ""}`,
-      `Participants: ${input.audienceSize}`,
-      "",
-      `Professional fee: ${formatPHP(quote.professionalFee)}`,
-      `Billed logistics: ${formatPHP(quote.reimbursablesBilled)}`,
-      `Total: ${formatPHP(quote.total)}`,
-      `Quote valid until ${formatEngagementDate(quote.validUntil)}.`,
-      "",
-      "Generated from the published rate card at startupfinance.tools/tools/speaker-quotation.",
-      "",
-      "Anything else you should know about this event:",
-      "",
-    ].filter((line): line is string => line !== null);
+  /**
+   * The inquiry itself is built in `lib/speaking/inquiry.ts` — it is the one
+   * output nobody sees before it is sent, so it is unit-tested rather than
+   * assembled inline here.
+   */
+  const mailtoHref = useMemo(
+    () => (quote ? buildInquiryMailto(INQUIRY_EMAIL, quote, input) : `mailto:${INQUIRY_EMAIL}`),
+    [quote, input]
+  );
+  const canSend = contactComplete(input);
+  const mailtoTooLong = exceedsMailtoLimit(mailtoHref);
 
-    const subject = `[Speaking] ${input.eventTitle || "Engagement inquiry"} — ${quote.reference}`;
-    return `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(lines.join("\n"))}`;
+  /**
+   * Sends the reader to the first contact field that is still missing.
+   *
+   * The gate message alone is not enough: someone who cannot see the form
+   * needs to arrive AT the field, not be told a block exists somewhere above.
+   */
+  const focusContactGap = useCallback(() => {
+    const id = !input.contactName?.trim()
+      ? "contact-name"
+      : !input.organizationName?.trim()
+        ? "organization"
+        : "contact-email";
+    const field = document.getElementById(id);
+    field?.scrollIntoView({ block: "center", behavior: "smooth" });
+    (field as HTMLInputElement | null)?.focus({ preventScroll: true });
+  }, [input.contactName, input.organizationName]);
+
+  /**
+   * The same text, on the clipboard.
+   *
+   * A `mailto:` href is a URL, and several mail clients truncate a long one
+   * without saying so — a full brief runs close enough to that ceiling that
+   * the organizer needs a way to paste it that cannot be cut. It is also the
+   * only route on a machine with no mail client configured at all.
+   */
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const copied = copyState === "copied";
+  const copyInquiry = useCallback(() => {
+    if (!quote) return;
+    const body = buildInquiryBody(quote, input);
+    // `navigator.clipboard` is undefined on a non-secure origin, and a write
+    // can be refused outright (permission, unfocused document). Both used to
+    // leave the button doing visibly nothing — a silent failure on the button
+    // that exists BECAUSE the other route can fail silently.
+    const write = navigator.clipboard?.writeText(body);
+    if (!write) {
+      setCopyState("failed");
+      return;
+    }
+    void write.then(() => setCopyState("copied")).catch(() => setCopyState("failed"));
   }, [quote, input]);
+  // Reverts the tick without leaving a timer behind on unmount. The failure
+  // state is NOT auto-cleared: it carries instructions the reader needs time
+  // to act on.
+  useEffect(() => {
+    if (copyState !== "copied") return;
+    const id = window.setTimeout(() => setCopyState("idle"), 2_000);
+    return () => window.clearTimeout(id);
+  }, [copyState]);
 
   const audienceBand = audienceBandFor(input.audienceSize);
   const audienceProfile = audienceProfileFor(input.audienceProfile);
@@ -616,22 +663,71 @@ export function SpeakerQuotationClient({ aiAvailable }: { aiAvailable: boolean }
       {phase === "full" && quoteBlock}
 
       {phase !== "opening" && quote && (
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
-        <p className="text-sm text-muted-foreground">
-          Quote {quote.reference} · valid until {formatEngagementDate(quote.validUntil)}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <ExportPDFButton
-            filename={`Speaking Quotation ${quote.reference}`}
-            buildPrintContent={() => buildQuotationPrint(quote, input)}
-          />
-          <Button asChild size="sm">
-            <a href={mailtoHref}>
-              <Send className="mr-2 h-4 w-4" />
-              Send this inquiry
-            </a>
-          </Button>
+      <div className="space-y-3 border-t border-rule pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Quote {quote.reference} · valid until {formatEngagementDate(quote.validUntil)}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {/* Ungated on purpose. Someone may legitimately want the numbers
+                without contacting anybody, and gating the PDF would make the
+                contact block feel like a toll rather than a courtesy. */}
+            <ExportPDFButton
+              filename={`Speaking Quotation ${quote.reference}`}
+              buildPrintContent={() => buildQuotationPrint(quote, input)}
+            />
+            <Button variant="outline" size="sm" onClick={copyInquiry}>
+              {copied ? (
+                <Check className="mr-2 h-4 w-4" />
+              ) : (
+                <Copy className="mr-2 h-4 w-4" />
+              )}
+              {copied ? "Copied" : "Copy inquiry"}
+            </Button>
+            {/* Not a `disabled` button: a disabled control is removed from
+                the tab order, so the one explanation of WHY sending is
+                blocked was unreachable to exactly the keyboard and screen
+                reader users who cannot see the empty fields either. It stays
+                focusable, announces itself as disabled, and sends the reader
+                to the first field that is missing. */}
+            {canSend ? (
+              <Button asChild size="sm">
+                <a href={mailtoHref}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send this inquiry
+                </a>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                aria-disabled
+                aria-describedby="send-gate"
+                className="opacity-50"
+                onClick={focusContactGap}
+              >
+                <Send className="mr-2 h-4 w-4" />
+                Send this inquiry
+              </Button>
+            )}
+          </div>
         </div>
+        {!canSend && (
+          <p id="send-gate" className="text-right text-xs text-muted-foreground">
+            Add your name, organization and email above so I know who I am replying to.
+          </p>
+        )}
+        {mailtoTooLong && copyState !== "failed" && (
+          <p className="text-right text-xs text-muted-foreground">
+            This inquiry is a long one. Some mail apps cut long links off without saying so — if
+            the draft looks short, use Copy inquiry and paste it instead.
+          </p>
+        )}
+        {copyState === "failed" && (
+          <p className="border-l-[2px] border-bad pl-3 text-xs text-bad" role="alert">
+            Your browser would not let me reach the clipboard. Export the PDF instead, or use
+            Send this inquiry to open the message in your mail app.
+          </p>
+        )}
       </div>
       )}
 

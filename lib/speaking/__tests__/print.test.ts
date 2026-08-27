@@ -35,6 +35,29 @@ describe("printed quotation", () => {
     expect(html).not.toContain("What could change");
   });
 
+  it("names who requested it, so a forwarded quote is answerable", () => {
+    const input = {
+      ...base,
+      organizationName: "DTI Region 1",
+      contactName: "Maria Santos",
+      contactRole: "Training Officer",
+      contactEmail: "maria@dtiregion1.gov.ph",
+      contactPhone: "0917 123 4567",
+    };
+    const html = buildQuotationPrint(buildQuotation(input), input);
+
+    expect(html).toContain("Requested by");
+    expect(html).toContain("Maria Santos, Training Officer");
+    expect(html).toContain("maria@dtiregion1.gov.ph");
+  });
+
+  it("escapes a contact name rather than letting it inject markup", () => {
+    const input = { ...base, contactName: "<script>alert(1)</script>" };
+    const html = buildQuotationPrint(buildQuotation(input), input);
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+
   it("prints no budget section when none was given", () => {
     const html = buildQuotationPrint(buildQuotation(base), base);
     expect(html).not.toContain("Budget stated");

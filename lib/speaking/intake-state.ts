@@ -20,6 +20,7 @@ import {
   OUTPUT_OPTIONS,
   PREPARATION_OPTIONS,
   REGIONS,
+  resolveFormat,
 } from "./rate-card";
 
 /**
@@ -28,8 +29,9 @@ import {
  * The order is load-bearing: `visibleFieldIds` filters this list rather than
  * building its own, so the form's reading order is defined in exactly one
  * place. The free-text identity fields (eventTitle, organizationName, venue)
- * are deliberately absent — they do not enter the price and have no QUESTIONS
- * entry.
+ * and the contact fields (contactName, contactRole, contactEmail,
+ * contactPhone) are deliberately absent — they do not enter the price and
+ * have no QUESTIONS entry.
  */
 export const FIELD_IDS = [
   "organizerType",
@@ -59,14 +61,15 @@ export const FIELD_IDS = [
 export type FieldId = (typeof FIELD_IDS)[number];
 
 /**
- * Whether the engine's chosen format is remote, resolved the way the page
- * resolves it — falling back to the last offered format when the current id is
- * stranded by an engagement-type change, exactly as `setEngagementType` does.
+ * Whether the engagement is remote, resolved the way the ENGINE resolves it.
+ *
+ * It used to resolve within the offered formats and fall back to the last of
+ * them, which disagrees with `priceEngagement` on a format id stranded by an
+ * older build — and disagreeing means hiding the travel questions on an
+ * engagement the engine is charging travel for.
  */
 function isRemote(input: QuotationInput): boolean {
-  const allowed = formatsFor(input.engagementType);
-  const chosen = allowed.find((f) => f.id === input.format) ?? allowed[allowed.length - 1];
-  return Boolean(chosen.remote);
+  return Boolean(resolveFormat(input.format).remote);
 }
 
 /**
@@ -147,6 +150,10 @@ export interface IntakeDraft {
   eventTitle?: string;
   organizationName?: string;
   venue?: string;
+  contactName?: string;
+  contactRole?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   assumptions: IntakeAssumption[];
 }
 
