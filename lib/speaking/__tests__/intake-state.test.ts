@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { DEFAULT_INPUT, type QuotationInput } from "@/lib/speaking/quotation";
-import { FIELD_IDS, visibleFieldIds, isFieldDisabled } from "@/lib/speaking/intake-state";
+import {
+  FIELD_IDS,
+  visibleFieldIds,
+  isFieldDisabled,
+  fieldProvenance,
+  assumptionFor,
+  type FieldId,
+  type IntakeDraft,
+} from "@/lib/speaking/intake-state";
 import { QUESTIONS } from "@/lib/speaking/questions";
 
 const TODAY = "2026-01-15";
@@ -69,5 +77,75 @@ describe("visibleFieldIds", () => {
     const ids = visibleFieldIds(input());
     const positions = ids.map((id) => FIELD_IDS.indexOf(id));
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+});
+
+function draft(over: Partial<IntakeDraft> = {}): IntakeDraft {
+  return { assumptions: [], ...over };
+}
+
+describe("fieldProvenance", () => {
+  it("marks a field the note stated as read", () => {
+    const p = fieldProvenance(draft({ organizerType: "cooperative" }), new Set());
+    expect(p.organizerType).toBe("read");
+  });
+
+  it("marks a field the model inferred as assumed", () => {
+    const p = fieldProvenance(
+      draft({
+        organizerType: "cooperative",
+        assumptions: [{ field: "organizerType", note: "Read 'our co-op' as a cooperative." }],
+      }),
+      new Set()
+    );
+    expect(p.organizerType).toBe("assumed");
+  });
+
+  it("marks an untouched field as blank", () => {
+    expect(fieldProvenance(draft(), new Set()).region).toBe("blank");
+  });
+
+  it("marks an edited field as edited, whatever it was before", () => {
+    const d = draft({
+      organizerType: "cooperative",
+      region: "baguio",
+      assumptions: [{ field: "organizerType", note: "Guessed." }],
+    });
+    const p = fieldProvenance(d, new Set<FieldId>(["organizerType", "region"]));
+    expect(p.organizerType).toBe("edited");
+    expect(p.region).toBe("edited");
+  });
+
+  it("drops an assumption naming a field the draft never set", () => {
+    const p = fieldProvenance(
+      draft({ assumptions: [{ field: "region", note: "Nothing set this." }] }),
+      new Set()
+    );
+    expect(p.region).toBe("blank");
+  });
+
+  it("treats a null draft as everything blank", () => {
+    const p = fieldProvenance(null, new Set());
+    for (const id of FIELD_IDS) expect(p[id]).toBe("blank");
+  });
+
+  it("returns an entry for every field id", () => {
+    const p = fieldProvenance(draft({ sessions: 2 }), new Set());
+    expect(Object.keys(p).sort()).toEqual([...FIELD_IDS].sort());
+  });
+});
+
+describe("assumptionFor", () => {
+  it("returns the note attached to a field", () => {
+    const d = draft({
+      region: "baguio",
+      assumptions: [{ field: "region", note: "Took Tarlac as the nearest region." }],
+    });
+    expect(assumptionFor(d, "region")).toBe("Took Tarlac as the nearest region.");
+  });
+
+  it("returns null when there is no note, and for a null draft", () => {
+    expect(assumptionFor(draft({ region: "baguio" }), "region")).toBeNull();
+    expect(assumptionFor(null, "region")).toBeNull();
   });
 });

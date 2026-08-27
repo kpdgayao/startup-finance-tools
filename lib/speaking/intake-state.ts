@@ -93,3 +93,82 @@ export function visibleFieldIds(input: QuotationInput): FieldId[] {
     }
   });
 }
+
+/** One inference the model made, tied to the field it made it about. */
+export interface IntakeAssumption {
+  field: FieldId;
+  note: string;
+}
+
+/**
+ * What the model read out of an organizer's description.
+ *
+ * Every priced field is optional: an omitted field keeps the form's default,
+ * where a wrong one becomes a wrong price the organizer then has to argue
+ * about. The ids are enum-constrained server-side and re-validated with zod,
+ * but they arrive at the client as plain strings, so the page checks each
+ * against the live option list before accepting it.
+ */
+export interface IntakeDraft {
+  engagementType?: string;
+  facilitationScope?: string;
+  preparation?: string;
+  output?: string;
+  format?: string;
+  sessions?: number;
+  complexity?: string;
+  audienceSize?: number;
+  audienceProfile?: string;
+  organizerType?: string;
+  ticketed?: boolean;
+  participantFee?: number;
+  expectedPaidAttendees?: number;
+  budget?: number;
+  region?: string;
+  startDate?: string;
+  earlyStart?: boolean;
+  travelCovered?: boolean;
+  accommodationCovered?: boolean;
+  addOns?: string[];
+  invoiceRequired?: boolean;
+  returningClient?: boolean;
+  eventTitle?: string;
+  organizationName?: string;
+  venue?: string;
+  assumptions: IntakeAssumption[];
+}
+
+export type FieldStatus = "read" | "assumed" | "blank" | "edited";
+
+/**
+ * Only `assumed` and `blank` need the organizer's attention. A `read` field
+ * renders set and quiet; an `edited` one has already had it.
+ *
+ * An assumption naming a field the draft did not actually set is dropped
+ * rather than trusted — the tool schema is a request to the model, not a
+ * guarantee from it, and a note pointing at an empty control reads as a bug.
+ */
+export function fieldProvenance(
+  draft: IntakeDraft | null,
+  edits: ReadonlySet<FieldId>
+): Record<FieldId, FieldStatus> {
+  const assumed = new Set(
+    (draft?.assumptions ?? [])
+      .filter((a) => draft?.[a.field as keyof IntakeDraft] !== undefined)
+      .map((a) => a.field)
+  );
+
+  const out = {} as Record<FieldId, FieldStatus>;
+  for (const id of FIELD_IDS) {
+    if (edits.has(id)) out[id] = "edited";
+    else if (!draft || draft[id as keyof IntakeDraft] === undefined) out[id] = "blank";
+    else if (assumed.has(id)) out[id] = "assumed";
+    else out[id] = "read";
+  }
+  return out;
+}
+
+/** The note attached to a field, or null when there is none. */
+export function assumptionFor(draft: IntakeDraft | null, id: FieldId): string | null {
+  return draft?.assumptions.find((a) => a.field === id)?.note ?? null;
+}
