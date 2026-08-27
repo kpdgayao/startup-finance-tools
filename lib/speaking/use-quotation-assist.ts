@@ -99,7 +99,16 @@ export function useIntakeDraft() {
   });
   const abortRef = useRef<AbortController | null>(null);
 
-  const requestDraft = useCallback(async (description: string, today: string) => {
+  /**
+   * Returns the draft as well as storing it, so a caller can act on it in the
+   * same turn.
+   *
+   * The page applies the draft and changes state the moment it lands. Watching
+   * `state.draft` from an effect would do the same job and would be a
+   * set-state-in-effect — the exact pattern that already makes `pnpm lint`
+   * fail elsewhere in this repo.
+   */
+  const requestDraft = useCallback(async (description: string, today: string): Promise<IntakeDraft | null> => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -113,13 +122,15 @@ export function useIntakeDraft() {
         controller.signal
       );
       setState({ draft: payload.draft, isDrafting: false, error: null });
+      return payload.draft;
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (err instanceof DOMException && err.name === "AbortError") return null;
       setState({
         draft: null,
         isDrafting: false,
         error: err instanceof Error ? err.message : "Could not read that description.",
       });
+      return null;
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
     }

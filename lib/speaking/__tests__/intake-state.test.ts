@@ -223,7 +223,7 @@ describe("the field registry", () => {
     // Two copies of a control drift, and a sector select that differs between
     // two states of one page produces two different prices for one event.
     const page = readFileSync(
-      join(process.cwd(), "app/tools/speaker-quotation/page.tsx"),
+      join(process.cwd(), "app/tools/speaker-quotation/speaker-quotation-client.tsx"),
       "utf8"
     );
     expect(page).not.toContain("<RateFactorField");
