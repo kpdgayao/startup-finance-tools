@@ -110,21 +110,8 @@ export function IntakeAssistant({
                 Assumed — correct anything wrong after applying
               </p>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink-2">
-                {draft.assumptions.map((line, i) => (
-                  <li key={i}>{line}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {draft.questions.length > 0 && (
-            <>
-              <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                Still needed — these change the price
-              </p>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink-2">
-                {draft.questions.map((line, i) => (
-                  <li key={i}>{line}</li>
+                {draft.assumptions.map((a) => (
+                  <li key={a.field}>{a.note}</li>
                 ))}
               </ul>
             </>

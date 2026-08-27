@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { AvailabilityReport } from "./availability";
+import type { IntakeDraft } from "./intake-state";
 
 /**
  * The only client-side network calls the Speaker Quotation tool makes.
@@ -16,34 +17,7 @@ import type { AvailabilityReport } from "./availability";
  * and drafts the form from a description when the organizer asks it to.
  */
 
-export interface IntakeDraft {
-  engagementType?: string;
-  facilitationScope?: string;
-  preparation?: string;
-  output?: string;
-  format?: string;
-  sessions?: number;
-  complexity?: string;
-  audienceSize?: number;
-  audienceProfile?: string;
-  organizerType?: string;
-  ticketed?: boolean;
-  participantFee?: number;
-  expectedPaidAttendees?: number;
-  budget?: number;
-  region?: string;
-  startDate?: string;
-  earlyStart?: boolean;
-  travelCovered?: boolean;
-  accommodationCovered?: boolean;
-  addOns?: string[];
-  invoiceRequired?: boolean;
-  eventTitle?: string;
-  organizationName?: string;
-  venue?: string;
-  assumptions: string[];
-  questions: string[];
-}
+export type { IntakeDraft, IntakeAssumption } from "./intake-state";
 
 async function postJSON<T>(url: string, body: unknown, signal: AbortSignal): Promise<T> {
   const response = await fetch(url, {
