@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { AvailabilityReport } from "./availability";
+import type { IntakeDraft } from "./intake-state";
 
 /**
  * The only client-side network calls the Speaker Quotation tool makes.
@@ -16,34 +17,7 @@ import type { AvailabilityReport } from "./availability";
  * and drafts the form from a description when the organizer asks it to.
  */
 
-export interface IntakeDraft {
-  engagementType?: string;
-  facilitationScope?: string;
-  preparation?: string;
-  output?: string;
-  format?: string;
-  sessions?: number;
-  complexity?: string;
-  audienceSize?: number;
-  audienceProfile?: string;
-  organizerType?: string;
-  ticketed?: boolean;
-  participantFee?: number;
-  expectedPaidAttendees?: number;
-  budget?: number;
-  region?: string;
-  startDate?: string;
-  earlyStart?: boolean;
-  travelCovered?: boolean;
-  accommodationCovered?: boolean;
-  addOns?: string[];
-  invoiceRequired?: boolean;
-  eventTitle?: string;
-  organizationName?: string;
-  venue?: string;
-  assumptions: string[];
-  questions: string[];
-}
+export type { IntakeDraft, IntakeAssumption } from "./intake-state";
 
 async function postJSON<T>(url: string, body: unknown, signal: AbortSignal): Promise<T> {
   const response = await fetch(url, {
@@ -125,7 +99,16 @@ export function useIntakeDraft() {
   });
   const abortRef = useRef<AbortController | null>(null);
 
-  const requestDraft = useCallback(async (description: string, today: string) => {
+  /**
+   * Returns the draft as well as storing it, so a caller can act on it in the
+   * same turn.
+   *
+   * The page applies the draft and changes state the moment it lands. Watching
+   * `state.draft` from an effect would do the same job and would be a
+   * set-state-in-effect — the exact pattern that already makes `pnpm lint`
+   * fail elsewhere in this repo.
+   */
+  const requestDraft = useCallback(async (description: string, today: string): Promise<IntakeDraft | null> => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -139,13 +122,15 @@ export function useIntakeDraft() {
         controller.signal
       );
       setState({ draft: payload.draft, isDrafting: false, error: null });
+      return payload.draft;
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (err instanceof DOMException && err.name === "AbortError") return null;
       setState({
         draft: null,
         isDrafting: false,
         error: err instanceof Error ? err.message : "Could not read that description.",
       });
+      return null;
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
     }

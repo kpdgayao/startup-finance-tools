@@ -143,7 +143,6 @@ export interface QuotationInput {
   /** Free-text, carried through to the printed quote. */
   eventTitle?: string;
   organizationName?: string;
-  contactName?: string;
   venue?: string;
 }
 
@@ -171,7 +170,6 @@ export const DEFAULT_INPUT: Omit<QuotationInput, "today" | "startDate"> = {
   budget: 0,
   eventTitle: "",
   organizationName: "",
-  contactName: "",
   venue: "",
 };
 
