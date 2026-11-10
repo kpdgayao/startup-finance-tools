@@ -109,7 +109,9 @@ export default function PricingCalculatorPage() {
 
   const expectedUnitsError = touched.expectedUnits ? validatePositiveInteger(expectedUnits).error : undefined;
   const targetPercentError = touched.targetPercent ? validatePercentage(targetPercent, { max: percentMax }).error : undefined;
-  const perceivedValueError = touched.perceivedValue ? validateFinancialAmount(perceivedValue).error : undefined;
+  // The perceived-value input is hidden while savings build the value, so its
+  // error must not block the AI explainer then.
+  const perceivedValueError = touched.perceivedValue && !useSavings ?validateFinancialAmount(perceivedValue).error : undefined;
   const valueDiscountError = touched.valueDiscount ? validatePercentage(valueDiscount).error : undefined;
   const marketPriceError = touched.marketPrice ? validateFinancialAmount(marketPrice).error : undefined;
   const penetrationDiscountError = touched.penetrationDiscount ? validatePercentage(penetrationDiscount).error : undefined;
@@ -676,6 +678,9 @@ export default function PricingCalculatorPage() {
               a: twoPriceResolvedA,
               b: twoPriceResolvedB,
               ...twoPriceResult,
+              volumeBToMatchA: Number.isFinite(twoPriceResult.volumeBToMatchA)
+                ? twoPriceResult.volumeBToMatchA
+                : "never (price B does not exceed variable cost)",
             },
           })
         }

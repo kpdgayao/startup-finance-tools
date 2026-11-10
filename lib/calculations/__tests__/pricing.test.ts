@@ -309,6 +309,9 @@ describe("compareTwoPrices — slide 3", () => {
   it("at ₱148 you need 566 liters to match ₱143 × 600", () => {
     expect(compareTwoPrices(30_000, 60, { price: 143, volume: 600 }, { price: 148, volume: 0 }).volumeBToMatchA).toBe(566);
   });
+  it("needs no volume when A itself sells below variable cost", () => {
+    expect(compareTwoPrices(30_000, 60, { price: 50, volume: 600 }, { price: 148, volume: 600 }).volumeBToMatchA).toBe(0);
+  });
   it("a price at or below variable cost can never match", () => {
     expect(compareTwoPrices(30_000, 60, { price: 143, volume: 600 }, { price: 60, volume: 600 }).volumeBToMatchA).toBe(Infinity);
   });

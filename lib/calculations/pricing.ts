@@ -274,6 +274,8 @@ export function compareTwoPrices(
   const difference = profitB - profitA;
   const contribution = b.price - variable;
   const volumeBToMatchA =
-    contribution <= 0 ? Infinity : Math.ceil((profitA + fixed) / contribution);
+    // profitA + fixed is A's contribution; it is negative when A sells below
+    // variable cost, and no volume is "needed" then, so floor it at 0.
+    contribution <= 0 ? Infinity : Math.max(0, Math.ceil((profitA + fixed) / contribution));
   return { profitA, profitB, difference, volumeBToMatchA };
 }
