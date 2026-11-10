@@ -77,11 +77,12 @@ export function CostLinesEditor({
   return (
     <div className="space-y-4">
       {lines.map((line) => (
-        <div
-          key={line.id}
-          className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border-b border-rule pb-3"
-        >
-          <div className="sm:col-span-3">
+        // Two rows per line: what the cost is, then what it costs. One
+        // 12-column row squeezed "Grant pays this now" into a single column,
+        // where it wrapped to four lines and made every line tall.
+        <div key={line.id} className="space-y-2 border-b border-rule pb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+          <div className="sm:col-span-5">
             <Input
               aria-label="Cost name"
               value={line.name}
@@ -89,12 +90,12 @@ export function CostLinesEditor({
               placeholder="Cost name"
             />
           </div>
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-3">
             <Select
               value={line.category}
               onValueChange={(v) => updateLine(line.id, { category: v as CostCategory })}
             >
-              <SelectTrigger aria-label="Cost category">
+              <SelectTrigger aria-label="Cost category" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -106,12 +107,12 @@ export function CostLinesEditor({
               </SelectContent>
             </Select>
           </div>
-          <div className="sm:col-span-3">
+          <div className="sm:col-span-4">
             <Select
               value={line.behavior}
               onValueChange={(v) => handleBehaviorChange(line, v as CostBehavior)}
             >
-              <SelectTrigger aria-label="Cost behavior">
+              <SelectTrigger aria-label="Cost behavior" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -123,7 +124,9 @@ export function CostLinesEditor({
               </SelectContent>
             </Select>
           </div>
-          <div className="sm:col-span-2">
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+          <div className="w-full sm:w-44">
             <CurrencyInput
               label={AMOUNT_LABEL[line.behavior]}
               value={line.amount}
@@ -131,7 +134,7 @@ export function CostLinesEditor({
             />
           </div>
           {(line.behavior === "one-time" || line.behavior === "per-use") && (
-            <div className="sm:col-span-1 space-y-2">
+            <div className="w-24 space-y-2">
               <Label>{line.behavior === "one-time" ? "Months" : "Uses"}</Label>
               <IntegerInput
                 min={1}
@@ -150,14 +153,14 @@ export function CostLinesEditor({
               />
             </div>
           )}
-          <div className="sm:col-span-1 flex flex-col items-start gap-2">
+          <div className="flex flex-1 items-center justify-between gap-2 pb-2">
             <div className="flex items-center gap-2">
               <Checkbox
                 id={`grant-${line.id}`}
                 checked={!!line.grantFunded}
                 onCheckedChange={(v) => updateLine(line.id, { grantFunded: v === true })}
               />
-              <Label htmlFor={`grant-${line.id}`} className="text-xs font-normal cursor-pointer">
+              <Label htmlFor={`grant-${line.id}`} className="whitespace-nowrap text-xs font-normal cursor-pointer">
                 Grant pays this now
               </Label>
             </div>
@@ -169,6 +172,7 @@ export function CostLinesEditor({
             >
               <Trash2 className="h-4 w-4" />
             </Button>
+          </div>
           </div>
         </div>
       ))}
