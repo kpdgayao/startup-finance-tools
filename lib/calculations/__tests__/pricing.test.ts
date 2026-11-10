@@ -97,6 +97,7 @@ describe("convertBasisPercent", () => {
   it("150% markup is a 60% margin (no clamping on the way)", () => expect(convertBasisPercent(150, "markup", "margin")).toBe(60));
   it("same basis is unchanged", () => expect(convertBasisPercent(37, "margin", "margin")).toBe(37));
   it("margin of 100 converts to the markup max of 500", () => expect(convertBasisPercent(100, "margin", "markup")).toBe(500));
+  it("a 90% margin (a 900% markup) caps at the markup max of 500", () => expect(convertBasisPercent(90, "margin", "markup")).toBe(500));
 });
 
 // ─── calculateValueBased ───────────────────────────────────────────────────

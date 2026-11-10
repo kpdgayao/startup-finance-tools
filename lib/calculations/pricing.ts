@@ -60,8 +60,10 @@ export function convertBasisPercent(
   if (from === "markup") {
     return Math.round((percent / (1 + percent / 100)) * 10) / 10;
   }
+  // 500 is the markup input's max. A margin above ~83.3% is a markup above
+  // 500%, which the input would clamp anyway — cap it here so the two agree.
   if (percent >= 100) return 500;
-  return Math.round((percent / (1 - percent / 100)) * 10) / 10;
+  return Math.min(500, Math.round((percent / (1 - percent / 100)) * 10) / 10);
 }
 
 export function calculateValueBased(
