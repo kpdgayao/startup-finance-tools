@@ -21,12 +21,13 @@ import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
 import {
   calculateCostPlus,
   calculatePenetrationPrice,
-  calculateCompetitivePosition,
   calculateBundlePrice,
   convertBasisPercent,
   suggestCharmPrices,
   calculateBreakeven,
+  comparePerMeasure,
   type PricingBasis,
+  type CompetitorOffer,
 } from "@/lib/calculations/pricing";
 import {
   summarizeCosts,
@@ -35,6 +36,7 @@ import {
   type CostLine,
 } from "@/lib/calculations/pricing-costs";
 import { CostLinesEditor } from "./components/cost-lines-editor";
+import { CompetitiveTab } from "./components/competitive-tab";
 import { LearnLink } from "@/components/shared/learn-link";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
 
@@ -57,7 +59,12 @@ export default function PricingCalculatorPage() {
   const [penetrationDiscount, setPenetrationDiscount] = useState(25);
 
   // Competitive state
-  const [competitorPrices, setCompetitorPrices] = useState<number[]>([15000, 18000, 22000, 25000]);
+  const [offers, setOffers] = useState<CompetitorOffer[]>([
+    { id: "c-1", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
+    { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
+  ]);
+  const [measure, setMeasure] = useState("ml");
+  const [yourSize, setYourSize] = useState(1000);
 
   // Bundle state
   const [bundleItems, setBundleItems] = useState<number[]>([10000, 8000, 5000]);
@@ -105,7 +112,12 @@ export default function PricingCalculatorPage() {
     setValueDiscount(20);
     setMarketPrice(20000);
     setPenetrationDiscount(25);
-    setCompetitorPrices([15000, 18000, 22000, 25000]);
+    setOffers([
+      { id: "c-1", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
+      { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
+    ]);
+    setMeasure("ml");
+    setYourSize(1000);
     setBundleItems([10000, 8000, 5000]);
     setBundleDiscount(15);
     setCharmBase(null);
@@ -128,7 +140,13 @@ export default function PricingCalculatorPage() {
 
   const valueBased = safePerceivedValue * (1 - safeValueDiscount / 100);
   const penetrationPrice = calculatePenetrationPrice(safeMarketPrice, safePenetrationDiscount);
-const competitive = calculateCompetitivePosition(competitorPrices.map((v) => sanitizeFinancialAmount(v)));
+const safeOffers = offers.map((o) => ({
+  ...o,
+  price: sanitizeFinancialAmount(o.price),
+  size: Math.max(0, Number.isFinite(o.size) ? o.size : 0),
+}));
+const safeYourSize = Math.max(0, Number.isFinite(yourSize) ? yourSize : 0);
+const comparison = comparePerMeasure(safeOffers, costPlusResult.price, safeYourSize);
 const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmount(v)), safeBundleDiscount);
   const charmInput = charmBase ?? Math.round(costPlusResult.price);
   const safeCharmInput = sanitizeFinancialAmount(charmInput);
@@ -315,60 +333,17 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
         </TabsContent>
 
         <TabsContent value="competitive" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Competitive Pricing
-                <InfoTooltip content="Analyze competitor prices to position your product. Price at, above, or below the market average." />
-              </CardTitle>
-              <CardDescription>Enter competitor prices to find your positioning.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {competitorPrices.map((price, i) => (
-                <div key={i} className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <CurrencyInput
-                      label={`Competitor ${i + 1}`}
-                      value={price}
-                      onChange={(v) => {
-                        const next = [...competitorPrices];
-                        next[i] = v;
-                        setCompetitorPrices(next);
-                      }}
-                    />
-                  </div>
-                  {competitorPrices.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="mb-0.5"
-                      onClick={() => setCompetitorPrices(competitorPrices.filter((_, j) => j !== i))}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              {competitorPrices.length < 10 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCompetitorPrices([...competitorPrices, 0])}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Competitor
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-          {competitorPrices.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <ResultCard label="Lowest Price" value={formatPHP(competitive.min)} />
-              <ResultCard label="Highest Price" value={formatPHP(competitive.max)} />
-              <ResultCard label="Average Price" value={formatPHP(competitive.average)} variant="success" />
-              <ResultCard label="Median Price" value={formatPHP(competitive.median)} />
-            </div>
-          )}
+          <CompetitiveTab
+            offers={offers}
+            onOffersChange={setOffers}
+            measure={measure}
+            onMeasureChange={setMeasure}
+            yourSize={yourSize}
+            onYourSizeChange={setYourSize}
+            yourPrice={costPlusResult.price}
+            unitName={unitName}
+            comparison={comparison}
+          />
         </TabsContent>
 
         <TabsContent value="bundle" className="space-y-4 mt-4">
@@ -500,7 +475,13 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
             },
             valueBased: { perceivedValue: safePerceivedValue, valueDiscount: safeValueDiscount, suggestedPrice: valueBased },
             penetration: { marketPrice: safeMarketPrice, penetrationDiscount: safePenetrationDiscount, entryPrice: penetrationPrice },
-            competitive: { competitorPrices: competitorPrices.map((v) => sanitizeFinancialAmount(v)), ...competitive },
+            competitive: {
+              measure,
+              yourSize: safeYourSize,
+              yourPerMeasure: comparison.yourPerMeasure,
+              rows: comparison.rows,
+              ...comparison.position,
+            },
             bundle: { bundleItems: bundleItems.map((v) => sanitizeFinancialAmount(v)), bundleDiscount: safeBundleDiscount, ...bundle },
             psychological: { price: safeCharmInput, down: charm?.down ?? null, up: charm?.up ?? null },
           })

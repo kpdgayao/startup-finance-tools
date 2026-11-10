@@ -8,6 +8,7 @@ import {
   convertBasisPercent,
   suggestCharmPrices,
   suggestPsychologicalPrice,
+  comparePerMeasure,
   type CostBreakdown,
 } from "../pricing";
 
@@ -228,5 +229,33 @@ describe("suggestCharmPrices", () => {
   it("below ₱9 there is no charm price", () => {
     expect(suggestCharmPrices(5)).toBeNull();
     expect(suggestCharmPrices(0)).toBeNull();
+  });
+});
+
+// ─── comparePerMeasure ─────────────────────────────────────────────────────
+
+describe("comparePerMeasure — the deck's sachet benchmark", () => {
+  const offers = [
+    { id: "a", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
+    { id: "b", name: "Refill hub, 30 ml", price: 4, size: 30 },
+  ];
+  it("₱143 per liter is ₱0.143 per ml", () => {
+    expect(comparePerMeasure(offers, 143, 1000).yourPerMeasure).toBeCloseTo(0.143, 6);
+  });
+  it("beats the ₱0.31/ml pack and loses to the ₱0.13/ml refill", () => {
+    const { rows } = comparePerMeasure(offers, 143, 1000);
+    expect(rows[0].pricePerMeasure).toBeCloseTo(0.3104, 4);
+    expect(rows[0].differencePercent).toBeCloseTo(-53.9, 1);
+    expect(rows[1].pricePerMeasure).toBeCloseTo(0.1333, 4);
+    expect(rows[1].differencePercent).toBeCloseTo(7.25, 2);
+  });
+  it("skips an offer with size 0 instead of dividing by it", () => {
+    const { rows } = comparePerMeasure([...offers, { id: "c", name: "x", price: 5, size: 0 }], 143, 1000);
+    expect(rows).toHaveLength(2);
+  });
+  it("your size of 0 gives zeros, not Infinity", () => {
+    const r = comparePerMeasure(offers, 143, 0);
+    expect(r.yourPerMeasure).toBe(0);
+    expect(r.rows.every((row) => row.differencePercent === 0)).toBe(true);
   });
 });

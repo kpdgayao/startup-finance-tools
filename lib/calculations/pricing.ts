@@ -4,6 +4,15 @@ export interface CostBreakdown {
   expectedUnits: number;
 }
 
+export interface CompetitorOffer { id: string; name: string; price: number; size: number }
+
+export interface PerMeasureRow {
+  id: string;
+  name: string;
+  pricePerMeasure: number;     // price ÷ size
+  differencePercent: number;   // (yourPerMeasure − theirs) ÷ theirs × 100; negative = you are cheaper
+}
+
 export type PricingBasis = "markup" | "margin";
 
 export interface PricingResult {
@@ -95,6 +104,33 @@ export function calculateCompetitivePosition(
     sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 
   return { min, max, average, median };
+}
+
+export function comparePerMeasure(
+  offers: CompetitorOffer[],
+  yourPrice: number,
+  yourSize: number
+): {
+  yourPerMeasure: number;
+  rows: PerMeasureRow[];
+  position: { min: number; max: number; average: number; median: number };
+} {
+  const yourPerMeasure = yourSize <= 0 ? 0 : yourPrice / yourSize;
+
+  const rows: PerMeasureRow[] = [];
+  for (const offer of offers) {
+    if (offer.size <= 0 || offer.price <= 0) continue;
+    const pricePerMeasure = offer.price / offer.size;
+    const differencePercent =
+      yourSize <= 0
+        ? 0
+        : ((yourPerMeasure - pricePerMeasure) / pricePerMeasure) * 100;
+    rows.push({ id: offer.id, name: offer.name, pricePerMeasure, differencePercent });
+  }
+
+  const position = calculateCompetitivePosition(rows.map((r) => r.pricePerMeasure));
+
+  return { yourPerMeasure, rows, position };
 }
 
 export function calculateBundlePrice(
