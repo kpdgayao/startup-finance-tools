@@ -12,7 +12,7 @@ import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
-import { formatPHP, formatPHPDetailed, formatNumber } from "@/lib/utils";
+import { formatPHP, formatPHPDetailed, formatNumber, nextNumberedId } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
@@ -28,8 +28,12 @@ import {
   comparePerMeasure,
   buildPriceLadder,
   formatShareLine,
+  compareTwoPrices,
+  sumSavings,
   type PricingBasis,
   type CompetitorOffer,
+  type SavingsItem,
+  type PricePoint,
 } from "@/lib/calculations/pricing";
 import {
   summarizeCosts,
@@ -40,6 +44,7 @@ import {
 import { CostLinesEditor } from "./components/cost-lines-editor";
 import { CompetitiveTab } from "./components/competitive-tab";
 import { PriceDecision } from "./components/price-decision";
+import { TwoPriceTest } from "./components/two-price-test";
 import { LearnLink } from "@/components/shared/learn-link";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
 
@@ -47,6 +52,14 @@ import { Trash2, Plus, RotateCcw } from "lucide-react";
 const DEFAULT_OFFERS: CompetitorOffer[] = [
   { id: "c-1", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
   { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
+];
+
+// A B2B refill example: what the customer stops
+// spending once they buy from you.
+const DEFAULT_SAVINGS: SavingsItem[] = [
+  { id: "s-1", name: "Fewer stock-outs (lost sales avoided)", amount: 6000 },
+  { id: "s-2", name: "No emergency purchases", amount: 2500 },
+  { id: "s-3", name: "Less staff time reordering", amount: 1500 },
 ];
 
 export default function PricingCalculatorPage() {
@@ -62,6 +75,8 @@ export default function PricingCalculatorPage() {
   // Value-Based state
   const [perceivedValue, setPerceivedValue] = useState(25000);
   const [valueDiscount, setValueDiscount] = useState(20);
+  const [useSavings, setUseSavings] = useState(false);
+  const [savingsItems, setSavingsItems] = useState<SavingsItem[]>(DEFAULT_SAVINGS);
 
   // Penetration state
   const [marketPrice, setMarketPrice] = useState(20000);
@@ -85,12 +100,20 @@ export default function PricingCalculatorPage() {
   const [productName, setProductName] = useState("");
   const [shareStrategy, setShareStrategy] = useState("Cost-Plus");
 
+  // Two-price test state: only the fields the user has edited. A field left
+  // unset keeps following its default (your price, your expected units), so
+  // editing B's price doesn't freeze B's volume while A's keeps moving.
+  const [twoPriceA, setTwoPriceA] = useState<Partial<PricePoint>>({});
+  const [twoPriceB, setTwoPriceB] = useState<Partial<PricePoint>>({});
+
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
 
   const expectedUnitsError = touched.expectedUnits ? validatePositiveInteger(expectedUnits).error : undefined;
   const targetPercentError = touched.targetPercent ? validatePercentage(targetPercent, { max: percentMax }).error : undefined;
-  const perceivedValueError = touched.perceivedValue ? validateFinancialAmount(perceivedValue).error : undefined;
+  // The perceived-value input is hidden while savings build the value, so its
+  // error must not block the AI explainer then.
+  const perceivedValueError = touched.perceivedValue && !useSavings ?validateFinancialAmount(perceivedValue).error : undefined;
   const valueDiscountError = touched.valueDiscount ? validatePercentage(valueDiscount).error : undefined;
   const marketPriceError = touched.marketPrice ? validateFinancialAmount(marketPrice).error : undefined;
   const penetrationDiscountError = touched.penetrationDiscount ? validatePercentage(penetrationDiscount).error : undefined;
@@ -109,6 +132,9 @@ export default function PricingCalculatorPage() {
   const safeTargetPercent = sanitizePercentage(targetPercent, { max: percentMax });
   const safePerceivedValue = sanitizeFinancialAmount(perceivedValue);
   const safeValueDiscount = sanitizePercentage(valueDiscount);
+  const safeSavingsItems = savingsItems.map((s) => ({ ...s, amount: sanitizeFinancialAmount(s.amount) }));
+  const savingsValue = sumSavings(safeSavingsItems);
+  const effectiveValue = useSavings ? savingsValue : safePerceivedValue;
   const safeMarketPrice = sanitizeFinancialAmount(marketPrice);
   const safePenetrationDiscount = sanitizePercentage(penetrationDiscount);
   const safeBundleDiscount = sanitizePercentage(bundleDiscount);
@@ -134,6 +160,10 @@ export default function PricingCalculatorPage() {
     setStartupName("");
     setProductName("");
     setShareStrategy("Cost-Plus");
+    setUseSavings(false);
+    setSavingsItems(DEFAULT_SAVINGS);
+    setTwoPriceA({});
+    setTwoPriceB({});
     setTouched({});
   };
 
@@ -151,7 +181,7 @@ export default function PricingCalculatorPage() {
     costPlusResult.price
   );
 
-  const valueBased = safePerceivedValue * (1 - safeValueDiscount / 100);
+  const valueBased = effectiveValue * (1 - safeValueDiscount / 100);
   const penetrationPrice = calculatePenetrationPrice(safeMarketPrice, safePenetrationDiscount);
 
   const effectivePrice = sanitizeFinancialAmount(chosenPrice ?? Math.round(costPlusResult.price));
@@ -196,6 +226,30 @@ export default function PricingCalculatorPage() {
     strategy: shareStrategy,
     breakeven: chosenBreakeven,
   });
+
+  const twoPriceResolvedA: PricePoint = {
+    price: sanitizeFinancialAmount(twoPriceA.price ?? effectivePrice),
+    volume: twoPriceA.volume ?? safeExpectedUnits,
+  };
+  const twoPriceResolvedB: PricePoint = {
+    price: sanitizeFinancialAmount(twoPriceB.price ?? effectivePrice + 5),
+    volume: twoPriceB.volume ?? safeExpectedUnits,
+  };
+  const twoPriceResult = compareTwoPrices(
+    costSummary.fixedMonthly,
+    costSummary.variablePerUnit,
+    twoPriceResolvedA,
+    twoPriceResolvedB
+  );
+
+  const addSaving = () => {
+    const nextId = nextNumberedId("s-", savingsItems.map((s) => s.id));
+    setSavingsItems([...savingsItems, { id: nextId, name: "", amount: 0 }]);
+  };
+  const updateSaving = (id: string, patch: Partial<SavingsItem>) =>
+    setSavingsItems(savingsItems.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  const removeSaving = (id: string) =>
+    setSavingsItems(savingsItems.filter((s) => s.id !== id));
 
   return (
     <div className="space-y-6">
@@ -341,16 +395,62 @@ export default function PricingCalculatorPage() {
               <CardDescription>Set price based on how much value the customer perceives.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CurrencyInput label="Customer Perceived Value" value={perceivedValue} onChange={setPerceivedValue} onBlur={() => markTouched("perceivedValue")} error={perceivedValueError} />
-                <PercentageInput label="Discount from Value %" value={valueDiscount} onChange={setValueDiscount} onBlur={() => markTouched("valueDiscount")} error={valueDiscountError} />
+              <div className="flex items-center gap-3">
+                <Switch id="use-savings" checked={useSavings} onCheckedChange={setUseSavings} />
+                <Label htmlFor="use-savings">Build it from what the customer saves</Label>
               </div>
+              {useSavings ? (
+                <>
+                  <div className="space-y-3">
+                    {savingsItems.map((s) => (
+                      <div key={s.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border-b border-rule pb-3">
+                        <div className="sm:col-span-7">
+                          <Input
+                            aria-label="Saving name"
+                            value={s.name}
+                            onChange={(e) => updateSaving(s.id, { name: e.target.value })}
+                            placeholder="What the customer saves"
+                          />
+                        </div>
+                        <div className="sm:col-span-4">
+                          <CurrencyInput
+                            label="₱ saved a month"
+                            value={s.amount}
+                            onChange={(v) => updateSaving(s.id, { amount: v })}
+                          />
+                        </div>
+                        <div className="sm:col-span-1 flex justify-end pb-1">
+                          <Button variant="ghost" size="icon" aria-label="Remove saving" onClick={() => removeSaving(s.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {savingsItems.length < 10 && (
+                      <Button variant="outline" size="sm" onClick={addSaving}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add saving
+                      </Button>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Total saved: {formatPHP(savingsValue)} a month
+                    </p>
+                  </div>
+                  <PercentageInput label="Discount from Value %" value={valueDiscount} onChange={setValueDiscount} onBlur={() => markTouched("valueDiscount")} error={valueDiscountError} />
+                </>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CurrencyInput label="Customer Perceived Value" value={perceivedValue} onChange={setPerceivedValue} onBlur={() => markTouched("perceivedValue")} error={perceivedValueError} />
+                  <PercentageInput label="Discount from Value %" value={valueDiscount} onChange={setValueDiscount} onBlur={() => markTouched("valueDiscount")} error={valueDiscountError} />
+                </div>
+              )}
             </CardContent>
           </Card>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ResultCard label="Perceived Value" value={formatPHP(perceivedValue)} />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <ResultCard label="Perceived Value" value={formatPHP(effectiveValue)} />
             <ResultCard label="Suggested Price" value={formatPHP(valueBased)} variant="success" />
-            <ResultCard label="Customer Surplus" value={formatPHP(perceivedValue - valueBased)} sublabel="Value the customer keeps" />
+            <ResultCard label="Customer Surplus" value={formatPHP(effectiveValue - valueBased)} sublabel="Value the customer keeps" />
+            <ResultCard label="Customer ROI" value={valueBased > 0 ? `${(effectiveValue / valueBased).toFixed(1)}×` : "—"} sublabel="Value for every ₱1 they pay" />
           </div>
         </TabsContent>
 
@@ -500,6 +600,15 @@ export default function PricingCalculatorPage() {
         shareLine={shareLine}
       />
 
+      <TwoPriceTest
+        unitName={unitName}
+        a={twoPriceResolvedA}
+        b={twoPriceResolvedB}
+        onAChange={(patch) => setTwoPriceA((prev) => ({ ...prev, ...patch }))}
+        onBChange={(patch) => setTwoPriceB((prev) => ({ ...prev, ...patch }))}
+        result={twoPriceResult}
+      />
+
       <AiInsightsPanel
         explanation={ai.explanation}
         isLoading={ai.isLoading}
@@ -538,7 +647,17 @@ export default function PricingCalculatorPage() {
               totalMonthlyCost: outcome.totalCost,
               monthlyProfit: outcome.profit,
             },
-            valueBased: { perceivedValue: safePerceivedValue, valueDiscount: safeValueDiscount, suggestedPrice: valueBased },
+            valueBased: {
+              useSavings,
+              // Only when they build the value from savings; otherwise the
+              // AI would discuss default rows the user never entered.
+              savingsItems: useSavings
+                ? safeSavingsItems.map((s) => ({ name: s.name, amount: s.amount }))
+                : [],
+              perceivedValue: effectiveValue,
+              valueDiscount: safeValueDiscount,
+              suggestedPrice: valueBased,
+            },
             penetration: { marketPrice: safeMarketPrice, penetrationDiscount: safePenetrationDiscount, entryPrice: penetrationPrice },
             competitive: {
               measure,
@@ -556,6 +675,14 @@ export default function PricingCalculatorPage() {
                 ? chosenBreakeven
                 : "never (price does not exceed variable cost)",
               strategy: shareStrategy,
+            },
+            twoPriceTest: {
+              a: twoPriceResolvedA,
+              b: twoPriceResolvedB,
+              ...twoPriceResult,
+              volumeBToMatchA: Number.isFinite(twoPriceResult.volumeBToMatchA)
+                ? twoPriceResult.volumeBToMatchA
+                : "never (price B does not exceed variable cost)",
             },
           })
         }

@@ -81,7 +81,7 @@ Explain which zone they're in, how adjustments change the picture, and when they
 
   "pricing-calculator": `${SHARED_INSTRUCTIONS}
 
-CONTEXT: The user explored pricing strategies including cost-plus, value-based, penetration, competitive, bundle, and psychological pricing.
+CONTEXT: The user priced a product with itemized costs (including reuse costs such as containers, collection and cleaning), compared it per measure against what customers buy now (often a sachet), picked a price, and may have tested two price points. The payload also carries the value-based, penetration, bundle and psychological tabs; use them where they help the decision.
 
 Kevin's curriculum notes:
 - Cost-plus is the baseline: unit cost × (1 + markup). Kevin's example: ₱130K costs ÷ 10 clients × 1.4 = ₱18,200/month. That is a 40% MARKUP, which is only a 28.6% MARGIN. Markup is profit ÷ cost; margin is profit ÷ price. Never call a markup a margin, and say which one the user chose (the payload's "basis").
@@ -91,8 +91,14 @@ Kevin's curriculum notes:
 - Bundle pricing increases average transaction value by 15-30% typically.
 - Psychological pricing (₱999 vs ₱1,000) leverages the left-digit effect.
 - Kevin's key insight: most Filipino startups underprice. Price based on value delivered, not cost incurred.
+- The full cost of reuse: containers (cost ÷ uses), collection (pickups, returns) and cleaning (washing, testing). Linear businesses never pay these; leaving them out loses money every cycle.
+- Compare per ml, not per pack. Where the refill loses on price, it must win on a reason: a deposit back, points, quality, or convenience.
+- Price for life after the grant. If the payload shows grant-funded costs, check that the price covers them anyway.
+- Lost containers are a cost; a deposit protects against them.
+- A 1% price improvement lifts operating profit about 11% (Marn & Rosiello, HBR 1992), more than any cost or volume lever.
+- Test, don't guess: try two price points in the pilot.
 
-Explain which strategy fits their business model and whether their pricing captures enough value.`,
+Explain which strategy fits their business model and whether their pricing captures enough value. If the decision verdict is "below-cost" or "above-market", say so plainly first.`,
 
   "cash-flow-forecast": `${SHARED_INSTRUCTIONS}
 
