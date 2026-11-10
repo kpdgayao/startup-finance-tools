@@ -43,6 +43,12 @@ import { PriceDecision } from "./components/price-decision";
 import { LearnLink } from "@/components/shared/learn-link";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
 
+// The deck's slide 25 benchmark: the sachet pack and the refill hub.
+const DEFAULT_OFFERS: CompetitorOffer[] = [
+  { id: "c-1", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
+  { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
+];
+
 export default function PricingCalculatorPage() {
   // Cost-Plus state
   const [costLines, setCostLines] = useState<CostLine[]>(REFILL_STATION_EXAMPLE);
@@ -62,10 +68,7 @@ export default function PricingCalculatorPage() {
   const [penetrationDiscount, setPenetrationDiscount] = useState(25);
 
   // Competitive state
-  const [offers, setOffers] = useState<CompetitorOffer[]>([
-    { id: "c-1", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
-    { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
-  ]);
+  const [offers, setOffers] = useState<CompetitorOffer[]>(DEFAULT_OFFERS);
   const [measure, setMeasure] = useState("ml");
   const [yourSize, setYourSize] = useState(1000);
 
@@ -121,10 +124,7 @@ export default function PricingCalculatorPage() {
     setValueDiscount(20);
     setMarketPrice(20000);
     setPenetrationDiscount(25);
-    setOffers([
-      { id: "c-1", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
-      { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
-    ]);
+    setOffers(DEFAULT_OFFERS);
     setMeasure("ml");
     setYourSize(1000);
     setBundleItems([10000, 8000, 5000]);
@@ -172,7 +172,10 @@ export default function PricingCalculatorPage() {
     unitCost: costPlusResult.unitCost,
     costPlusPrice: costPlusResult.price,
     chosen: effectivePrice,
-    ...(comparison.rows.length > 0
+    // Per-measure prices only scale back to a pack price when your pack has a
+    // size; with size 0 the market range would collapse to ₱0 and every price
+    // would read "above market".
+    ...(comparison.rows.length > 0 && safeYourSize > 0
       ? {
           marketLow: comparison.position.min * safeYourSize,
           marketHigh: comparison.position.max * safeYourSize,
@@ -292,7 +295,7 @@ export default function PricingCalculatorPage() {
                 hasTakeBackCosts={costSummary.hasTakeBackCosts}
               />
               <p className="text-sm text-muted-foreground">
-                Fixed {formatPHP(costSummary.fixedMonthly)} a month · Variable {formatPHPDetailed(costSummary.variablePerUnit)} per {unitName}
+                Fixed {formatPHP(costSummary.fixedMonthly)} a month · Variable {formatPHPDetailed(costSummary.variablePerUnit)} per {unitName || "unit"}
               </p>
             </CardContent>
           </Card>
@@ -323,7 +326,7 @@ export default function PricingCalculatorPage() {
           </p>
           {costSummary.grantFixedMonthly > 0 || costSummary.grantVariablePerUnit > 0 ? (
             <p className="text-sm text-muted-foreground">
-              The grant pays {formatPHP(costSummary.grantFixedMonthly)} a month and {formatPHPDetailed(costSummary.grantVariablePerUnit)} per {unitName} today. Your price already covers these, so it still works after the grant ends. While the grant pays, your monthly profit is {formatPHP(outcome.profit + costSummary.grantFixedMonthly + costSummary.grantVariablePerUnit * safeExpectedUnits)}.
+              The grant pays {formatPHP(costSummary.grantFixedMonthly)} a month and {formatPHPDetailed(costSummary.grantVariablePerUnit)} per {unitName || "unit"} today. Your price already covers these, so it still works after the grant ends. While the grant pays, your monthly profit is {formatPHP(outcome.profit + costSummary.grantFixedMonthly + costSummary.grantVariablePerUnit * safeExpectedUnits)}.
             </p>
           ) : null}
         </TabsContent>
@@ -524,7 +527,10 @@ export default function PricingCalculatorPage() {
               profitPerUnit: costPlusResult.profitPerUnit,
               markupPercent: costPlusResult.markupPercent,
               marginPercent: costPlusResult.marginPercent,
-              breakeven: costPlusResult.breakeven,
+              // JSON turns Infinity into null; say what it means instead.
+              breakeven: Number.isFinite(costPlusResult.breakeven)
+                ? costPlusResult.breakeven
+                : "never (price does not exceed variable cost)",
               fixedMonthly: costSummary.fixedMonthly,
               variablePerUnit: costSummary.variablePerUnit,
               grantFixedMonthly: costSummary.grantFixedMonthly,
@@ -546,7 +552,9 @@ export default function PricingCalculatorPage() {
             decision: {
               chosenPrice: effectivePrice,
               verdict: ladder.verdict,
-              breakeven: chosenBreakeven,
+              breakeven: Number.isFinite(chosenBreakeven)
+                ? chosenBreakeven
+                : "never (price does not exceed variable cost)",
               strategy: shareStrategy,
             },
           })

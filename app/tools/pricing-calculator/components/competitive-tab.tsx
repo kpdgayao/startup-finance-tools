@@ -62,7 +62,9 @@ export function CompetitiveTab({
       n += 1;
       id = `c-${n}`;
     }
-    onOffersChange([...offers, { id, name: "", price: 0, size: 0 }]);
+    // Default the size to your own pack, so an offer entered with just a
+    // price compares pack-for-pack instead of being skipped for size 0.
+    onOffersChange([...offers, { id, name: "", price: 0, size: yourSize > 0 ? yourSize : 1 }]);
   };
 
   const unitLabel = unitName || "unit";
@@ -188,17 +190,30 @@ export function CompetitiveTab({
                   verdict — the column that matters — off the right edge. */}
               <TableCell className="whitespace-normal">{row.name || "Offer"}</TableCell>
               <TableCell>{formatPHPDetailed(row.pricePerMeasure)}</TableCell>
-              <TableCell className={cn("whitespace-normal", row.differencePercent < 0 ? "text-good" : "text-warn")}>
-                {row.differencePercent < 0
-                  ? `You're ${Math.abs(row.differencePercent).toFixed(0)}% cheaper`
-                  : `You're ${row.differencePercent.toFixed(0)}% more expensive`}
+              {/* Under half a percent rounds to 0%, so call it the same price
+                  rather than "0% more expensive" in the warning colour. */}
+              <TableCell
+                className={cn(
+                  "whitespace-normal",
+                  Math.abs(row.differencePercent) < 0.5
+                    ? "text-muted-foreground"
+                    : row.differencePercent < 0
+                      ? "text-good"
+                      : "text-warn"
+                )}
+              >
+                {Math.abs(row.differencePercent) < 0.5
+                  ? "Same price"
+                  : row.differencePercent < 0
+                    ? `You're ${Math.abs(row.differencePercent).toFixed(0)}% cheaper`
+                    : `You're ${row.differencePercent.toFixed(0)}% more expensive`}
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      {comparison.rows.some((row) => row.differencePercent > 0) && (
+      {comparison.rows.some((row) => row.differencePercent >= 0.5) && (
         <p className="text-sm text-muted-foreground">
           Where you lose on price, win on a reason: a deposit back, points, quality, or convenience.
         </p>

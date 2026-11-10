@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -42,10 +41,15 @@ export function CostLinesEditor({
   isReuseModel: boolean;
   hasTakeBackCosts: boolean;
 }) {
-  const idRef = useRef(0);
+  // Derive the next id from the lines themselves, not a ref counter: Radix
+  // unmounts inactive tabs, so a ref restarts at 0 on every return to this
+  // tab and would hand out an id that is already in use.
   const nextId = () => {
-    idRef.current += 1;
-    return `line-${idRef.current}`;
+    const used = lines
+      .map((l) => /^line-(\d+)$/.exec(l.id)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number);
+    return `line-${(used.length ? Math.max(...used) : 0) + 1}`;
   };
 
   const updateLine = (id: string, patch: Partial<CostLine>) => {
