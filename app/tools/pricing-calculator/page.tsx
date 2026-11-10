@@ -12,7 +12,7 @@ import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
-import { formatPHP, formatPHPDetailed, formatNumber } from "@/lib/utils";
+import { formatPHP, formatPHPDetailed, formatNumber, nextNumberedId } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
@@ -54,7 +54,7 @@ const DEFAULT_OFFERS: CompetitorOffer[] = [
   { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
 ];
 
-// A B2B refill example in the shape of Sangkap Hub: what the customer stops
+// A B2B refill example: what the customer stops
 // spending once they buy from you.
 const DEFAULT_SAVINGS: SavingsItem[] = [
   { id: "s-1", name: "Fewer stock-outs (lost sales avoided)", amount: 6000 },
@@ -100,9 +100,11 @@ export default function PricingCalculatorPage() {
   const [productName, setProductName] = useState("");
   const [shareStrategy, setShareStrategy] = useState("Cost-Plus");
 
-  // Two-price test state (null follows the defaults derived below)
-  const [twoPriceA, setTwoPriceA] = useState<PricePoint | null>(null);
-  const [twoPriceB, setTwoPriceB] = useState<PricePoint | null>(null);
+  // Two-price test state: only the fields the user has edited. A field left
+  // unset keeps following its default (your price, your expected units), so
+  // editing B's price doesn't freeze B's volume while A's keeps moving.
+  const [twoPriceA, setTwoPriceA] = useState<Partial<PricePoint>>({});
+  const [twoPriceB, setTwoPriceB] = useState<Partial<PricePoint>>({});
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
@@ -160,8 +162,8 @@ export default function PricingCalculatorPage() {
     setShareStrategy("Cost-Plus");
     setUseSavings(false);
     setSavingsItems(DEFAULT_SAVINGS);
-    setTwoPriceA(null);
-    setTwoPriceB(null);
+    setTwoPriceA({});
+    setTwoPriceB({});
     setTouched({});
   };
 
@@ -226,12 +228,12 @@ export default function PricingCalculatorPage() {
   });
 
   const twoPriceResolvedA: PricePoint = {
-    price: sanitizeFinancialAmount(twoPriceA?.price ?? effectivePrice),
-    volume: twoPriceA?.volume ?? safeExpectedUnits,
+    price: sanitizeFinancialAmount(twoPriceA.price ?? effectivePrice),
+    volume: twoPriceA.volume ?? safeExpectedUnits,
   };
   const twoPriceResolvedB: PricePoint = {
-    price: sanitizeFinancialAmount(twoPriceB?.price ?? effectivePrice + 5),
-    volume: twoPriceB?.volume ?? safeExpectedUnits,
+    price: sanitizeFinancialAmount(twoPriceB.price ?? effectivePrice + 5),
+    volume: twoPriceB.volume ?? safeExpectedUnits,
   };
   const twoPriceResult = compareTwoPrices(
     costSummary.fixedMonthly,
@@ -241,11 +243,7 @@ export default function PricingCalculatorPage() {
   );
 
   const addSaving = () => {
-    const used = savingsItems
-      .map((s) => /^s-(\d+)$/.exec(s.id)?.[1])
-      .filter((n): n is string => n !== undefined)
-      .map(Number);
-    const nextId = `s-${(used.length ? Math.max(...used) : 0) + 1}`;
+    const nextId = nextNumberedId("s-", savingsItems.map((s) => s.id));
     setSavingsItems([...savingsItems, { id: nextId, name: "", amount: 0 }]);
   };
   const updateSaving = (id: string, patch: Partial<SavingsItem>) =>
@@ -606,8 +604,8 @@ export default function PricingCalculatorPage() {
         unitName={unitName}
         a={twoPriceResolvedA}
         b={twoPriceResolvedB}
-        onAChange={setTwoPriceA}
-        onBChange={setTwoPriceB}
+        onAChange={(patch) => setTwoPriceA((prev) => ({ ...prev, ...patch }))}
+        onBChange={(patch) => setTwoPriceB((prev) => ({ ...prev, ...patch }))}
         result={twoPriceResult}
       />
 
@@ -651,7 +649,11 @@ export default function PricingCalculatorPage() {
             },
             valueBased: {
               useSavings,
-              savingsItems: safeSavingsItems.map((s) => ({ name: s.name, amount: s.amount })),
+              // Only when they build the value from savings; otherwise the
+              // AI would discuss default rows the user never entered.
+              savingsItems: useSavings
+                ? safeSavingsItems.map((s) => ({ name: s.name, amount: s.amount }))
+                : [],
               perceivedValue: effectiveValue,
               valueDiscount: safeValueDiscount,
               suggestedPrice: valueBased,

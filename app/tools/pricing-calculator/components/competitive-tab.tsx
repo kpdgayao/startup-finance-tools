@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn, formatPHP, formatPHPDetailed } from "@/lib/utils";
+import { cn, formatPHP, formatPHPDetailed, nextNumberedId } from "@/lib/utils";
 import { Plus, Trash2 } from "lucide-react";
 import type { CompetitorOffer, PerMeasureRow } from "@/lib/calculations/pricing";
 
@@ -55,13 +55,7 @@ export function CompetitiveTab({
   };
 
   const addOffer = () => {
-    const used = new Set(offers.map((o) => o.id));
-    let n = offers.length + 1;
-    let id = `c-${n}`;
-    while (used.has(id)) {
-      n += 1;
-      id = `c-${n}`;
-    }
+    const id = nextNumberedId("c-", offers.map((o) => o.id));
     // Default the size to your own pack, so an offer entered with just a
     // price compares pack-for-pack instead of being skipped for size 0.
     onOffersChange([...offers, { id, name: "", price: 0, size: yourSize > 0 ? yourSize : 1 }]);

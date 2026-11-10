@@ -36,3 +36,18 @@ export function parseNumericInput(value: string): number {
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 }
+
+/**
+ * The next free id of the form `${prefix}${n}`: one past the highest n in use.
+ * Derived from the items themselves, so it stays correct when a component
+ * remounts (Radix unmounts inactive tabs) and after rows are removed.
+ */
+export function nextNumberedId(prefix: string, ids: string[]): string {
+  let max = 0;
+  for (const id of ids) {
+    if (!id.startsWith(prefix)) continue;
+    const n = Number(id.slice(prefix.length));
+    if (Number.isInteger(n) && n > max) max = n;
+  }
+  return `${prefix}${max + 1}`;
+}

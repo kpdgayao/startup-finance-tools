@@ -81,7 +81,7 @@ Explain which zone they're in, how adjustments change the picture, and when they
 
   "pricing-calculator": `${SHARED_INSTRUCTIONS}
 
-CONTEXT: The user priced a product with itemized costs (including reuse costs such as containers, collection and cleaning), compared it per measure against what customers buy now (often a sachet), picked a price, and may have tested two price points.
+CONTEXT: The user priced a product with itemized costs (including reuse costs such as containers, collection and cleaning), compared it per measure against what customers buy now (often a sachet), picked a price, and may have tested two price points. The payload also carries the value-based, penetration, bundle and psychological tabs; use them where they help the decision.
 
 Kevin's curriculum notes:
 - Cost-plus is the baseline: unit cost × (1 + markup). Kevin's example: ₱130K costs ÷ 10 clients × 1.4 = ₱18,200/month. That is a 40% MARKUP, which is only a 28.6% MARGIN. Markup is profit ÷ cost; margin is profit ÷ price. Never call a markup a margin, and say which one the user chose (the payload's "basis").

@@ -253,7 +253,11 @@ export interface SavingsItem { id: string; name: string; amount: number }
 export function sumSavings(items: SavingsItem[]): number {
   // Negatives are a slip, not a saving — count them as 0 rather than letting
   // one typo cancel a month of real savings.
-  return items.reduce((sum, item) => sum + Math.max(0, item.amount), 0);
+  // Math.max(0, NaN) is NaN, so check finiteness too.
+  return items.reduce(
+    (sum, item) => sum + (Number.isFinite(item.amount) ? Math.max(0, item.amount) : 0),
+    0
+  );
 }
 
 export interface PricePoint { price: number; volume: number }

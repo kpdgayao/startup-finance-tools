@@ -322,4 +322,6 @@ describe("sumSavings", () => {
     expect(sumSavings([{ id: "1", name: "a", amount: 6_000 }, { id: "2", name: "b", amount: 2_500 }, { id: "3", name: "c", amount: 1_500 }])).toBe(10_000);
   });
   it("ignores negative entries", () => expect(sumSavings([{ id: "1", name: "a", amount: -50 }])).toBe(0));
+  it("ignores non-finite entries", () =>
+    expect(sumSavings([{ id: "1", name: "a", amount: NaN }, { id: "2", name: "b", amount: 100 }])).toBe(100));
 });

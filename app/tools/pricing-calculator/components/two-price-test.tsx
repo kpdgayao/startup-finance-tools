@@ -19,8 +19,8 @@ export function TwoPriceTest({
   unitName: string;
   a: PricePoint;
   b: PricePoint;
-  onAChange: (p: PricePoint) => void;
-  onBChange: (p: PricePoint) => void;
+  onAChange: (patch: Partial<PricePoint>) => void;
+  onBChange: (patch: Partial<PricePoint>) => void;
   result: ReturnType<typeof compareTwoPrices>;
 }) {
   const unitLabel = unitName || "unit";
@@ -40,7 +40,7 @@ export function TwoPriceTest({
               label={`Price per ${unitLabel}`}
               min={0}
               value={a.price}
-              onChange={(v) => onAChange({ price: v, volume: a.volume })}
+              onChange={(v) => onAChange({ price: v })}
             />
             <div className="space-y-2">
               <Label htmlFor="price-a-units">Units a month</Label>
@@ -48,7 +48,7 @@ export function TwoPriceTest({
                 id="price-a-units"
                 min={0}
                 value={a.volume}
-                onChange={(v) => onAChange({ price: a.price, volume: v })}
+                onChange={(v) => onAChange({ volume: v })}
               />
             </div>
           </div>
@@ -59,7 +59,7 @@ export function TwoPriceTest({
               label={`Price per ${unitLabel}`}
               min={0}
               value={b.price}
-              onChange={(v) => onBChange({ price: v, volume: b.volume })}
+              onChange={(v) => onBChange({ price: v })}
             />
             <div className="space-y-2">
               <Label htmlFor="price-b-units">Units a month</Label>
@@ -67,7 +67,7 @@ export function TwoPriceTest({
                 id="price-b-units"
                 min={0}
                 value={b.volume}
-                onChange={(v) => onBChange({ price: b.price, volume: v })}
+                onChange={(v) => onBChange({ volume: v })}
               />
             </div>
           </div>

@@ -14,6 +14,7 @@ import {
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { IntegerInput } from "@/components/shared/integer-input";
 import { Plus, Trash2 } from "lucide-react";
+import { nextNumberedId } from "@/lib/utils";
 import {
   COST_CATEGORY_LABELS,
   COST_BEHAVIOR_LABELS,
@@ -41,16 +42,9 @@ export function CostLinesEditor({
   isReuseModel: boolean;
   hasTakeBackCosts: boolean;
 }) {
-  // Derive the next id from the lines themselves, not a ref counter: Radix
-  // unmounts inactive tabs, so a ref restarts at 0 on every return to this
-  // tab and would hand out an id that is already in use.
-  const nextId = () => {
-    const used = lines
-      .map((l) => /^line-(\d+)$/.exec(l.id)?.[1])
-      .filter((n): n is string => n !== undefined)
-      .map(Number);
-    return `line-${(used.length ? Math.max(...used) : 0) + 1}`;
-  };
+  // Not a ref counter: Radix unmounts inactive tabs, so a ref would restart
+  // at 0 on every return to this tab and reuse an id.
+  const nextId = () => nextNumberedId("line-", lines.map((l) => l.id));
 
   const updateLine = (id: string, patch: Partial<CostLine>) => {
     onChange(lines.map((l) => (l.id === id ? { ...l, ...patch } : l)));
