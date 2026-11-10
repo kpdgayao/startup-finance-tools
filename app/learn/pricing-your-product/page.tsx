@@ -36,10 +36,12 @@ export default function PricingYourProductPage() {
 
       <h3 className="text-lg font-medium mt-6 mb-2">1. Cost-Plus Pricing</h3>
       <p>
-        The baseline approach: calculate your total costs, add a profit margin,
-        and divide by the number of units. Kevin&apos;s example: if your monthly
-        costs are ₱130,000 and you want a 40% margin, your revenue target is
+        The baseline approach: calculate your total costs, add a markup, and
+        divide by the number of units. Kevin&apos;s example: if your monthly
+        costs are ₱130,000 and you add a 40% markup, your revenue target is
         ₱182,000. With 10 clients, that&apos;s ₱18,200 per month per client.
+        Careful with the words: a 40% markup on cost is only a 28.6% margin on
+        price. To earn a true 40% margin, divide cost by 0.6 instead.
       </p>
       <p>
         <strong>Best for:</strong> service businesses, agencies, consulting.

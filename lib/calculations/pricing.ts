@@ -1,12 +1,27 @@
+import { formatPHP, formatNumber } from "@/lib/utils";
+
 export interface CostBreakdown {
   fixedCosts: number;
   variableCostPerUnit: number;
   expectedUnits: number;
 }
 
+export interface CompetitorOffer { id: string; name: string; price: number; size: number }
+
+export interface PerMeasureRow {
+  id: string;
+  name: string;
+  pricePerMeasure: number;     // price ÷ size
+  differencePercent: number;   // (yourPerMeasure − theirs) ÷ theirs × 100; negative = you are cheaper
+}
+
+export type PricingBasis = "markup" | "margin";
+
 export interface PricingResult {
   price: number;
-  margin: number;
+  unitCost: number;
+  profitPerUnit: number;
+  markupPercent: number;
   marginPercent: number;
   breakeven: number;
   contributionPerUnit: number;
@@ -14,15 +29,22 @@ export interface PricingResult {
 
 export function calculateCostPlus(
   costs: CostBreakdown,
-  marginPercent: number
+  percent: number,
+  basis: PricingBasis = "markup"
 ): PricingResult {
-  const totalCostPerUnit =
+  const unitCost =
     costs.expectedUnits > 0
       ? costs.fixedCosts / costs.expectedUnits + costs.variableCostPerUnit
       : costs.variableCostPerUnit;
 
-  const price = totalCostPerUnit * (1 + marginPercent / 100);
-  const margin = price - totalCostPerUnit;
+  const price =
+    basis === "margin"
+      ? percent >= 100
+        ? Infinity
+        : unitCost / (1 - percent / 100)
+      : unitCost * (1 + percent / 100);
+
+  const profitPerUnit = price - unitCost;
   const contributionPerUnit = price - costs.variableCostPerUnit;
   const breakeven =
     contributionPerUnit > 0
@@ -31,11 +53,28 @@ export function calculateCostPlus(
 
   return {
     price,
-    margin,
-    marginPercent,
+    unitCost,
+    profitPerUnit,
+    markupPercent: unitCost === 0 ? 0 : (profitPerUnit / unitCost) * 100,
+    marginPercent: price === 0 ? 0 : (profitPerUnit / price) * 100,
     breakeven,
     contributionPerUnit,
   };
+}
+
+export function convertBasisPercent(
+  percent: number,
+  from: PricingBasis,
+  to: PricingBasis
+): number {
+  if (from === to) return percent;
+  if (from === "markup") {
+    return Math.round((percent / (1 + percent / 100)) * 10) / 10;
+  }
+  // 500 is the markup input's max. A margin above ~83.3% is a markup above
+  // 500%, which the input would clamp anyway — cap it here so the two agree.
+  if (percent >= 100) return 500;
+  return Math.min(500, Math.round((percent / (1 - percent / 100)) * 10) / 10);
 }
 
 export function calculateValueBased(
@@ -69,6 +108,33 @@ export function calculateCompetitivePosition(
   return { min, max, average, median };
 }
 
+export function comparePerMeasure(
+  offers: CompetitorOffer[],
+  yourPrice: number,
+  yourSize: number
+): {
+  yourPerMeasure: number;
+  rows: PerMeasureRow[];
+  position: { min: number; max: number; average: number; median: number };
+} {
+  const yourPerMeasure = yourSize <= 0 ? 0 : yourPrice / yourSize;
+
+  const rows: PerMeasureRow[] = [];
+  for (const offer of offers) {
+    if (offer.size <= 0 || offer.price <= 0) continue;
+    const pricePerMeasure = offer.price / offer.size;
+    const differencePercent =
+      yourSize <= 0
+        ? 0
+        : ((yourPerMeasure - pricePerMeasure) / pricePerMeasure) * 100;
+    rows.push({ id: offer.id, name: offer.name, pricePerMeasure, differencePercent });
+  }
+
+  const position = calculateCompetitivePosition(rows.map((r) => r.pricePerMeasure));
+
+  return { yourPerMeasure, rows, position };
+}
+
 export function calculateBundlePrice(
   individualPrices: number[],
   discountPercent: number
@@ -84,11 +150,20 @@ export function calculateBundlePrice(
 
 export function suggestPsychologicalPrice(price: number): number {
   if (price <= 0) return 0;
+  if (price < 9) return Math.floor(price);
   const floored = Math.floor(price);
   const lastDigit = floored % 10;
   if (lastDigit === 9) return floored;
   // Step down to nearest number ending in 9
   return floored - lastDigit - 1;
+}
+
+export function suggestCharmPrices(
+  price: number
+): { down: number; up: number } | null {
+  if (price < 9) return null;
+  const down = suggestPsychologicalPrice(price);
+  return { down, up: down + 10 };
 }
 
 export function calculateBreakeven(
@@ -99,4 +174,76 @@ export function calculateBreakeven(
   const contribution = pricePerUnit - variableCostPerUnit;
   if (contribution <= 0) return Infinity;
   return Math.ceil(fixedCosts / contribution);
+}
+
+export type PriceVerdict = "below-cost" | "in-range" | "above-market";
+
+export interface PriceAnchor {
+  label: string;
+  price: number;
+  isChosen: boolean;
+}
+
+export function buildPriceLadder(input: {
+  unitCost: number;
+  costPlusPrice: number;
+  chosen: number;
+  marketLow?: number; // already converted to the selling unit
+  marketHigh?: number; // already converted to the selling unit
+}): { anchors: PriceAnchor[]; verdict: PriceVerdict } {
+  const anchors: PriceAnchor[] = [
+    { label: "Unit cost (floor)", price: input.unitCost, isChosen: false },
+    { label: "Cost-plus price", price: input.costPlusPrice, isChosen: false },
+    { label: "Your price", price: input.chosen, isChosen: true },
+  ];
+  if (input.marketLow !== undefined) {
+    anchors.push({ label: "Lowest alternative", price: input.marketLow, isChosen: false });
+  }
+  if (input.marketHigh !== undefined) {
+    anchors.push({ label: "Highest alternative", price: input.marketHigh, isChosen: false });
+  }
+
+  // Ascending by price. On a tie the chosen price sorts last so it stays
+  // visible beside an equal anchor instead of hiding behind it.
+  anchors.sort((a, b) => {
+    if (a.price === b.price) {
+      if (a.isChosen) return 1;
+      if (b.isChosen) return -1;
+      return 0;
+    }
+    return a.price - b.price;
+  });
+
+  let verdict: PriceVerdict = "in-range";
+  if (input.chosen < input.unitCost) {
+    verdict = "below-cost";
+  } else if (input.marketHigh !== undefined && input.chosen > input.marketHigh) {
+    verdict = "above-market";
+  }
+
+  return { anchors, verdict };
+}
+
+export const PRICING_STRATEGIES = [
+  "Cost-Plus",
+  "Value-Based",
+  "Penetration",
+  "Competitive",
+  "Bundle",
+  "Psychological",
+] as const;
+
+export function formatShareLine(input: {
+  startup: string;
+  product: string;
+  price: number;
+  unitName: string;
+  strategy: string;
+  breakeven: number;
+}): string {
+  const startup = input.startup.trim() || "Startup";
+  const product = input.product.trim() || "Product";
+  const unitName = input.unitName || "unit";
+  const breakeven = input.breakeven === Infinity ? "N/A" : formatNumber(input.breakeven);
+  return `${startup} · ${product} · ${formatPHP(input.price)} per ${unitName} · ${input.strategy} · Break-even ${breakeven}`;
 }

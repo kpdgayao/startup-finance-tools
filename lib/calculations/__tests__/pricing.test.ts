@@ -5,7 +5,12 @@ import {
   calculatePenetrationPrice,
   calculateCompetitivePosition,
   calculateBundlePrice,
+  convertBasisPercent,
+  suggestCharmPrices,
   suggestPsychologicalPrice,
+  comparePerMeasure,
+  buildPriceLadder,
+  formatShareLine,
   type CostBreakdown,
 } from "../pricing";
 
@@ -29,9 +34,9 @@ describe("calculateCostPlus", () => {
     expect(result.price).toBe(225);
   });
 
-  it("margin equals price minus total cost per unit", () => {
+  it("profitPerUnit equals price minus unit cost", () => {
     const result = calculateCostPlus(makeCosts(), 50);
-    expect(result.margin).toBeCloseTo(result.price - 150, 2);
+    expect(result.profitPerUnit).toBeCloseTo(result.price - 150, 2);
   });
 
   it("breakeven is fixed costs divided by contribution per unit", () => {
@@ -59,6 +64,43 @@ describe("calculateCostPlus", () => {
     const result = calculateCostPlus(makeCosts(), 0);
     expect(result.price).toBe(150);
   });
+});
+
+describe("calculateCostPlus — deck practice case", () => {
+  const deck = { fixedCosts: 30_000, variableCostPerUnit: 60, expectedUnits: 600 };
+
+  it("30% markup gives ₱143, which is a 23% margin", () => {
+    const r = calculateCostPlus(deck, 30, "markup");
+    expect(r.unitCost).toBe(110);
+    expect(r.price).toBeCloseTo(143, 6);
+    expect(r.markupPercent).toBeCloseTo(30, 6);
+    expect(r.marginPercent).toBeCloseTo(23.08, 2);
+    expect(r.breakeven).toBe(362);
+  });
+
+  it("30% margin gives ₱157, which is a 43% markup", () => {
+    const r = calculateCostPlus(deck, 30, "margin");
+    expect(r.price).toBeCloseTo(157.14, 2);
+    expect(r.marginPercent).toBeCloseTo(30, 6);
+    expect(r.markupPercent).toBeCloseTo(42.86, 2);
+  });
+
+  it("defaults to markup when no basis is given", () => {
+    expect(calculateCostPlus(deck, 30).price).toBeCloseTo(143, 6);
+  });
+
+  it("margin of 100% or more prices at Infinity instead of going negative", () => {
+    expect(calculateCostPlus(deck, 100, "margin").price).toBe(Infinity);
+  });
+});
+
+describe("convertBasisPercent", () => {
+  it("30% markup is a 23.1% margin", () => expect(convertBasisPercent(30, "markup", "margin")).toBe(23.1));
+  it("30% margin is a 42.9% markup", () => expect(convertBasisPercent(30, "margin", "markup")).toBe(42.9));
+  it("150% markup is a 60% margin (no clamping on the way)", () => expect(convertBasisPercent(150, "markup", "margin")).toBe(60));
+  it("same basis is unchanged", () => expect(convertBasisPercent(37, "margin", "margin")).toBe(37));
+  it("margin of 100 converts to the markup max of 500", () => expect(convertBasisPercent(100, "margin", "markup")).toBe(500));
+  it("a 90% margin (a 900% markup) caps at the markup max of 500", () => expect(convertBasisPercent(90, "margin", "markup")).toBe(500));
 });
 
 // ─── calculateValueBased ───────────────────────────────────────────────────
@@ -167,5 +209,86 @@ describe("suggestPsychologicalPrice", () => {
   it("steps down to nearest 9-ending number", () => {
     const result = suggestPsychologicalPrice(100);
     expect(result).toBe(99);
+  });
+});
+
+describe("suggestPsychologicalPrice — small prices", () => {
+  it("never returns a negative price", () => {
+    for (let p = 0.5; p <= 200; p += 0.5) {
+      const r = suggestPsychologicalPrice(p);
+      expect(r, `price ${p}`).toBeGreaterThanOrEqual(0);
+      expect(r, `price ${p}`).toBeLessThanOrEqual(p);
+    }
+  });
+  it("leaves a ₱5 add-on at ₱5", () => expect(suggestPsychologicalPrice(5)).toBe(5));
+  it("₱9.50 becomes ₱9", () => expect(suggestPsychologicalPrice(9.5)).toBe(9));
+});
+
+describe("suggestCharmPrices", () => {
+  it("₱143 → down ₱139, up ₱149", () => expect(suggestCharmPrices(143)).toEqual({ down: 139, up: 149 }));
+  it("₱18 → down ₱9, up ₱19", () => expect(suggestCharmPrices(18)).toEqual({ down: 9, up: 19 }));
+  it("₱99 → down ₱99, up ₱109", () => expect(suggestCharmPrices(99)).toEqual({ down: 99, up: 109 }));
+  it("below ₱9 there is no charm price", () => {
+    expect(suggestCharmPrices(5)).toBeNull();
+    expect(suggestCharmPrices(0)).toBeNull();
+  });
+});
+
+// ─── comparePerMeasure ─────────────────────────────────────────────────────
+
+describe("comparePerMeasure — the deck's sachet benchmark", () => {
+  const offers = [
+    { id: "a", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
+    { id: "b", name: "Refill hub, 30 ml", price: 4, size: 30 },
+  ];
+  it("₱143 per liter is ₱0.143 per ml", () => {
+    expect(comparePerMeasure(offers, 143, 1000).yourPerMeasure).toBeCloseTo(0.143, 6);
+  });
+  it("beats the ₱0.31/ml pack and loses to the ₱0.13/ml refill", () => {
+    const { rows } = comparePerMeasure(offers, 143, 1000);
+    expect(rows[0].pricePerMeasure).toBeCloseTo(0.3104, 4);
+    expect(rows[0].differencePercent).toBeCloseTo(-53.9, 1);
+    expect(rows[1].pricePerMeasure).toBeCloseTo(0.1333, 4);
+    expect(rows[1].differencePercent).toBeCloseTo(7.25, 2);
+  });
+  it("skips an offer with size 0 instead of dividing by it", () => {
+    const { rows } = comparePerMeasure([...offers, { id: "c", name: "x", price: 5, size: 0 }], 143, 1000);
+    expect(rows).toHaveLength(2);
+  });
+  it("your size of 0 gives zeros, not Infinity", () => {
+    const r = comparePerMeasure(offers, 143, 0);
+    expect(r.yourPerMeasure).toBe(0);
+    expect(r.rows.every((row) => row.differencePercent === 0)).toBe(true);
+  });
+});
+
+// ─── buildPriceLadder ──────────────────────────────────────────────────────
+
+describe("buildPriceLadder", () => {
+  const base = { unitCost: 110, costPlusPrice: 143, marketLow: 133.33, marketHigh: 310.45 };
+  it("₱143 sits between the floor and the market high", () => {
+    const r = buildPriceLadder({ ...base, chosen: 143 });
+    expect(r.verdict).toBe("in-range");
+    expect(r.anchors.map((a) => a.label)).toEqual([
+      "Unit cost (floor)", "Lowest alternative", "Cost-plus price", "Your price", "Highest alternative",
+    ]);
+  });
+  it("below unit cost is below-cost", () => expect(buildPriceLadder({ ...base, chosen: 100 }).verdict).toBe("below-cost"));
+  it("above every alternative is above-market", () => expect(buildPriceLadder({ ...base, chosen: 400 }).verdict).toBe("above-market"));
+  it("without market numbers nothing is above-market", () => {
+    expect(buildPriceLadder({ unitCost: 110, costPlusPrice: 143, chosen: 9_999 }).verdict).toBe("in-range");
+  });
+});
+
+// ─── formatShareLine ───────────────────────────────────────────────────────
+
+describe("formatShareLine", () => {
+  it("uses the deck's chat format", () => {
+    expect(formatShareLine({ startup: "Ikot", product: "Dish soap refill", price: 143, unitName: "liter", strategy: "Cost-Plus", breakeven: 362 }))
+      .toBe("Ikot · Dish soap refill · ₱143 per liter · Cost-Plus · Break-even 362");
+  });
+  it("fills blanks and shows N/A for an impossible break-even", () => {
+    expect(formatShareLine({ startup: " ", product: "", price: 50, unitName: "", strategy: "Penetration", breakeven: Infinity }))
+      .toBe("Startup · Product · ₱50 per unit · Penetration · Break-even N/A");
   });
 });

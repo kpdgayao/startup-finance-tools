@@ -6,11 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
-import { formatPHP, formatNumber } from "@/lib/utils";
+import { formatPHP, formatPHPDetailed, formatNumber } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
@@ -19,20 +21,43 @@ import { EcosystemBanner } from "@/components/shared/ecosystem-banner";
 import {
   calculateCostPlus,
   calculatePenetrationPrice,
-  calculateCompetitivePosition,
   calculateBundlePrice,
-  suggestPsychologicalPrice,
+  convertBasisPercent,
+  suggestCharmPrices,
   calculateBreakeven,
+  comparePerMeasure,
+  buildPriceLadder,
+  formatShareLine,
+  type PricingBasis,
+  type CompetitorOffer,
 } from "@/lib/calculations/pricing";
+import {
+  summarizeCosts,
+  calculateMonthlyOutcome,
+  REFILL_STATION_EXAMPLE,
+  type CostLine,
+} from "@/lib/calculations/pricing-costs";
+import { CostLinesEditor } from "./components/cost-lines-editor";
+import { CompetitiveTab } from "./components/competitive-tab";
+import { PriceDecision } from "./components/price-decision";
 import { LearnLink } from "@/components/shared/learn-link";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
 
+// The deck's slide 25 benchmark: the sachet pack and the refill hub.
+const DEFAULT_OFFERS: CompetitorOffer[] = [
+  { id: "c-1", name: "Single-use pack, 100.5 ml", price: 31.2, size: 100.5 },
+  { id: "c-2", name: "Refill hub, 30 ml", price: 4, size: 30 },
+];
+
 export default function PricingCalculatorPage() {
   // Cost-Plus state
-  const [fixedCosts, setFixedCosts] = useState(130000);
-  const [variableCost, setVariableCost] = useState(0);
-  const [expectedUnits, setExpectedUnits] = useState(10);
-  const [marginPercent, setMarginPercent] = useState(40);
+  const [costLines, setCostLines] = useState<CostLine[]>(REFILL_STATION_EXAMPLE);
+  const [unitName, setUnitName] = useState("liter");
+  const [isReuseModel, setIsReuseModel] = useState(true);
+  const [expectedUnits, setExpectedUnits] = useState(600);
+  const [targetPercent, setTargetPercent] = useState(30);
+  const [pricingBasis, setPricingBasis] = useState<PricingBasis>("markup");
+  const percentMax = pricingBasis === "margin" ? 99 : 500;
 
   // Value-Based state
   const [perceivedValue, setPerceivedValue] = useState(25000);
@@ -43,31 +68,45 @@ export default function PricingCalculatorPage() {
   const [penetrationDiscount, setPenetrationDiscount] = useState(25);
 
   // Competitive state
-  const [competitorPrices, setCompetitorPrices] = useState<number[]>([15000, 18000, 22000, 25000]);
+  const [offers, setOffers] = useState<CompetitorOffer[]>(DEFAULT_OFFERS);
+  const [measure, setMeasure] = useState("ml");
+  const [yourSize, setYourSize] = useState(1000);
 
   // Bundle state
   const [bundleItems, setBundleItems] = useState<number[]>([10000, 8000, 5000]);
   const [bundleDiscount, setBundleDiscount] = useState(15);
 
+  // Psychological state
+  const [charmBase, setCharmBase] = useState<number | null>(null);
+
+  // Decision state
+  const [chosenPrice, setChosenPrice] = useState<number | null>(null);
+  const [startupName, setStartupName] = useState("");
+  const [productName, setProductName] = useState("");
+  const [shareStrategy, setShareStrategy] = useState("Cost-Plus");
+
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
 
-  const fixedCostsError = touched.fixedCosts ? validateFinancialAmount(fixedCosts).error : undefined;
-  const variableCostError = touched.variableCost ? validateFinancialAmount(variableCost).error : undefined;
   const expectedUnitsError = touched.expectedUnits ? validatePositiveInteger(expectedUnits).error : undefined;
-  const marginPercentError = touched.marginPercent ? validatePercentage(marginPercent, { max: 500 }).error : undefined;
+  const targetPercentError = touched.targetPercent ? validatePercentage(targetPercent, { max: percentMax }).error : undefined;
   const perceivedValueError = touched.perceivedValue ? validateFinancialAmount(perceivedValue).error : undefined;
   const valueDiscountError = touched.valueDiscount ? validatePercentage(valueDiscount).error : undefined;
   const marketPriceError = touched.marketPrice ? validateFinancialAmount(marketPrice).error : undefined;
   const penetrationDiscountError = touched.penetrationDiscount ? validatePercentage(penetrationDiscount).error : undefined;
   const bundleDiscountError = touched.bundleDiscount ? validatePercentage(bundleDiscount).error : undefined;
 
-  const hasErrors = !!(fixedCostsError || variableCostError || expectedUnitsError || marginPercentError || perceivedValueError || valueDiscountError || marketPriceError || penetrationDiscountError || bundleDiscountError);
+  const hasErrors = !!(expectedUnitsError || targetPercentError || perceivedValueError || valueDiscountError || marketPriceError || penetrationDiscountError || bundleDiscountError);
 
-  const safeFixedCosts = sanitizeFinancialAmount(fixedCosts);
-  const safeVariableCost = sanitizeFinancialAmount(variableCost);
+  const safeCostLines = costLines.map((l) => ({
+    ...l,
+    amount: sanitizeFinancialAmount(l.amount),
+    lifeMonths: l.lifeMonths === undefined ? undefined : sanitizePositiveInteger(l.lifeMonths),
+    uses: l.uses === undefined ? undefined : sanitizePositiveInteger(l.uses),
+  }));
+  const costSummary = summarizeCosts(safeCostLines);
   const safeExpectedUnits = sanitizePositiveInteger(expectedUnits);
-  const safeMarginPercent = sanitizePercentage(marginPercent, { max: 500 });
+  const safeTargetPercent = sanitizePercentage(targetPercent, { max: percentMax });
   const safePerceivedValue = sanitizeFinancialAmount(perceivedValue);
   const safeValueDiscount = sanitizePercentage(valueDiscount);
   const safeMarketPrice = sanitizeFinancialAmount(marketPrice);
@@ -75,32 +114,88 @@ export default function PricingCalculatorPage() {
   const safeBundleDiscount = sanitizePercentage(bundleDiscount);
 
   const handleReset = () => {
-    setFixedCosts(130000);
-    setVariableCost(0);
-    setExpectedUnits(10);
-    setMarginPercent(40);
+    setCostLines(REFILL_STATION_EXAMPLE);
+    setUnitName("liter");
+    setIsReuseModel(true);
+    setExpectedUnits(600);
+    setTargetPercent(30);
+    setPricingBasis("markup");
     setPerceivedValue(25000);
     setValueDiscount(20);
     setMarketPrice(20000);
     setPenetrationDiscount(25);
-    setCompetitorPrices([15000, 18000, 22000, 25000]);
+    setOffers(DEFAULT_OFFERS);
+    setMeasure("ml");
+    setYourSize(1000);
     setBundleItems([10000, 8000, 5000]);
     setBundleDiscount(15);
+    setCharmBase(null);
+    setChosenPrice(null);
+    setStartupName("");
+    setProductName("");
+    setShareStrategy("Cost-Plus");
     setTouched({});
   };
 
   const ai = useAiExplain("pricing-calculator");
 
   const costPlusResult = calculateCostPlus(
-    { fixedCosts: safeFixedCosts, variableCostPerUnit: safeVariableCost, expectedUnits: safeExpectedUnits },
-    safeMarginPercent
+    { fixedCosts: costSummary.fixedMonthly, variableCostPerUnit: costSummary.variablePerUnit, expectedUnits: safeExpectedUnits },
+    safeTargetPercent,
+    pricingBasis
+  );
+  const outcome = calculateMonthlyOutcome(
+    costSummary.fixedMonthly,
+    costSummary.variablePerUnit,
+    safeExpectedUnits,
+    costPlusResult.price
   );
 
   const valueBased = safePerceivedValue * (1 - safeValueDiscount / 100);
   const penetrationPrice = calculatePenetrationPrice(safeMarketPrice, safePenetrationDiscount);
-const competitive = calculateCompetitivePosition(competitorPrices.map((v) => sanitizeFinancialAmount(v)));
-const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmount(v)), safeBundleDiscount);
-  const psychologicalPrice = suggestPsychologicalPrice(costPlusResult.price);
+
+  const effectivePrice = sanitizeFinancialAmount(chosenPrice ?? Math.round(costPlusResult.price));
+
+  const safeOffers = offers.map((o) => ({
+    ...o,
+    price: sanitizeFinancialAmount(o.price),
+    size: Math.max(0, Number.isFinite(o.size) ? o.size : 0),
+  }));
+  const safeYourSize = Math.max(0, Number.isFinite(yourSize) ? yourSize : 0);
+  const comparison = comparePerMeasure(safeOffers, effectivePrice, safeYourSize);
+  const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmount(v)), safeBundleDiscount);
+  const charmInput = charmBase ?? Math.round(costPlusResult.price);
+  const safeCharmInput = sanitizeFinancialAmount(charmInput);
+  const charm = suggestCharmPrices(safeCharmInput);
+
+  const ladder = buildPriceLadder({
+    unitCost: costPlusResult.unitCost,
+    costPlusPrice: costPlusResult.price,
+    chosen: effectivePrice,
+    // Per-measure prices only scale back to a pack price when your pack has a
+    // size; with size 0 the market range would collapse to ₱0 and every price
+    // would read "above market".
+    ...(comparison.rows.length > 0 && safeYourSize > 0
+      ? {
+          marketLow: comparison.position.min * safeYourSize,
+          marketHigh: comparison.position.max * safeYourSize,
+        }
+      : {}),
+  });
+  const decisionCharm = suggestCharmPrices(effectivePrice);
+  const chosenBreakeven = calculateBreakeven(
+    costSummary.fixedMonthly,
+    effectivePrice,
+    costSummary.variablePerUnit
+  );
+  const shareLine = formatShareLine({
+    startup: startupName,
+    product: productName,
+    price: effectivePrice,
+    unitName,
+    strategy: shareStrategy,
+    breakeven: chosenBreakeven,
+  });
 
   return (
     <div className="space-y-6">
@@ -132,18 +227,48 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
             <CardHeader>
               <CardTitle>
                 Cost-Plus Pricing
-                <InfoTooltip content="From Kevin's deck: Add your target margin to total costs. Example: ₱130K total costs × 1.4 margin / 10 clients = ₱18,200/month per client." />
+                <InfoTooltip content="Pre-loaded with the refill-station practice case from Kevin's CircleWorks talk: ₱30,000 fixed, ₱60 per liter, 600 liters, 30% markup → ₱143 per liter. Markup is profit ÷ cost; margin is profit ÷ price." />
               </CardTitle>
               <CardDescription>
-                Calculate price by adding a markup to your costs. Pre-loaded with Kevin&apos;s cloud software exercise.
+                List every cost, including take-back: containers, collection and cleaning. Then add your markup or margin.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CurrencyInput label="Total Fixed Costs (monthly)" value={fixedCosts} onChange={setFixedCosts} onBlur={() => markTouched("fixedCosts")} error={fixedCostsError} />
-                <CurrencyInput label="Variable Cost per Unit" value={variableCost} onChange={setVariableCost} onBlur={() => markTouched("variableCost")} error={variableCostError} />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={pricingBasis === "markup" ? "default" : "outline"}
+                  aria-pressed={pricingBasis === "markup"}
+                  onClick={() => {
+                    if (pricingBasis !== "markup") {
+                      setTargetPercent(convertBasisPercent(targetPercent, pricingBasis, "markup"));
+                      setPricingBasis("markup");
+                    }
+                  }}
+                >
+                  Markup on cost
+                </Button>
+                <Button
+                  size="sm"
+                  variant={pricingBasis === "margin" ? "default" : "outline"}
+                  aria-pressed={pricingBasis === "margin"}
+                  onClick={() => {
+                    if (pricingBasis !== "margin") {
+                      setTargetPercent(convertBasisPercent(targetPercent, pricingBasis, "margin"));
+                      setPricingBasis("margin");
+                    }
+                  }}
+                >
+                  Margin on price
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Expected Units / Clients</Label>
+                  <Label htmlFor="selling-unit">Selling unit</Label>
+                  <Input id="selling-unit" value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="liter" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Expected units a month</Label>
                   {/* min={0}, not 1: the page validates this field itself with
                       validatePositiveInteger and shows an error at zero.
                       Clamping to 1 here settles a cleared field silently at 1,
@@ -157,17 +282,53 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
                   />
                   {expectedUnitsError && <p className="text-xs text-bad mt-1">{expectedUnitsError}</p>}
                 </div>
-                <PercentageInput label="Target Margin %" value={marginPercent} onChange={setMarginPercent} max={500} onBlur={() => markTouched("marginPercent")} error={marginPercentError} />
+                <PercentageInput label={pricingBasis === "markup" ? "Markup % (of cost)" : "Margin % (of price)"} value={targetPercent} onChange={setTargetPercent} max={percentMax} onBlur={() => markTouched("targetPercent")} error={targetPercentError} />
               </div>
+              <div className="flex items-center gap-3">
+                <Switch id="reuse-model" checked={isReuseModel} onCheckedChange={setIsReuseModel} />
+                <Label htmlFor="reuse-model">My product is reused, refilled or taken back</Label>
+              </div>
+              <CostLinesEditor
+                lines={costLines}
+                onChange={setCostLines}
+                isReuseModel={isReuseModel}
+                hasTakeBackCosts={costSummary.hasTakeBackCosts}
+              />
+              <p className="text-sm text-muted-foreground">
+                Fixed {formatPHP(costSummary.fixedMonthly)} a month · Variable {formatPHPDetailed(costSummary.variablePerUnit)} per {unitName || "unit"}
+              </p>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <ResultCard label="Price per Unit" value={formatPHP(costPlusResult.price)} variant="success" />
-            <ResultCard label="Margin per Unit" value={formatPHP(costPlusResult.margin)} />
-            <ResultCard label="Breakeven Units" value={costPlusResult.breakeven === Infinity ? "N/A" : formatNumber(costPlusResult.breakeven)} />
-            <ResultCard label="Contribution / Unit" value={formatPHP(costPlusResult.contributionPerUnit)} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <ResultCard label={`Price per ${unitName || "unit"}`} value={formatPHP(costPlusResult.price)} variant="success" />
+            <ResultCard label="Unit Cost" value={formatPHP(costPlusResult.unitCost)} sublabel="Your price floor at this volume" />
+            <ResultCard
+              label="Profit per Unit"
+              value={formatPHP(costPlusResult.profitPerUnit)}
+              sublabel={`${costPlusResult.markupPercent.toFixed(1)}% markup · ${costPlusResult.marginPercent.toFixed(1)}% margin · Each sale adds ${formatPHP(costPlusResult.contributionPerUnit)} toward fixed costs`}
+            />
+            <ResultCard
+              label="Break-even Volume"
+              value={costPlusResult.breakeven === Infinity ? "N/A" : formatNumber(costPlusResult.breakeven)}
+              sublabel={`${unitName || "unit"}s a month`}
+            />
+            <ResultCard label="Total Monthly Cost" value={formatPHP(outcome.totalCost)} />
+            <ResultCard
+              label="Monthly Profit"
+              value={formatPHP(outcome.profit)}
+              variant={outcome.profit < 0 ? "danger" : "success"}
+              sublabel={`at ${formatNumber(safeExpectedUnits)} ${unitName || "unit"}s`}
+            />
           </div>
+          <p className="text-sm text-muted-foreground">
+            A {costPlusResult.markupPercent.toFixed(1)}% markup is a {costPlusResult.marginPercent.toFixed(1)}% margin. When someone says &quot;30% margin&quot;, ask: of cost, or of price?
+          </p>
+          {costSummary.grantFixedMonthly > 0 || costSummary.grantVariablePerUnit > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              The grant pays {formatPHP(costSummary.grantFixedMonthly)} a month and {formatPHPDetailed(costSummary.grantVariablePerUnit)} per {unitName || "unit"} today. Your price already covers these, so it still works after the grant ends. While the grant pays, your monthly profit is {formatPHP(outcome.profit + costSummary.grantFixedMonthly + costSummary.grantVariablePerUnit * safeExpectedUnits)}.
+            </p>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="value-based" className="space-y-4 mt-4">
@@ -217,60 +378,17 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
         </TabsContent>
 
         <TabsContent value="competitive" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Competitive Pricing
-                <InfoTooltip content="Analyze competitor prices to position your product. Price at, above, or below the market average." />
-              </CardTitle>
-              <CardDescription>Enter competitor prices to find your positioning.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {competitorPrices.map((price, i) => (
-                <div key={i} className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <CurrencyInput
-                      label={`Competitor ${i + 1}`}
-                      value={price}
-                      onChange={(v) => {
-                        const next = [...competitorPrices];
-                        next[i] = v;
-                        setCompetitorPrices(next);
-                      }}
-                    />
-                  </div>
-                  {competitorPrices.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="mb-0.5"
-                      onClick={() => setCompetitorPrices(competitorPrices.filter((_, j) => j !== i))}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              {competitorPrices.length < 10 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCompetitorPrices([...competitorPrices, 0])}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Competitor
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-          {competitorPrices.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <ResultCard label="Lowest Price" value={formatPHP(competitive.min)} />
-              <ResultCard label="Highest Price" value={formatPHP(competitive.max)} />
-              <ResultCard label="Average Price" value={formatPHP(competitive.average)} variant="success" />
-              <ResultCard label="Median Price" value={formatPHP(competitive.median)} />
-            </div>
-          )}
+          <CompetitiveTab
+            offers={offers}
+            onOffersChange={setOffers}
+            measure={measure}
+            onMeasureChange={setMeasure}
+            yourSize={yourSize}
+            onYourSizeChange={setYourSize}
+            yourPrice={effectivePrice}
+            unitName={unitName}
+            comparison={comparison}
+          />
         </TabsContent>
 
         <TabsContent value="bundle" className="space-y-4 mt-4">
@@ -336,20 +454,51 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <CurrencyInput label="Your Calculated Price" value={costPlusResult.price} onChange={() => {}} />
+              <CurrencyInput label="Price to round" value={charmInput} onChange={setCharmBase} />
+              {charmBase !== null && (
+                <Button variant="ghost" size="sm" onClick={() => setCharmBase(null)}>
+                  Use my cost-plus price
+                </Button>
+              )}
             </CardContent>
           </Card>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ResultCard label="Original Price" value={formatPHP(Math.round(costPlusResult.price))} />
-            <ResultCard
-              label="Psychological Price"
-              value={formatPHP(psychologicalPrice)}
-              variant="success"
-              sublabel={`Ends in 9 — feels cheaper than ${formatPHP(psychologicalPrice + 1)}`}
-            />
-          </div>
+          {charm !== null ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <ResultCard label="Your Price" value={formatPHP(safeCharmInput)} />
+              <ResultCard
+                label="Round Down"
+                value={formatPHP(charm.down)}
+                variant={charm.down >= safeCharmInput * 0.95 ? "success" : "warning"}
+                sublabel={
+                  charm.down >= safeCharmInput * 0.95
+                    ? `Feels cheaper than ${formatPHP(charm.down + 1)}`
+                    : `Cuts ${(100 - (charm.down / safeCharmInput) * 100).toFixed(0)}% off your price — consider rounding up`
+                }
+              />
+              <ResultCard label="Round Up" value={formatPHP(charm.up)} sublabel="More margin, still ends in 9" />
+            </div>
+          ) : (
+            <ResultCard label="Charm Price" value="None" sublabel="Below ₱9 there is no lower price ending in 9. Keep it round, or sell two for ₱9." />
+          )}
         </TabsContent>
       </Tabs>
+
+      <PriceDecision
+        ladder={ladder}
+        chosenInput={effectivePrice}
+        onChosenChange={setChosenPrice}
+        followsCostPlus={chosenPrice === null}
+        onUseCostPlus={() => setChosenPrice(null)}
+        charm={decisionCharm}
+        unitName={unitName}
+        startup={startupName}
+        onStartupChange={setStartupName}
+        product={productName}
+        onProductChange={setProductName}
+        strategy={shareStrategy}
+        onStrategyChange={setShareStrategy}
+        shareLine={shareLine}
+      />
 
       <AiInsightsPanel
         explanation={ai.explanation}
@@ -359,18 +508,55 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
         onExplain={() =>
           ai.explain({
             costPlus: {
-              fixedCosts: safeFixedCosts,
-              variableCost: safeVariableCost,
+              unitName,
+              isReuseModel,
+              costLines: safeCostLines.map((l) => ({
+                name: l.name,
+                category: l.category,
+                behavior: l.behavior,
+                amount: l.amount,
+                lifeMonths: l.lifeMonths,
+                uses: l.uses,
+                grantFunded: l.grantFunded,
+              })),
               expectedUnits: safeExpectedUnits,
-              marginPercent: safeMarginPercent,
+              basis: pricingBasis,
+              percent: safeTargetPercent,
+              unitCost: costPlusResult.unitCost,
               price: costPlusResult.price,
-              breakeven: costPlusResult.breakeven,
+              profitPerUnit: costPlusResult.profitPerUnit,
+              markupPercent: costPlusResult.markupPercent,
+              marginPercent: costPlusResult.marginPercent,
+              // JSON turns Infinity into null; say what it means instead.
+              breakeven: Number.isFinite(costPlusResult.breakeven)
+                ? costPlusResult.breakeven
+                : "never (price does not exceed variable cost)",
+              fixedMonthly: costSummary.fixedMonthly,
+              variablePerUnit: costSummary.variablePerUnit,
+              grantFixedMonthly: costSummary.grantFixedMonthly,
+              grantVariablePerUnit: costSummary.grantVariablePerUnit,
+              totalMonthlyCost: outcome.totalCost,
+              monthlyProfit: outcome.profit,
             },
             valueBased: { perceivedValue: safePerceivedValue, valueDiscount: safeValueDiscount, suggestedPrice: valueBased },
             penetration: { marketPrice: safeMarketPrice, penetrationDiscount: safePenetrationDiscount, entryPrice: penetrationPrice },
-            competitive: { competitorPrices: competitorPrices.map((v) => sanitizeFinancialAmount(v)), ...competitive },
+            competitive: {
+              measure,
+              yourSize: safeYourSize,
+              yourPerMeasure: comparison.yourPerMeasure,
+              rows: comparison.rows,
+              ...comparison.position,
+            },
             bundle: { bundleItems: bundleItems.map((v) => sanitizeFinancialAmount(v)), bundleDiscount: safeBundleDiscount, ...bundle },
-            psychologicalPrice,
+            psychological: { price: safeCharmInput, down: charm?.down ?? null, up: charm?.up ?? null },
+            decision: {
+              chosenPrice: effectivePrice,
+              verdict: ladder.verdict,
+              breakeven: Number.isFinite(chosenBreakeven)
+                ? chosenBreakeven
+                : "never (price does not exceed variable cost)",
+              strategy: shareStrategy,
+            },
           })
         }
         onDismiss={ai.reset}
