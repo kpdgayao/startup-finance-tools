@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatPHP, formatPHPDetailed } from "@/lib/utils";
+import { cn, formatPHP, formatPHPDetailed } from "@/lib/utils";
 import { Plus, Trash2 } from "lucide-react";
 import type { CompetitorOffer, PerMeasureRow } from "@/lib/calculations/pricing";
 
@@ -184,9 +184,11 @@ export function CompetitiveTab({
           </TableRow>
           {comparison.rows.map((row) => (
             <TableRow key={row.id}>
-              <TableCell>{row.name || "Offer"}</TableCell>
+              {/* TableCell is nowrap by default; at phone width that pushed the
+                  verdict — the column that matters — off the right edge. */}
+              <TableCell className="whitespace-normal">{row.name || "Offer"}</TableCell>
               <TableCell>{formatPHPDetailed(row.pricePerMeasure)}</TableCell>
-              <TableCell className={row.differencePercent < 0 ? "text-good" : "text-warn"}>
+              <TableCell className={cn("whitespace-normal", row.differencePercent < 0 ? "text-good" : "text-warn")}>
                 {row.differencePercent < 0
                   ? `You're ${Math.abs(row.differencePercent).toFixed(0)}% cheaper`
                   : `You're ${row.differencePercent.toFixed(0)}% more expensive`}

@@ -63,7 +63,25 @@ export function PriceDecision({
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  const shareRef = useRef<HTMLElement>(null);
+
+  // When the clipboard is unavailable (an http page, or a browser that
+  // refuses), select the line instead so Ctrl+C / long-press copies it.
+  const selectShareLine = () => {
+    const el = shareRef.current;
+    const selection = window.getSelection();
+    if (!el || !selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+
   const copy = () => {
+    if (!navigator.clipboard) {
+      selectShareLine();
+      return;
+    }
     navigator.clipboard
       .writeText(shareLine)
       .then(() => {
@@ -71,9 +89,7 @@ export function PriceDecision({
         clearTimeout(copyTimer.current);
         copyTimer.current = setTimeout(() => setCopied(false), 2000);
       })
-      .catch(() => {
-        // Ignore a rejected promise; the text stays selectable.
-      });
+      .catch(selectShareLine);
   };
 
   const unitLabel = unitName || "unit";
@@ -158,7 +174,7 @@ export function PriceDecision({
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-start gap-2">
-          <code className="block break-words rounded border border-rule bg-muted p-3 text-sm flex-1">
+          <code ref={shareRef} className="block break-words rounded border border-rule bg-muted p-3 text-sm flex-1">
             {shareLine}
           </code>
           <Button variant="outline" size="sm" onClick={copy} className="shrink-0">
