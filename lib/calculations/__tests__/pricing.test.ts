@@ -336,6 +336,10 @@ describe("calculateCustomerRoi", () => {
   it("moves with the price, unlike value ÷ value-based price", () => {
     expect(calculateCustomerRoi(10_000, 100, 50).roi).toBe(2);
   });
+  it("counts non-finite or negative inputs as 0", () => {
+    expect(calculateCustomerRoi(10_000, 143, NaN)).toEqual({ spend: 0, roi: null });
+    expect(calculateCustomerRoi(-500, 100, 10).roi).toBe(0);
+  });
   it("is null when the customer spends nothing", () => {
     expect(calculateCustomerRoi(10_000, 143, 0).roi).toBeNull();
     expect(calculateCustomerRoi(10_000, 0, 50).roi).toBeNull();

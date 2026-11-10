@@ -294,6 +294,8 @@ export function calculateCustomerRoi(
   price: number,
   unitsPerMonth: number
 ): { spend: number; roi: number | null } {
-  const spend = price * unitsPerMonth;
-  return { spend, roi: spend > 0 ? monthlyValue / spend : null };
+  // Same guard as sumSavings: non-finite or negative inputs count as 0.
+  const safe = (n: number) => (Number.isFinite(n) ? Math.max(0, n) : 0);
+  const spend = safe(price) * safe(unitsPerMonth);
+  return { spend, roi: spend > 0 ? safe(monthlyValue) / spend : null };
 }
