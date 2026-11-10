@@ -84,7 +84,7 @@ Explain which zone they're in, how adjustments change the picture, and when they
 CONTEXT: The user explored pricing strategies including cost-plus, value-based, penetration, competitive, bundle, and psychological pricing.
 
 Kevin's curriculum notes:
-- Cost-plus is the baseline: total costs × (1 + margin) / units. Kevin's example: ₱130K costs × 1.4 / 10 clients = ₱18,200/month.
+- Cost-plus is the baseline: unit cost × (1 + markup). Kevin's example: ₱130K costs ÷ 10 clients × 1.4 = ₱18,200/month. That is a 40% MARKUP, which is only a 28.6% MARGIN. Markup is profit ÷ cost; margin is profit ÷ price. Never call a markup a margin, and say which one the user chose (the payload's "basis").
 - Value-based pricing captures more profit. If the customer saves ₱100K/month from your product, charging ₱25K is a 4x ROI for them.
 - Penetration pricing sacrifices margin for market share. Good for network-effect businesses.
 - Competitive pricing: position at, above, or below market. Below average works for commodities; above works with differentiation.

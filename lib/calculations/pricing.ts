@@ -4,9 +4,13 @@ export interface CostBreakdown {
   expectedUnits: number;
 }
 
+export type PricingBasis = "markup" | "margin";
+
 export interface PricingResult {
   price: number;
-  margin: number;
+  unitCost: number;
+  profitPerUnit: number;
+  markupPercent: number;
   marginPercent: number;
   breakeven: number;
   contributionPerUnit: number;
@@ -14,15 +18,22 @@ export interface PricingResult {
 
 export function calculateCostPlus(
   costs: CostBreakdown,
-  marginPercent: number
+  percent: number,
+  basis: PricingBasis = "markup"
 ): PricingResult {
-  const totalCostPerUnit =
+  const unitCost =
     costs.expectedUnits > 0
       ? costs.fixedCosts / costs.expectedUnits + costs.variableCostPerUnit
       : costs.variableCostPerUnit;
 
-  const price = totalCostPerUnit * (1 + marginPercent / 100);
-  const margin = price - totalCostPerUnit;
+  const price =
+    basis === "margin"
+      ? percent >= 100
+        ? Infinity
+        : unitCost / (1 - percent / 100)
+      : unitCost * (1 + percent / 100);
+
+  const profitPerUnit = price - unitCost;
   const contributionPerUnit = price - costs.variableCostPerUnit;
   const breakeven =
     contributionPerUnit > 0
@@ -31,11 +42,26 @@ export function calculateCostPlus(
 
   return {
     price,
-    margin,
-    marginPercent,
+    unitCost,
+    profitPerUnit,
+    markupPercent: unitCost === 0 ? 0 : (profitPerUnit / unitCost) * 100,
+    marginPercent: price === 0 ? 0 : (profitPerUnit / price) * 100,
     breakeven,
     contributionPerUnit,
   };
+}
+
+export function convertBasisPercent(
+  percent: number,
+  from: PricingBasis,
+  to: PricingBasis
+): number {
+  if (from === to) return percent;
+  if (from === "markup") {
+    return Math.round((percent / (1 + percent / 100)) * 10) / 10;
+  }
+  if (percent >= 100) return 500;
+  return Math.round((percent / (1 - percent / 100)) * 10) / 10;
 }
 
 export function calculateValueBased(

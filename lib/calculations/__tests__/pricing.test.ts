@@ -5,6 +5,7 @@ import {
   calculatePenetrationPrice,
   calculateCompetitivePosition,
   calculateBundlePrice,
+  convertBasisPercent,
   suggestPsychologicalPrice,
   type CostBreakdown,
 } from "../pricing";
@@ -29,9 +30,9 @@ describe("calculateCostPlus", () => {
     expect(result.price).toBe(225);
   });
 
-  it("margin equals price minus total cost per unit", () => {
+  it("profitPerUnit equals price minus unit cost", () => {
     const result = calculateCostPlus(makeCosts(), 50);
-    expect(result.margin).toBeCloseTo(result.price - 150, 2);
+    expect(result.profitPerUnit).toBeCloseTo(result.price - 150, 2);
   });
 
   it("breakeven is fixed costs divided by contribution per unit", () => {
@@ -59,6 +60,42 @@ describe("calculateCostPlus", () => {
     const result = calculateCostPlus(makeCosts(), 0);
     expect(result.price).toBe(150);
   });
+});
+
+describe("calculateCostPlus — deck practice case", () => {
+  const deck = { fixedCosts: 30_000, variableCostPerUnit: 60, expectedUnits: 600 };
+
+  it("30% markup gives ₱143, which is a 23% margin", () => {
+    const r = calculateCostPlus(deck, 30, "markup");
+    expect(r.unitCost).toBe(110);
+    expect(r.price).toBeCloseTo(143, 6);
+    expect(r.markupPercent).toBeCloseTo(30, 6);
+    expect(r.marginPercent).toBeCloseTo(23.08, 2);
+    expect(r.breakeven).toBe(362);
+  });
+
+  it("30% margin gives ₱157, which is a 43% markup", () => {
+    const r = calculateCostPlus(deck, 30, "margin");
+    expect(r.price).toBeCloseTo(157.14, 2);
+    expect(r.marginPercent).toBeCloseTo(30, 6);
+    expect(r.markupPercent).toBeCloseTo(42.86, 2);
+  });
+
+  it("defaults to markup when no basis is given", () => {
+    expect(calculateCostPlus(deck, 30).price).toBeCloseTo(143, 6);
+  });
+
+  it("margin of 100% or more prices at Infinity instead of going negative", () => {
+    expect(calculateCostPlus(deck, 100, "margin").price).toBe(Infinity);
+  });
+});
+
+describe("convertBasisPercent", () => {
+  it("30% markup is a 23.1% margin", () => expect(convertBasisPercent(30, "markup", "margin")).toBe(23.1));
+  it("30% margin is a 42.9% markup", () => expect(convertBasisPercent(30, "margin", "markup")).toBe(42.9));
+  it("150% markup is a 60% margin (no clamping on the way)", () => expect(convertBasisPercent(150, "markup", "margin")).toBe(60));
+  it("same basis is unchanged", () => expect(convertBasisPercent(37, "margin", "margin")).toBe(37));
+  it("margin of 100 converts to the markup max of 500", () => expect(convertBasisPercent(100, "margin", "markup")).toBe(500));
 });
 
 // ─── calculateValueBased ───────────────────────────────────────────────────

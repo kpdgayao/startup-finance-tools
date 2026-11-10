@@ -21,8 +21,10 @@ import {
   calculatePenetrationPrice,
   calculateCompetitivePosition,
   calculateBundlePrice,
+  convertBasisPercent,
   suggestPsychologicalPrice,
   calculateBreakeven,
+  type PricingBasis,
 } from "@/lib/calculations/pricing";
 import { LearnLink } from "@/components/shared/learn-link";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
@@ -32,7 +34,9 @@ export default function PricingCalculatorPage() {
   const [fixedCosts, setFixedCosts] = useState(130000);
   const [variableCost, setVariableCost] = useState(0);
   const [expectedUnits, setExpectedUnits] = useState(10);
-  const [marginPercent, setMarginPercent] = useState(40);
+  const [targetPercent, setTargetPercent] = useState(40);
+  const [pricingBasis, setPricingBasis] = useState<PricingBasis>("markup");
+  const percentMax = pricingBasis === "margin" ? 99 : 500;
 
   // Value-Based state
   const [perceivedValue, setPerceivedValue] = useState(25000);
@@ -55,19 +59,19 @@ export default function PricingCalculatorPage() {
   const fixedCostsError = touched.fixedCosts ? validateFinancialAmount(fixedCosts).error : undefined;
   const variableCostError = touched.variableCost ? validateFinancialAmount(variableCost).error : undefined;
   const expectedUnitsError = touched.expectedUnits ? validatePositiveInteger(expectedUnits).error : undefined;
-  const marginPercentError = touched.marginPercent ? validatePercentage(marginPercent, { max: 500 }).error : undefined;
+  const targetPercentError = touched.targetPercent ? validatePercentage(targetPercent, { max: percentMax }).error : undefined;
   const perceivedValueError = touched.perceivedValue ? validateFinancialAmount(perceivedValue).error : undefined;
   const valueDiscountError = touched.valueDiscount ? validatePercentage(valueDiscount).error : undefined;
   const marketPriceError = touched.marketPrice ? validateFinancialAmount(marketPrice).error : undefined;
   const penetrationDiscountError = touched.penetrationDiscount ? validatePercentage(penetrationDiscount).error : undefined;
   const bundleDiscountError = touched.bundleDiscount ? validatePercentage(bundleDiscount).error : undefined;
 
-  const hasErrors = !!(fixedCostsError || variableCostError || expectedUnitsError || marginPercentError || perceivedValueError || valueDiscountError || marketPriceError || penetrationDiscountError || bundleDiscountError);
+  const hasErrors = !!(fixedCostsError || variableCostError || expectedUnitsError || targetPercentError || perceivedValueError || valueDiscountError || marketPriceError || penetrationDiscountError || bundleDiscountError);
 
   const safeFixedCosts = sanitizeFinancialAmount(fixedCosts);
   const safeVariableCost = sanitizeFinancialAmount(variableCost);
   const safeExpectedUnits = sanitizePositiveInteger(expectedUnits);
-  const safeMarginPercent = sanitizePercentage(marginPercent, { max: 500 });
+  const safeTargetPercent = sanitizePercentage(targetPercent, { max: percentMax });
   const safePerceivedValue = sanitizeFinancialAmount(perceivedValue);
   const safeValueDiscount = sanitizePercentage(valueDiscount);
   const safeMarketPrice = sanitizeFinancialAmount(marketPrice);
@@ -78,7 +82,8 @@ export default function PricingCalculatorPage() {
     setFixedCosts(130000);
     setVariableCost(0);
     setExpectedUnits(10);
-    setMarginPercent(40);
+    setTargetPercent(40);
+    setPricingBasis("markup");
     setPerceivedValue(25000);
     setValueDiscount(20);
     setMarketPrice(20000);
@@ -93,7 +98,8 @@ export default function PricingCalculatorPage() {
 
   const costPlusResult = calculateCostPlus(
     { fixedCosts: safeFixedCosts, variableCostPerUnit: safeVariableCost, expectedUnits: safeExpectedUnits },
-    safeMarginPercent
+    safeTargetPercent,
+    pricingBasis
   );
 
   const valueBased = safePerceivedValue * (1 - safeValueDiscount / 100);
@@ -132,13 +138,41 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
             <CardHeader>
               <CardTitle>
                 Cost-Plus Pricing
-                <InfoTooltip content="From Kevin's deck: Add your target margin to total costs. Example: ₱130K total costs × 1.4 margin / 10 clients = ₱18,200/month per client." />
+                <InfoTooltip content="Unit cost = fixed costs ÷ units + variable cost. Markup is profit ÷ cost; margin is profit ÷ price. Kevin's example: ₱130K costs ÷ 10 clients × 1.4 = ₱18,200 per client a month — a 40% markup, which is a 28.6% margin." />
               </CardTitle>
               <CardDescription>
                 Calculate price by adding a markup to your costs. Pre-loaded with Kevin&apos;s cloud software exercise.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={pricingBasis === "markup" ? "default" : "outline"}
+                  aria-pressed={pricingBasis === "markup"}
+                  onClick={() => {
+                    if (pricingBasis !== "markup") {
+                      setTargetPercent(convertBasisPercent(targetPercent, pricingBasis, "markup"));
+                      setPricingBasis("markup");
+                    }
+                  }}
+                >
+                  Markup on cost
+                </Button>
+                <Button
+                  size="sm"
+                  variant={pricingBasis === "margin" ? "default" : "outline"}
+                  aria-pressed={pricingBasis === "margin"}
+                  onClick={() => {
+                    if (pricingBasis !== "margin") {
+                      setTargetPercent(convertBasisPercent(targetPercent, pricingBasis, "margin"));
+                      setPricingBasis("margin");
+                    }
+                  }}
+                >
+                  Margin on price
+                </Button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CurrencyInput label="Total Fixed Costs (monthly)" value={fixedCosts} onChange={setFixedCosts} onBlur={() => markTouched("fixedCosts")} error={fixedCostsError} />
                 <CurrencyInput label="Variable Cost per Unit" value={variableCost} onChange={setVariableCost} onBlur={() => markTouched("variableCost")} error={variableCostError} />
@@ -157,17 +191,28 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
                   />
                   {expectedUnitsError && <p className="text-xs text-bad mt-1">{expectedUnitsError}</p>}
                 </div>
-                <PercentageInput label="Target Margin %" value={marginPercent} onChange={setMarginPercent} max={500} onBlur={() => markTouched("marginPercent")} error={marginPercentError} />
+                <PercentageInput label={pricingBasis === "markup" ? "Markup % (of cost)" : "Margin % (of price)"} value={targetPercent} onChange={setTargetPercent} max={percentMax} onBlur={() => markTouched("targetPercent")} error={targetPercentError} />
               </div>
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <ResultCard label="Price per Unit" value={formatPHP(costPlusResult.price)} variant="success" />
-            <ResultCard label="Margin per Unit" value={formatPHP(costPlusResult.margin)} />
-            <ResultCard label="Breakeven Units" value={costPlusResult.breakeven === Infinity ? "N/A" : formatNumber(costPlusResult.breakeven)} />
-            <ResultCard label="Contribution / Unit" value={formatPHP(costPlusResult.contributionPerUnit)} />
+            <ResultCard label="Unit Cost" value={formatPHP(costPlusResult.unitCost)} sublabel="Your price floor at this volume" />
+            <ResultCard
+              label="Profit per Unit"
+              value={formatPHP(costPlusResult.profitPerUnit)}
+              sublabel={`${costPlusResult.markupPercent.toFixed(1)}% markup · ${costPlusResult.marginPercent.toFixed(1)}% margin`}
+            />
+            <ResultCard
+              label="Break-even Units"
+              value={costPlusResult.breakeven === Infinity ? "N/A" : formatNumber(costPlusResult.breakeven)}
+              sublabel={`Each sale adds ${formatPHP(costPlusResult.contributionPerUnit)} toward fixed costs`}
+            />
           </div>
+          <p className="text-sm text-muted-foreground">
+            A {costPlusResult.markupPercent.toFixed(1)}% markup is a {costPlusResult.marginPercent.toFixed(1)}% margin. When someone says &quot;30% margin&quot;, ask: of cost, or of price?
+          </p>
         </TabsContent>
 
         <TabsContent value="value-based" className="space-y-4 mt-4">
@@ -362,8 +407,13 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
               fixedCosts: safeFixedCosts,
               variableCost: safeVariableCost,
               expectedUnits: safeExpectedUnits,
-              marginPercent: safeMarginPercent,
+              basis: pricingBasis,
+              percent: safeTargetPercent,
+              unitCost: costPlusResult.unitCost,
               price: costPlusResult.price,
+              profitPerUnit: costPlusResult.profitPerUnit,
+              markupPercent: costPlusResult.markupPercent,
+              marginPercent: costPlusResult.marginPercent,
               breakeven: costPlusResult.breakeven,
             },
             valueBased: { perceivedValue: safePerceivedValue, valueDiscount: safeValueDiscount, suggestedPrice: valueBased },
