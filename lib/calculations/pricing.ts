@@ -247,3 +247,33 @@ export function formatShareLine(input: {
   const breakeven = input.breakeven === Infinity ? "N/A" : formatNumber(input.breakeven);
   return `${startup} · ${product} · ${formatPHP(input.price)} per ${unitName} · ${input.strategy} · Break-even ${breakeven}`;
 }
+
+export interface SavingsItem { id: string; name: string; amount: number }
+
+export function sumSavings(items: SavingsItem[]): number {
+  // Negatives are a slip, not a saving — count them as 0 rather than letting
+  // one typo cancel a month of real savings.
+  return items.reduce((sum, item) => sum + Math.max(0, item.amount), 0);
+}
+
+export interface PricePoint { price: number; volume: number }
+
+export function compareTwoPrices(
+  fixed: number,
+  variable: number,
+  a: PricePoint,
+  b: PricePoint
+): {
+  profitA: number;
+  profitB: number;
+  difference: number; // profitB − profitA
+  volumeBToMatchA: number; // Math.ceil((profitA + fixed) ÷ (b.price − variable)); Infinity when b.price ≤ variable
+} {
+  const profitA = a.price * a.volume - (fixed + variable * a.volume);
+  const profitB = b.price * b.volume - (fixed + variable * b.volume);
+  const difference = profitB - profitA;
+  const contribution = b.price - variable;
+  const volumeBToMatchA =
+    contribution <= 0 ? Infinity : Math.ceil((profitA + fixed) / contribution);
+  return { profitA, profitB, difference, volumeBToMatchA };
+}

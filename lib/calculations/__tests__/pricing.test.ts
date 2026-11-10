@@ -11,6 +11,8 @@ import {
   comparePerMeasure,
   buildPriceLadder,
   formatShareLine,
+  compareTwoPrices,
+  sumSavings,
   type CostBreakdown,
 } from "../pricing";
 
@@ -291,4 +293,30 @@ describe("formatShareLine", () => {
     expect(formatShareLine({ startup: " ", product: "", price: 50, unitName: "", strategy: "Penetration", breakeven: Infinity }))
       .toBe("Startup · Product · ₱50 per unit · Penetration · Break-even N/A");
   });
+});
+
+// ─── compareTwoPrices ──────────────────────────────────────────────────────
+
+describe("compareTwoPrices — slide 3", () => {
+  it("+₱5 per liter adds ₱3,000 a month", () => {
+    const r = compareTwoPrices(30_000, 60, { price: 143, volume: 600 }, { price: 148, volume: 600 });
+    expect(r.profitA).toBe(19_800);
+    expect(r.difference).toBe(3_000);
+  });
+  it("selling 5% more liters at ₱143 adds only ₱2,490", () => {
+    expect(compareTwoPrices(30_000, 60, { price: 143, volume: 600 }, { price: 143, volume: 630 }).difference).toBe(2_490);
+  });
+  it("at ₱148 you need 566 liters to match ₱143 × 600", () => {
+    expect(compareTwoPrices(30_000, 60, { price: 143, volume: 600 }, { price: 148, volume: 0 }).volumeBToMatchA).toBe(566);
+  });
+  it("a price at or below variable cost can never match", () => {
+    expect(compareTwoPrices(30_000, 60, { price: 143, volume: 600 }, { price: 60, volume: 600 }).volumeBToMatchA).toBe(Infinity);
+  });
+});
+
+describe("sumSavings", () => {
+  it("adds the customer's monthly savings", () => {
+    expect(sumSavings([{ id: "1", name: "a", amount: 6_000 }, { id: "2", name: "b", amount: 2_500 }, { id: "3", name: "c", amount: 1_500 }])).toBe(10_000);
+  });
+  it("ignores negative entries", () => expect(sumSavings([{ id: "1", name: "a", amount: -50 }])).toBe(0));
 });
