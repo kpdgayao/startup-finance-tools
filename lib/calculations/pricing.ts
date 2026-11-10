@@ -283,3 +283,17 @@ export function compareTwoPrices(
     contribution <= 0 ? Infinity : Math.max(0, Math.ceil((profitA + fixed) / contribution));
   return { profitA, profitB, difference, volumeBToMatchA };
 }
+
+/**
+ * What a customer gets back for every ₱1 they spend with you in a month.
+ * Value is monthly (what they save or gain); spend is your price × the units
+ * one customer buys a month. Null when they spend nothing.
+ */
+export function calculateCustomerRoi(
+  monthlyValue: number,
+  price: number,
+  unitsPerMonth: number
+): { spend: number; roi: number | null } {
+  const spend = price * unitsPerMonth;
+  return { spend, roi: spend > 0 ? monthlyValue / spend : null };
+}

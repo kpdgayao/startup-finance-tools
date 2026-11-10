@@ -13,6 +13,7 @@ import {
   formatShareLine,
   compareTwoPrices,
   sumSavings,
+  calculateCustomerRoi,
   type CostBreakdown,
 } from "../pricing";
 
@@ -324,4 +325,19 @@ describe("sumSavings", () => {
   it("ignores negative entries", () => expect(sumSavings([{ id: "1", name: "a", amount: -50 }])).toBe(0));
   it("ignores non-finite entries", () =>
     expect(sumSavings([{ id: "1", name: "a", amount: NaN }, { id: "2", name: "b", amount: 100 }])).toBe(100));
+});
+
+describe("calculateCustomerRoi", () => {
+  it("compares monthly value with monthly spend at your price", () => {
+    const r = calculateCustomerRoi(10_000, 143, 50);
+    expect(r.spend).toBe(7_150);
+    expect(r.roi).toBeCloseTo(1.399, 3);
+  });
+  it("moves with the price, unlike value ÷ value-based price", () => {
+    expect(calculateCustomerRoi(10_000, 100, 50).roi).toBe(2);
+  });
+  it("is null when the customer spends nothing", () => {
+    expect(calculateCustomerRoi(10_000, 143, 0).roi).toBeNull();
+    expect(calculateCustomerRoi(10_000, 0, 50).roi).toBeNull();
+  });
 });

@@ -30,6 +30,7 @@ import {
   formatShareLine,
   compareTwoPrices,
   sumSavings,
+  calculateCustomerRoi,
   type PricingBasis,
   type CompetitorOffer,
   type SavingsItem,
@@ -75,6 +76,9 @@ export default function PricingCalculatorPage() {
   // Value-Based state
   const [perceivedValue, setPerceivedValue] = useState(25000);
   const [valueDiscount, setValueDiscount] = useState(20);
+  // What one customer buys a month, so the monthly value can be set against
+  // the monthly spend at your chosen price.
+  const [customerUnits, setCustomerUnits] = useState(50);
   const [useSavings, setUseSavings] = useState(false);
   const [savingsItems, setSavingsItems] = useState<SavingsItem[]>(DEFAULT_SAVINGS);
 
@@ -148,6 +152,7 @@ export default function PricingCalculatorPage() {
     setPricingBasis("markup");
     setPerceivedValue(25000);
     setValueDiscount(20);
+    setCustomerUnits(50);
     setMarketPrice(20000);
     setPenetrationDiscount(25);
     setOffers(DEFAULT_OFFERS);
@@ -185,6 +190,8 @@ export default function PricingCalculatorPage() {
   const penetrationPrice = calculatePenetrationPrice(safeMarketPrice, safePenetrationDiscount);
 
   const effectivePrice = sanitizeFinancialAmount(chosenPrice ?? Math.round(costPlusResult.price));
+  const safeCustomerUnits = sanitizePositiveInteger(customerUnits, { allowZero: true });
+  const customerRoi = calculateCustomerRoi(effectiveValue, effectivePrice, safeCustomerUnits);
 
   const safeOffers = offers.map((o) => ({
     ...o,
@@ -444,13 +451,30 @@ export default function PricingCalculatorPage() {
                   <PercentageInput label="Discount from Value %" value={valueDiscount} onChange={setValueDiscount} onBlur={() => markTouched("valueDiscount")} error={valueDiscountError} />
                 </div>
               )}
+              <div className="space-y-2 md:w-1/2">
+                <Label htmlFor="customer-units">
+                  {`How many ${unitName || "unit"}s one customer buys a month`}
+                </Label>
+                <IntegerInput
+                  id="customer-units"
+                  min={0}
+                  value={customerUnits}
+                  onChange={setCustomerUnits}
+                />
+              </div>
             </CardContent>
           </Card>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <ResultCard label="Perceived Value" value={formatPHP(effectiveValue)} />
             <ResultCard label="Suggested Price" value={formatPHP(valueBased)} variant="success" />
             <ResultCard label="Customer Surplus" value={formatPHP(effectiveValue - valueBased)} sublabel="Value the customer keeps" />
-            <ResultCard label="Customer ROI" value={valueBased > 0 ? `${(effectiveValue / valueBased).toFixed(1)}×` : "—"} sublabel="Value for every ₱1 they pay" />
+            {/* Against your chosen price, not the suggested one: value ÷
+                (value × (1 − discount)) only ever restated the discount. */}
+            <ResultCard
+              label="Customer ROI"
+              value={customerRoi.roi === null ? "—" : `${customerRoi.roi.toFixed(1)}×`}
+              sublabel={`Value for every ₱1 they spend at your ${formatPHP(effectivePrice)} × ${formatNumber(safeCustomerUnits)} = ${formatPHP(customerRoi.spend)} a month`}
+            />
           </div>
         </TabsContent>
 
@@ -657,6 +681,9 @@ export default function PricingCalculatorPage() {
               perceivedValue: effectiveValue,
               valueDiscount: safeValueDiscount,
               suggestedPrice: valueBased,
+              customerUnitsPerMonth: safeCustomerUnits,
+              customerMonthlySpend: customerRoi.spend,
+              customerRoi: customerRoi.roi,
             },
             penetration: { marketPrice: safeMarketPrice, penetrationDiscount: safePenetrationDiscount, entryPrice: penetrationPrice },
             competitive: {
