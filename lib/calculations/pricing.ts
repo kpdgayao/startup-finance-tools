@@ -1,3 +1,5 @@
+import { formatPHP, formatNumber } from "@/lib/utils";
+
 export interface CostBreakdown {
   fixedCosts: number;
   variableCostPerUnit: number;
@@ -172,4 +174,76 @@ export function calculateBreakeven(
   const contribution = pricePerUnit - variableCostPerUnit;
   if (contribution <= 0) return Infinity;
   return Math.ceil(fixedCosts / contribution);
+}
+
+export type PriceVerdict = "below-cost" | "in-range" | "above-market";
+
+export interface PriceAnchor {
+  label: string;
+  price: number;
+  isChosen: boolean;
+}
+
+export function buildPriceLadder(input: {
+  unitCost: number;
+  costPlusPrice: number;
+  chosen: number;
+  marketLow?: number; // already converted to the selling unit
+  marketHigh?: number; // already converted to the selling unit
+}): { anchors: PriceAnchor[]; verdict: PriceVerdict } {
+  const anchors: PriceAnchor[] = [
+    { label: "Unit cost (floor)", price: input.unitCost, isChosen: false },
+    { label: "Cost-plus price", price: input.costPlusPrice, isChosen: false },
+    { label: "Your price", price: input.chosen, isChosen: true },
+  ];
+  if (input.marketLow !== undefined) {
+    anchors.push({ label: "Lowest alternative", price: input.marketLow, isChosen: false });
+  }
+  if (input.marketHigh !== undefined) {
+    anchors.push({ label: "Highest alternative", price: input.marketHigh, isChosen: false });
+  }
+
+  // Ascending by price. On a tie the chosen price sorts last so it stays
+  // visible beside an equal anchor instead of hiding behind it.
+  anchors.sort((a, b) => {
+    if (a.price === b.price) {
+      if (a.isChosen) return 1;
+      if (b.isChosen) return -1;
+      return 0;
+    }
+    return a.price - b.price;
+  });
+
+  let verdict: PriceVerdict = "in-range";
+  if (input.chosen < input.unitCost) {
+    verdict = "below-cost";
+  } else if (input.marketHigh !== undefined && input.chosen > input.marketHigh) {
+    verdict = "above-market";
+  }
+
+  return { anchors, verdict };
+}
+
+export const PRICING_STRATEGIES = [
+  "Cost-Plus",
+  "Value-Based",
+  "Penetration",
+  "Competitive",
+  "Bundle",
+  "Psychological",
+] as const;
+
+export function formatShareLine(input: {
+  startup: string;
+  product: string;
+  price: number;
+  unitName: string;
+  strategy: string;
+  breakeven: number;
+}): string {
+  const startup = input.startup.trim() || "Startup";
+  const product = input.product.trim() || "Product";
+  const unitName = input.unitName || "unit";
+  const breakeven = input.breakeven === Infinity ? "N/A" : formatNumber(input.breakeven);
+  return `${startup} · ${product} · ${formatPHP(input.price)} per ${unitName} · ${input.strategy} · Break-even ${breakeven}`;
 }

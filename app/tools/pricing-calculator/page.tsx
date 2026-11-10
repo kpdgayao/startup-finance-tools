@@ -26,6 +26,8 @@ import {
   suggestCharmPrices,
   calculateBreakeven,
   comparePerMeasure,
+  buildPriceLadder,
+  formatShareLine,
   type PricingBasis,
   type CompetitorOffer,
 } from "@/lib/calculations/pricing";
@@ -37,6 +39,7 @@ import {
 } from "@/lib/calculations/pricing-costs";
 import { CostLinesEditor } from "./components/cost-lines-editor";
 import { CompetitiveTab } from "./components/competitive-tab";
+import { PriceDecision } from "./components/price-decision";
 import { LearnLink } from "@/components/shared/learn-link";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
 
@@ -72,6 +75,12 @@ export default function PricingCalculatorPage() {
 
   // Psychological state
   const [charmBase, setCharmBase] = useState<number | null>(null);
+
+  // Decision state
+  const [chosenPrice, setChosenPrice] = useState<number | null>(null);
+  const [startupName, setStartupName] = useState("");
+  const [productName, setProductName] = useState("");
+  const [shareStrategy, setShareStrategy] = useState("Cost-Plus");
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
@@ -121,6 +130,10 @@ export default function PricingCalculatorPage() {
     setBundleItems([10000, 8000, 5000]);
     setBundleDiscount(15);
     setCharmBase(null);
+    setChosenPrice(null);
+    setStartupName("");
+    setProductName("");
+    setShareStrategy("Cost-Plus");
     setTouched({});
   };
 
@@ -140,17 +153,46 @@ export default function PricingCalculatorPage() {
 
   const valueBased = safePerceivedValue * (1 - safeValueDiscount / 100);
   const penetrationPrice = calculatePenetrationPrice(safeMarketPrice, safePenetrationDiscount);
-const safeOffers = offers.map((o) => ({
-  ...o,
-  price: sanitizeFinancialAmount(o.price),
-  size: Math.max(0, Number.isFinite(o.size) ? o.size : 0),
-}));
-const safeYourSize = Math.max(0, Number.isFinite(yourSize) ? yourSize : 0);
-const comparison = comparePerMeasure(safeOffers, costPlusResult.price, safeYourSize);
-const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmount(v)), safeBundleDiscount);
+
+  const effectivePrice = sanitizeFinancialAmount(chosenPrice ?? Math.round(costPlusResult.price));
+
+  const safeOffers = offers.map((o) => ({
+    ...o,
+    price: sanitizeFinancialAmount(o.price),
+    size: Math.max(0, Number.isFinite(o.size) ? o.size : 0),
+  }));
+  const safeYourSize = Math.max(0, Number.isFinite(yourSize) ? yourSize : 0);
+  const comparison = comparePerMeasure(safeOffers, effectivePrice, safeYourSize);
+  const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmount(v)), safeBundleDiscount);
   const charmInput = charmBase ?? Math.round(costPlusResult.price);
   const safeCharmInput = sanitizeFinancialAmount(charmInput);
   const charm = suggestCharmPrices(safeCharmInput);
+
+  const ladder = buildPriceLadder({
+    unitCost: costPlusResult.unitCost,
+    costPlusPrice: costPlusResult.price,
+    chosen: effectivePrice,
+    ...(comparison.rows.length > 0
+      ? {
+          marketLow: comparison.position.min * safeYourSize,
+          marketHigh: comparison.position.max * safeYourSize,
+        }
+      : {}),
+  });
+  const decisionCharm = suggestCharmPrices(effectivePrice);
+  const chosenBreakeven = calculateBreakeven(
+    costSummary.fixedMonthly,
+    effectivePrice,
+    costSummary.variablePerUnit
+  );
+  const shareLine = formatShareLine({
+    startup: startupName,
+    product: productName,
+    price: effectivePrice,
+    unitName,
+    strategy: shareStrategy,
+    breakeven: chosenBreakeven,
+  });
 
   return (
     <div className="space-y-6">
@@ -340,7 +382,7 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
             onMeasureChange={setMeasure}
             yourSize={yourSize}
             onYourSizeChange={setYourSize}
-            yourPrice={costPlusResult.price}
+            yourPrice={effectivePrice}
             unitName={unitName}
             comparison={comparison}
           />
@@ -438,6 +480,23 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
         </TabsContent>
       </Tabs>
 
+      <PriceDecision
+        ladder={ladder}
+        chosenInput={effectivePrice}
+        onChosenChange={setChosenPrice}
+        followsCostPlus={chosenPrice === null}
+        onUseCostPlus={() => setChosenPrice(null)}
+        charm={decisionCharm}
+        unitName={unitName}
+        startup={startupName}
+        onStartupChange={setStartupName}
+        product={productName}
+        onProductChange={setProductName}
+        strategy={shareStrategy}
+        onStrategyChange={setShareStrategy}
+        shareLine={shareLine}
+      />
+
       <AiInsightsPanel
         explanation={ai.explanation}
         isLoading={ai.isLoading}
@@ -484,6 +543,12 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
             },
             bundle: { bundleItems: bundleItems.map((v) => sanitizeFinancialAmount(v)), bundleDiscount: safeBundleDiscount, ...bundle },
             psychological: { price: safeCharmInput, down: charm?.down ?? null, up: charm?.up ?? null },
+            decision: {
+              chosenPrice: effectivePrice,
+              verdict: ladder.verdict,
+              breakeven: chosenBreakeven,
+              strategy: shareStrategy,
+            },
           })
         }
         onDismiss={ai.reset}

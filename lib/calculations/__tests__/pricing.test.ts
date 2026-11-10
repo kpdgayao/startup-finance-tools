@@ -9,6 +9,8 @@ import {
   suggestCharmPrices,
   suggestPsychologicalPrice,
   comparePerMeasure,
+  buildPriceLadder,
+  formatShareLine,
   type CostBreakdown,
 } from "../pricing";
 
@@ -257,5 +259,36 @@ describe("comparePerMeasure — the deck's sachet benchmark", () => {
     const r = comparePerMeasure(offers, 143, 0);
     expect(r.yourPerMeasure).toBe(0);
     expect(r.rows.every((row) => row.differencePercent === 0)).toBe(true);
+  });
+});
+
+// ─── buildPriceLadder ──────────────────────────────────────────────────────
+
+describe("buildPriceLadder", () => {
+  const base = { unitCost: 110, costPlusPrice: 143, marketLow: 133.33, marketHigh: 310.45 };
+  it("₱143 sits between the floor and the market high", () => {
+    const r = buildPriceLadder({ ...base, chosen: 143 });
+    expect(r.verdict).toBe("in-range");
+    expect(r.anchors.map((a) => a.label)).toEqual([
+      "Unit cost (floor)", "Lowest alternative", "Cost-plus price", "Your price", "Highest alternative",
+    ]);
+  });
+  it("below unit cost is below-cost", () => expect(buildPriceLadder({ ...base, chosen: 100 }).verdict).toBe("below-cost"));
+  it("above every alternative is above-market", () => expect(buildPriceLadder({ ...base, chosen: 400 }).verdict).toBe("above-market"));
+  it("without market numbers nothing is above-market", () => {
+    expect(buildPriceLadder({ unitCost: 110, costPlusPrice: 143, chosen: 9_999 }).verdict).toBe("in-range");
+  });
+});
+
+// ─── formatShareLine ───────────────────────────────────────────────────────
+
+describe("formatShareLine", () => {
+  it("uses the deck's chat format", () => {
+    expect(formatShareLine({ startup: "Ikot", product: "Dish soap refill", price: 143, unitName: "liter", strategy: "Cost-Plus", breakeven: 362 }))
+      .toBe("Ikot · Dish soap refill · ₱143 per liter · Cost-Plus · Break-even 362");
+  });
+  it("fills blanks and shows N/A for an impossible break-even", () => {
+    expect(formatShareLine({ startup: " ", product: "", price: 50, unitName: "", strategy: "Penetration", breakeven: Infinity }))
+      .toBe("Startup · Product · ₱50 per unit · Penetration · Break-even N/A");
   });
 });
