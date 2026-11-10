@@ -6,11 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IntegerInput } from "@/components/shared/integer-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { PercentageInput } from "@/components/shared/percentage-input";
 import { ResultCard } from "@/components/shared/result-card";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
-import { formatPHP, formatNumber } from "@/lib/utils";
+import { formatPHP, formatPHPDetailed, formatNumber } from "@/lib/utils";
 import { useAiExplain } from "@/lib/ai/use-ai-explain";
 import { validateFinancialAmount, validatePercentage, validatePositiveInteger, sanitizeFinancialAmount, sanitizePercentage, sanitizePositiveInteger } from "@/lib/validation";
 import { AiInsightsPanel } from "@/components/shared/ai-insights-panel";
@@ -26,15 +28,23 @@ import {
   calculateBreakeven,
   type PricingBasis,
 } from "@/lib/calculations/pricing";
+import {
+  summarizeCosts,
+  calculateMonthlyOutcome,
+  REFILL_STATION_EXAMPLE,
+  type CostLine,
+} from "@/lib/calculations/pricing-costs";
+import { CostLinesEditor } from "./components/cost-lines-editor";
 import { LearnLink } from "@/components/shared/learn-link";
 import { Trash2, Plus, RotateCcw } from "lucide-react";
 
 export default function PricingCalculatorPage() {
   // Cost-Plus state
-  const [fixedCosts, setFixedCosts] = useState(130000);
-  const [variableCost, setVariableCost] = useState(0);
-  const [expectedUnits, setExpectedUnits] = useState(10);
-  const [targetPercent, setTargetPercent] = useState(40);
+  const [costLines, setCostLines] = useState<CostLine[]>(REFILL_STATION_EXAMPLE);
+  const [unitName, setUnitName] = useState("liter");
+  const [isReuseModel, setIsReuseModel] = useState(true);
+  const [expectedUnits, setExpectedUnits] = useState(600);
+  const [targetPercent, setTargetPercent] = useState(30);
   const [pricingBasis, setPricingBasis] = useState<PricingBasis>("markup");
   const percentMax = pricingBasis === "margin" ? 99 : 500;
 
@@ -59,8 +69,6 @@ export default function PricingCalculatorPage() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
 
-  const fixedCostsError = touched.fixedCosts ? validateFinancialAmount(fixedCosts).error : undefined;
-  const variableCostError = touched.variableCost ? validateFinancialAmount(variableCost).error : undefined;
   const expectedUnitsError = touched.expectedUnits ? validatePositiveInteger(expectedUnits).error : undefined;
   const targetPercentError = touched.targetPercent ? validatePercentage(targetPercent, { max: percentMax }).error : undefined;
   const perceivedValueError = touched.perceivedValue ? validateFinancialAmount(perceivedValue).error : undefined;
@@ -69,10 +77,15 @@ export default function PricingCalculatorPage() {
   const penetrationDiscountError = touched.penetrationDiscount ? validatePercentage(penetrationDiscount).error : undefined;
   const bundleDiscountError = touched.bundleDiscount ? validatePercentage(bundleDiscount).error : undefined;
 
-  const hasErrors = !!(fixedCostsError || variableCostError || expectedUnitsError || targetPercentError || perceivedValueError || valueDiscountError || marketPriceError || penetrationDiscountError || bundleDiscountError);
+  const hasErrors = !!(expectedUnitsError || targetPercentError || perceivedValueError || valueDiscountError || marketPriceError || penetrationDiscountError || bundleDiscountError);
 
-  const safeFixedCosts = sanitizeFinancialAmount(fixedCosts);
-  const safeVariableCost = sanitizeFinancialAmount(variableCost);
+  const safeCostLines = costLines.map((l) => ({
+    ...l,
+    amount: sanitizeFinancialAmount(l.amount),
+    lifeMonths: l.lifeMonths === undefined ? undefined : sanitizePositiveInteger(l.lifeMonths),
+    uses: l.uses === undefined ? undefined : sanitizePositiveInteger(l.uses),
+  }));
+  const costSummary = summarizeCosts(safeCostLines);
   const safeExpectedUnits = sanitizePositiveInteger(expectedUnits);
   const safeTargetPercent = sanitizePercentage(targetPercent, { max: percentMax });
   const safePerceivedValue = sanitizeFinancialAmount(perceivedValue);
@@ -82,10 +95,11 @@ export default function PricingCalculatorPage() {
   const safeBundleDiscount = sanitizePercentage(bundleDiscount);
 
   const handleReset = () => {
-    setFixedCosts(130000);
-    setVariableCost(0);
-    setExpectedUnits(10);
-    setTargetPercent(40);
+    setCostLines(REFILL_STATION_EXAMPLE);
+    setUnitName("liter");
+    setIsReuseModel(true);
+    setExpectedUnits(600);
+    setTargetPercent(30);
     setPricingBasis("markup");
     setPerceivedValue(25000);
     setValueDiscount(20);
@@ -101,9 +115,15 @@ export default function PricingCalculatorPage() {
   const ai = useAiExplain("pricing-calculator");
 
   const costPlusResult = calculateCostPlus(
-    { fixedCosts: safeFixedCosts, variableCostPerUnit: safeVariableCost, expectedUnits: safeExpectedUnits },
+    { fixedCosts: costSummary.fixedMonthly, variableCostPerUnit: costSummary.variablePerUnit, expectedUnits: safeExpectedUnits },
     safeTargetPercent,
     pricingBasis
+  );
+  const outcome = calculateMonthlyOutcome(
+    costSummary.fixedMonthly,
+    costSummary.variablePerUnit,
+    safeExpectedUnits,
+    costPlusResult.price
   );
 
   const valueBased = safePerceivedValue * (1 - safeValueDiscount / 100);
@@ -144,10 +164,10 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
             <CardHeader>
               <CardTitle>
                 Cost-Plus Pricing
-                <InfoTooltip content="Unit cost = fixed costs ÷ units + variable cost. Markup is profit ÷ cost; margin is profit ÷ price. Kevin's example: ₱130K costs ÷ 10 clients × 1.4 = ₱18,200 per client a month — a 40% markup, which is a 28.6% margin." />
+                <InfoTooltip content="Pre-loaded with the refill-station practice case from Kevin's CircleWorks talk: ₱30,000 fixed, ₱60 per liter, 600 liters, 30% markup → ₱143 per liter. Markup is profit ÷ cost; margin is profit ÷ price." />
               </CardTitle>
               <CardDescription>
-                Calculate price by adding a markup to your costs. Pre-loaded with Kevin&apos;s cloud software exercise.
+                List every cost, including take-back: containers, collection and cleaning. Then add your markup or margin.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -179,11 +199,13 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
                   Margin on price
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CurrencyInput label="Total Fixed Costs (monthly)" value={fixedCosts} onChange={setFixedCosts} onBlur={() => markTouched("fixedCosts")} error={fixedCostsError} />
-                <CurrencyInput label="Variable Cost per Unit" value={variableCost} onChange={setVariableCost} onBlur={() => markTouched("variableCost")} error={variableCostError} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Expected Units / Clients</Label>
+                  <Label htmlFor="selling-unit">Selling unit</Label>
+                  <Input id="selling-unit" value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="liter" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Expected units a month</Label>
                   {/* min={0}, not 1: the page validates this field itself with
                       validatePositiveInteger and shows an error at zero.
                       Clamping to 1 here settles a cleared field silently at 1,
@@ -199,26 +221,51 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
                 </div>
                 <PercentageInput label={pricingBasis === "markup" ? "Markup % (of cost)" : "Margin % (of price)"} value={targetPercent} onChange={setTargetPercent} max={percentMax} onBlur={() => markTouched("targetPercent")} error={targetPercentError} />
               </div>
+              <div className="flex items-center gap-3">
+                <Switch id="reuse-model" checked={isReuseModel} onCheckedChange={setIsReuseModel} />
+                <Label htmlFor="reuse-model">My product is reused, refilled or taken back</Label>
+              </div>
+              <CostLinesEditor
+                lines={costLines}
+                onChange={setCostLines}
+                isReuseModel={isReuseModel}
+                hasTakeBackCosts={costSummary.hasTakeBackCosts}
+              />
+              <p className="text-sm text-muted-foreground">
+                Fixed {formatPHP(costSummary.fixedMonthly)} a month · Variable {formatPHPDetailed(costSummary.variablePerUnit)} per {unitName}
+              </p>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <ResultCard label="Price per Unit" value={formatPHP(costPlusResult.price)} variant="success" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <ResultCard label={`Price per ${unitName || "unit"}`} value={formatPHP(costPlusResult.price)} variant="success" />
             <ResultCard label="Unit Cost" value={formatPHP(costPlusResult.unitCost)} sublabel="Your price floor at this volume" />
             <ResultCard
               label="Profit per Unit"
               value={formatPHP(costPlusResult.profitPerUnit)}
-              sublabel={`${costPlusResult.markupPercent.toFixed(1)}% markup · ${costPlusResult.marginPercent.toFixed(1)}% margin`}
+              sublabel={`${costPlusResult.markupPercent.toFixed(1)}% markup · ${costPlusResult.marginPercent.toFixed(1)}% margin · Each sale adds ${formatPHP(costPlusResult.contributionPerUnit)} toward fixed costs`}
             />
             <ResultCard
-              label="Break-even Units"
+              label="Break-even Volume"
               value={costPlusResult.breakeven === Infinity ? "N/A" : formatNumber(costPlusResult.breakeven)}
-              sublabel={`Each sale adds ${formatPHP(costPlusResult.contributionPerUnit)} toward fixed costs`}
+              sublabel={`${unitName || "unit"}s a month`}
+            />
+            <ResultCard label="Total Monthly Cost" value={formatPHP(outcome.totalCost)} />
+            <ResultCard
+              label="Monthly Profit"
+              value={formatPHP(outcome.profit)}
+              variant={outcome.profit < 0 ? "danger" : "success"}
+              sublabel={`at ${formatNumber(safeExpectedUnits)} ${unitName || "unit"}s`}
             />
           </div>
           <p className="text-sm text-muted-foreground">
             A {costPlusResult.markupPercent.toFixed(1)}% markup is a {costPlusResult.marginPercent.toFixed(1)}% margin. When someone says &quot;30% margin&quot;, ask: of cost, or of price?
           </p>
+          {costSummary.grantFixedMonthly > 0 || costSummary.grantVariablePerUnit > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              The grant pays {formatPHP(costSummary.grantFixedMonthly)} a month and {formatPHPDetailed(costSummary.grantVariablePerUnit)} per {unitName} today. Your price already covers these, so it still works after the grant ends. While the grant pays, your monthly profit is {formatPHP(outcome.profit + costSummary.grantFixedMonthly + costSummary.grantVariablePerUnit * safeExpectedUnits)}.
+            </p>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="value-based" className="space-y-4 mt-4">
@@ -424,8 +471,17 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
         onExplain={() =>
           ai.explain({
             costPlus: {
-              fixedCosts: safeFixedCosts,
-              variableCost: safeVariableCost,
+              unitName,
+              isReuseModel,
+              costLines: safeCostLines.map((l) => ({
+                name: l.name,
+                category: l.category,
+                behavior: l.behavior,
+                amount: l.amount,
+                lifeMonths: l.lifeMonths,
+                uses: l.uses,
+                grantFunded: l.grantFunded,
+              })),
               expectedUnits: safeExpectedUnits,
               basis: pricingBasis,
               percent: safeTargetPercent,
@@ -435,6 +491,12 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
               markupPercent: costPlusResult.markupPercent,
               marginPercent: costPlusResult.marginPercent,
               breakeven: costPlusResult.breakeven,
+              fixedMonthly: costSummary.fixedMonthly,
+              variablePerUnit: costSummary.variablePerUnit,
+              grantFixedMonthly: costSummary.grantFixedMonthly,
+              grantVariablePerUnit: costSummary.grantVariablePerUnit,
+              totalMonthlyCost: outcome.totalCost,
+              monthlyProfit: outcome.profit,
             },
             valueBased: { perceivedValue: safePerceivedValue, valueDiscount: safeValueDiscount, suggestedPrice: valueBased },
             penetration: { marketPrice: safeMarketPrice, penetrationDiscount: safePenetrationDiscount, entryPrice: penetrationPrice },
