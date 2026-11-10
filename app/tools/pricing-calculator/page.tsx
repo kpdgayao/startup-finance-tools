@@ -67,6 +67,8 @@ export default function PricingCalculatorPage() {
   // Cost-Plus state
   const [costLines, setCostLines] = useState<CostLine[]>(REFILL_STATION_EXAMPLE);
   const [unitName, setUnitName] = useState("liter");
+  // What the copy calls one unit when the name is left blank.
+  const unitLabel = unitName || "unit";
   const [isReuseModel, setIsReuseModel] = useState(true);
   const [expectedUnits, setExpectedUnits] = useState(600);
   const [targetPercent, setTargetPercent] = useState(30);
@@ -356,13 +358,13 @@ export default function PricingCalculatorPage() {
                 hasTakeBackCosts={costSummary.hasTakeBackCosts}
               />
               <p className="text-sm text-muted-foreground">
-                Fixed {formatPHP(costSummary.fixedMonthly)} a month · Variable {formatPHPDetailed(costSummary.variablePerUnit)} per {unitName || "unit"}
+                Fixed {formatPHP(costSummary.fixedMonthly)} a month · Variable {formatPHPDetailed(costSummary.variablePerUnit)} per {unitLabel}
               </p>
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <ResultCard label={`Price per ${unitName || "unit"}`} value={formatPHP(costPlusResult.price)} variant="success" />
+            <ResultCard label={`Price per ${unitLabel}`} value={formatPHP(costPlusResult.price)} variant="success" />
             <ResultCard label="Unit Cost" value={formatPHP(costPlusResult.unitCost)} sublabel="Your price floor at this volume" />
             <ResultCard
               label="Profit per Unit"
@@ -372,14 +374,14 @@ export default function PricingCalculatorPage() {
             <ResultCard
               label="Break-even Volume"
               value={costPlusResult.breakeven === Infinity ? "N/A" : formatNumber(costPlusResult.breakeven)}
-              sublabel={`${unitName || "unit"}s a month`}
+              sublabel={`${unitLabel}s a month`}
             />
             <ResultCard label="Total Monthly Cost" value={formatPHP(outcome.totalCost)} />
             <ResultCard
               label="Monthly Profit"
               value={formatPHP(outcome.profit)}
               variant={outcome.profit < 0 ? "danger" : "success"}
-              sublabel={`at ${formatNumber(safeExpectedUnits)} ${unitName || "unit"}s`}
+              sublabel={`at ${formatNumber(safeExpectedUnits)} ${unitLabel}s`}
             />
           </div>
           <p className="text-sm text-muted-foreground">
@@ -387,7 +389,7 @@ export default function PricingCalculatorPage() {
           </p>
           {costSummary.grantFixedMonthly > 0 || costSummary.grantVariablePerUnit > 0 ? (
             <p className="text-sm text-muted-foreground">
-              The grant pays {formatPHP(costSummary.grantFixedMonthly)} a month and {formatPHPDetailed(costSummary.grantVariablePerUnit)} per {unitName || "unit"} today. Your price already covers these, so it still works after the grant ends. While the grant pays, your monthly profit is {formatPHP(outcome.profit + costSummary.grantFixedMonthly + costSummary.grantVariablePerUnit * safeExpectedUnits)}.
+              The grant pays {formatPHP(costSummary.grantFixedMonthly)} a month and {formatPHPDetailed(costSummary.grantVariablePerUnit)} per {unitLabel} today. Your price already covers these, so it still works after the grant ends. While the grant pays, your monthly profit is {formatPHP(outcome.profit + costSummary.grantFixedMonthly + costSummary.grantVariablePerUnit * safeExpectedUnits)}.
             </p>
           ) : null}
         </TabsContent>
@@ -453,7 +455,7 @@ export default function PricingCalculatorPage() {
               )}
               <div className="space-y-2 md:w-1/2">
                 <Label htmlFor="customer-units">
-                  {`How many ${unitName || "unit"}s one customer buys a month`}
+                  {`How many ${unitLabel}s one customer buys a month`}
                 </Label>
                 <IntegerInput
                   id="customer-units"
@@ -475,7 +477,7 @@ export default function PricingCalculatorPage() {
               variant="success"
               sublabel={
                 safeCustomerUnits > 0
-                  ? `A month per customer, about ${formatPHPDetailed(valueBased / safeCustomerUnits)} per ${unitName || "unit"} at ${formatNumber(safeCustomerUnits)} ${unitName || "unit"}s`
+                  ? `A month per customer, about ${formatPHP(valueBased / safeCustomerUnits)} per ${unitLabel} at ${formatNumber(safeCustomerUnits)} ${unitLabel}s`
                   : "A month per customer"
               }
             />
@@ -485,7 +487,7 @@ export default function PricingCalculatorPage() {
             <ResultCard
               label="Customer ROI"
               value={customerRoi.roi === null ? "—" : `${customerRoi.roi.toFixed(1)}×`}
-              sublabel={`Value for every ₱1 they spend at your chosen ${formatPHP(effectivePrice)} per ${unitName || "unit"} × ${formatNumber(safeCustomerUnits)} = ${formatPHP(customerRoi.spend)} a month (set it in Pick your price)`}
+              sublabel={`Value for every ₱1 they spend at your chosen ${formatPHP(effectivePrice)} per ${unitLabel} × ${formatNumber(safeCustomerUnits)} = ${formatPHP(customerRoi.spend)} a month (set it in Pick your price)`}
             />
           </div>
         </TabsContent>
