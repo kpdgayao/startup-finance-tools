@@ -447,7 +447,7 @@ export default function PricingCalculatorPage() {
                 </>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <CurrencyInput label="Customer Perceived Value" value={perceivedValue} onChange={setPerceivedValue} onBlur={() => markTouched("perceivedValue")} error={perceivedValueError} />
+                  <CurrencyInput label="Value to one customer, ₱ a month" value={perceivedValue} onChange={setPerceivedValue} onBlur={() => markTouched("perceivedValue")} error={perceivedValueError} />
                   <PercentageInput label="Discount from Value %" value={valueDiscount} onChange={setValueDiscount} onBlur={() => markTouched("valueDiscount")} error={valueDiscountError} />
                 </div>
               )}
@@ -465,15 +465,27 @@ export default function PricingCalculatorPage() {
             </CardContent>
           </Card>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <ResultCard label="Perceived Value" value={formatPHP(effectiveValue)} />
-            <ResultCard label="Suggested Price" value={formatPHP(valueBased)} variant="success" />
-            <ResultCard label="Customer Surplus" value={formatPHP(effectiveValue - valueBased)} sublabel="Value the customer keeps" />
+            {/* Everything on this tab is per customer per month. Suggested
+                Price is a monthly bill, so it also shows as a per-unit price
+                to set beside your chosen one. */}
+            <ResultCard label="Perceived Value" value={formatPHP(effectiveValue)} sublabel="Per customer, a month" />
+            <ResultCard
+              label="Suggested Price"
+              value={formatPHP(valueBased)}
+              variant="success"
+              sublabel={
+                safeCustomerUnits > 0
+                  ? `A month per customer, about ${formatPHPDetailed(valueBased / safeCustomerUnits)} per ${unitName || "unit"} at ${formatNumber(safeCustomerUnits)} ${unitName || "unit"}s`
+                  : "A month per customer"
+              }
+            />
+            <ResultCard label="Customer Surplus" value={formatPHP(effectiveValue - valueBased)} sublabel="Value the customer keeps, a month" />
             {/* Against your chosen price, not the suggested one: value ÷
                 (value × (1 − discount)) only ever restated the discount. */}
             <ResultCard
               label="Customer ROI"
               value={customerRoi.roi === null ? "—" : `${customerRoi.roi.toFixed(1)}×`}
-              sublabel={`Value for every ₱1 they spend at your ${formatPHP(effectivePrice)} × ${formatNumber(safeCustomerUnits)} = ${formatPHP(customerRoi.spend)} a month`}
+              sublabel={`Value for every ₱1 they spend at your chosen ${formatPHP(effectivePrice)} per ${unitName || "unit"} × ${formatNumber(safeCustomerUnits)} = ${formatPHP(customerRoi.spend)} a month (set it in Pick your price)`}
             />
           </div>
         </TabsContent>
