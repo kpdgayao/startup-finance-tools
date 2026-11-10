@@ -110,11 +110,20 @@ export function calculateBundlePrice(
 
 export function suggestPsychologicalPrice(price: number): number {
   if (price <= 0) return 0;
+  if (price < 9) return Math.floor(price);
   const floored = Math.floor(price);
   const lastDigit = floored % 10;
   if (lastDigit === 9) return floored;
   // Step down to nearest number ending in 9
   return floored - lastDigit - 1;
+}
+
+export function suggestCharmPrices(
+  price: number
+): { down: number; up: number } | null {
+  if (price < 9) return null;
+  const down = suggestPsychologicalPrice(price);
+  return { down, up: down + 10 };
 }
 
 export function calculateBreakeven(

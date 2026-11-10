@@ -22,7 +22,7 @@ import {
   calculateCompetitivePosition,
   calculateBundlePrice,
   convertBasisPercent,
-  suggestPsychologicalPrice,
+  suggestCharmPrices,
   calculateBreakeven,
   type PricingBasis,
 } from "@/lib/calculations/pricing";
@@ -52,6 +52,9 @@ export default function PricingCalculatorPage() {
   // Bundle state
   const [bundleItems, setBundleItems] = useState<number[]>([10000, 8000, 5000]);
   const [bundleDiscount, setBundleDiscount] = useState(15);
+
+  // Psychological state
+  const [charmBase, setCharmBase] = useState<number | null>(null);
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
@@ -91,6 +94,7 @@ export default function PricingCalculatorPage() {
     setCompetitorPrices([15000, 18000, 22000, 25000]);
     setBundleItems([10000, 8000, 5000]);
     setBundleDiscount(15);
+    setCharmBase(null);
     setTouched({});
   };
 
@@ -106,7 +110,9 @@ export default function PricingCalculatorPage() {
   const penetrationPrice = calculatePenetrationPrice(safeMarketPrice, safePenetrationDiscount);
 const competitive = calculateCompetitivePosition(competitorPrices.map((v) => sanitizeFinancialAmount(v)));
 const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmount(v)), safeBundleDiscount);
-  const psychologicalPrice = suggestPsychologicalPrice(costPlusResult.price);
+  const charmInput = charmBase ?? Math.round(costPlusResult.price);
+  const safeCharmInput = sanitizeFinancialAmount(charmInput);
+  const charm = suggestCharmPrices(safeCharmInput);
 
   return (
     <div className="space-y-6">
@@ -381,18 +387,32 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <CurrencyInput label="Your Calculated Price" value={costPlusResult.price} onChange={() => {}} />
+              <CurrencyInput label="Price to round" value={charmInput} onChange={setCharmBase} />
+              {charmBase !== null && (
+                <Button variant="ghost" size="sm" onClick={() => setCharmBase(null)}>
+                  Use my cost-plus price
+                </Button>
+              )}
             </CardContent>
           </Card>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ResultCard label="Original Price" value={formatPHP(Math.round(costPlusResult.price))} />
-            <ResultCard
-              label="Psychological Price"
-              value={formatPHP(psychologicalPrice)}
-              variant="success"
-              sublabel={`Ends in 9 — feels cheaper than ${formatPHP(psychologicalPrice + 1)}`}
-            />
-          </div>
+          {charm !== null ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <ResultCard label="Your Price" value={formatPHP(safeCharmInput)} />
+              <ResultCard
+                label="Round Down"
+                value={formatPHP(charm.down)}
+                variant={charm.down >= safeCharmInput * 0.95 ? "success" : "warning"}
+                sublabel={
+                  charm.down >= safeCharmInput * 0.95
+                    ? `Feels cheaper than ${formatPHP(charm.down + 1)}`
+                    : `Cuts ${(100 - (charm.down / safeCharmInput) * 100).toFixed(0)}% off your price — consider rounding up`
+                }
+              />
+              <ResultCard label="Round Up" value={formatPHP(charm.up)} sublabel="More margin, still ends in 9" />
+            </div>
+          ) : (
+            <ResultCard label="Charm Price" value="None" sublabel="Below ₱9 there is no lower price ending in 9. Keep it round, or sell two for ₱9." />
+          )}
         </TabsContent>
       </Tabs>
 
@@ -420,7 +440,7 @@ const bundle = calculateBundlePrice(bundleItems.map((v) => sanitizeFinancialAmou
             penetration: { marketPrice: safeMarketPrice, penetrationDiscount: safePenetrationDiscount, entryPrice: penetrationPrice },
             competitive: { competitorPrices: competitorPrices.map((v) => sanitizeFinancialAmount(v)), ...competitive },
             bundle: { bundleItems: bundleItems.map((v) => sanitizeFinancialAmount(v)), bundleDiscount: safeBundleDiscount, ...bundle },
-            psychologicalPrice,
+            psychological: { price: safeCharmInput, down: charm?.down ?? null, up: charm?.up ?? null },
           })
         }
         onDismiss={ai.reset}

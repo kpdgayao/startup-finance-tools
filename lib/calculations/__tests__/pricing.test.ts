@@ -6,6 +6,7 @@ import {
   calculateCompetitivePosition,
   calculateBundlePrice,
   convertBasisPercent,
+  suggestCharmPrices,
   suggestPsychologicalPrice,
   type CostBreakdown,
 } from "../pricing";
@@ -204,5 +205,27 @@ describe("suggestPsychologicalPrice", () => {
   it("steps down to nearest 9-ending number", () => {
     const result = suggestPsychologicalPrice(100);
     expect(result).toBe(99);
+  });
+});
+
+describe("suggestPsychologicalPrice — small prices", () => {
+  it("never returns a negative price", () => {
+    for (let p = 0.5; p <= 200; p += 0.5) {
+      const r = suggestPsychologicalPrice(p);
+      expect(r, `price ${p}`).toBeGreaterThanOrEqual(0);
+      expect(r, `price ${p}`).toBeLessThanOrEqual(p);
+    }
+  });
+  it("leaves a ₱5 add-on at ₱5", () => expect(suggestPsychologicalPrice(5)).toBe(5));
+  it("₱9.50 becomes ₱9", () => expect(suggestPsychologicalPrice(9.5)).toBe(9));
+});
+
+describe("suggestCharmPrices", () => {
+  it("₱143 → down ₱139, up ₱149", () => expect(suggestCharmPrices(143)).toEqual({ down: 139, up: 149 }));
+  it("₱18 → down ₱9, up ₱19", () => expect(suggestCharmPrices(18)).toEqual({ down: 9, up: 19 }));
+  it("₱99 → down ₱99, up ₱109", () => expect(suggestCharmPrices(99)).toEqual({ down: 99, up: 109 }));
+  it("below ₱9 there is no charm price", () => {
+    expect(suggestCharmPrices(5)).toBeNull();
+    expect(suggestCharmPrices(0)).toBeNull();
   });
 });
